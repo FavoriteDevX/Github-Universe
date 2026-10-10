@@ -2,9 +2,9 @@
   "themeName": "Main Headquarters Lobby",
   "backgroundColor": "#1e1e24",
   "blocks": [
-    { "type": "floor", "position": [0, -0.5, 0], "scale":, "color": "#2d2d34" },
-    { "type": "desk", "position": [0, 0.5, 0], "scale":, "color": "#4a4a5a", "label": "Central Desk" },
-    { "type": "wall", "position": [-15, 5, 0], "scale":, "color": "#3d3d45" },
-    { "type": "wall", "position":, "scale":, "color": "#3d3d45" }
+    { "type": "floor", "position": [0, -0.5, 0], "scale": [30, 1, 30], "color": "#2d2d34" },
+    { "type": "desk", "position": [0, 0.5, 0], "scale": [6, 1, 3], "color": "#4a4a5a", "label": "Central Desk" },
+    { "type": "wall", "position": [-15, 5, 0], "scale": [1, 10, 30], "color": "#3d3d45" },
+    { "type": "wall", "position": [15, 5, 0], "scale": [1, 10, 30], "color": "#3d3d45" }
   ]
 }

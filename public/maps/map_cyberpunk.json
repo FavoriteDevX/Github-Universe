@@ -2,9 +2,9 @@
   "themeName": "The Cyberpunk Repository",
   "backgroundColor": "#0d0211",
   "blocks": [
-    { "type": "floor", "position": [0, -0.5, 0], "scale":, "color": "#1a0826" },
-    { "type": "neon_pillar", "position": [-5, 4, -5], "scale":, "color": "#00ffcc", "label": "Core API" },
-    { "type": "neon_pillar", "position":, "scale":, "color": "#ff007f", "label": "Webhooks" },
-    { "type": "server_rack", "position": [0, 2, -10], "scale":, "color": "#390099" }
+    { "type": "floor", "position": [0, -0.5, 0], "scale": [30, 1, 30], "color": "#1a0826" },
+    { "type": "neon_pillar", "position": [-5, 4, -5], "scale": [1, 8, 1], "color": "#00ffcc", "label": "Core API" },
+    { "type": "neon_pillar", "position": [5, 4, -5], "scale": [1, 8, 1], "color": "#ff007f", "label": "Webhooks" },
+    { "type": "server_rack", "position": [0, 2, -10], "scale": [6, 4, 2], "color": "#390099" }
   ]
 }

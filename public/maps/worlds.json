@@ -1,0 +1,18 @@
+[
+  { "key": "plaza",     "file": "map_decentraland.json",       "name": "Genesis Plaza",            "description": "Spawn padrão (0,0), estilo Decentraland" },
+  { "key": "districts", "file": "map_genesis_plaza.json",      "name": "Distritos",                "description": "Vegas, Fashion, Aetheria e lotes privados" },
+  { "key": "lobby",     "file": "map_lobby.json",              "name": "HQ Lobby",                 "description": "Sala social com a mesa central" },
+  { "key": "pavilion",  "file": "map_repository_pavilion.json","name": "Repository Pavilion",      "description": "Exposição de blocos verdes e azuis" },
+  { "key": "agile",     "file": "map_agile_board.json",        "name": "Scrum & Agile",            "description": "Quadros Kanban e post-its" },
+  { "key": "sandbox",   "file": "map_sandbox_voxels.json",     "name": "Sandbox Voxels",           "description": "Cluster de voxels" },
+  { "key": "social",    "file": "map_horizon_somnium.json",    "name": "Horizon & Somnium",        "description": "Hub social" },
+  { "key": "gallery",   "file": "map_upland_voxels.json",      "name": "Upland Gallery",           "description": "Imóveis e galeria de arte" },
+  { "key": "mall",      "file": "map_gamimall.json",           "name": "GamiMall",                 "description": "Shopping de vestíveis" },
+  { "key": "apple",     "file": "map_apple_house.json",        "name": "House of MAC",             "description": "Praça de alumínio" },
+  { "key": "zen",       "file": "map_world_zen.json",          "name": "Zen Temple",               "description": "Ilha flutuante privada" },
+  { "key": "cyberpunk", "file": "map_cyberpunk.json",          "name": "Cyberpunk Repo",           "description": "Pilares neon" },
+  { "key": "retro",     "file": "map_retro.json",              "name": "Retro Contributions",      "description": "Gráfico de contribuições em 3D" },
+  { "key": "beach",     "file": "map_beach.json",              "name": "Tropical Beach",           "description": "Ilha de praia" },
+  { "key": "house",     "file": "map_modern_house.json",       "name": "Hacker House",             "description": "Casa de dois andares" },
+  { "key": "arcade",    "file": "map_game_room.json",          "name": "Arcade Room",              "description": "Fliperamas e sinuca" }
+]
