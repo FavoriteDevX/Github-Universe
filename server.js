@@ -1,21 +1,40 @@
 const express = require('express');
 const app = express();
+const fs = require('fs');
 const path = require('path'); // Core module to handle absolute system directory paths smoothly
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
   cors: { origin: "*" }
 });
 
-// Serves all static layout assets (main.js, maps JSON directories) nested inside public folder
-app.use(express.static('public'));
+const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Secure fallback route mapping the landing URL specifically to the index.html on the root layer
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Serves all static layout assets (index.html, main.js, maps JSON directories) nested inside public folder
+app.use(express.static(PUBLIC_DIR));
+
+// World instances registry shared with the client (public/maps/worlds.json)
+const worldRegistry = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'worlds.json'), 'utf8'));
+const validWorldKeys = new Set(worldRegistry.map((world) => world.key));
+const DEFAULT_WORLD = worldRegistry[0].key;
+
+const MAX_CHAT_LENGTH = 200;
+const MAX_COORDINATE = 500;
 
 // Active tracking memory for connected developers network clients
 const activeDevelopers = {};
+
+// Every world instance is a Socket.io room: peers only see and hear who is in the same world
+function worldRoom(worldKey) {
+  return `world:${worldKey}`;
+}
+
+function sanitizePosition(position) {
+  if (!position || typeof position !== 'object') return null;
+  const axes = ['x', 'y', 'z'].map((axis) => Number(position[axis]));
+  if (axes.some((value) => !Number.isFinite(value))) return null;
+  const [x, y, z] = axes.map((value) => Math.max(-MAX_COORDINATE, Math.min(MAX_COORDINATE, value)));
+  return { x, y, z };
+}
 
 // This manages every developer that connects to your multiverse environment cluster
 io.on('connection', (socket) => {
@@ -27,9 +46,9 @@ io.on('connection', (socket) => {
   activeDevelopers[socket.id] = {
     id: socket.id,
     devTag: developerTag,
-    position: { x: 0, y: 1, z: 0 }, 
+    position: { x: 0, y: 1, z: 0 },
     color: getRandomPastelColor(),
-    activeWorld: "Lobby"
+    activeWorld: DEFAULT_WORLD
   };
 
   console.log(`[NETWORK] Developer registered: ${developerTag} (${socket.id})`);
@@ -37,51 +56,46 @@ io.on('connection', (socket) => {
   // Sends the local client its own developer registration metadata attributes
   socket.emit('local_registration_success', activeDevelopers[socket.id]);
 
-  // Synchronizes the existing active cluster maps state profiles into the new client pipeline
-  socket.emit('sync_entire_developer_pool', Object.values(activeDevelopers));
+  joinWorld(socket, DEFAULT_WORLD);
 
-  // Broadcasts to all online clients that a new cursor entered the rendering plane view
-  socket.broadcast.emit('new_developer_joined', activeDevelopers[socket.id]);
-
-  // Synchronizes real-time coordinates transform movements updates across the matrix
+  // Synchronizes real-time coordinates transform movements across the same world instance
   socket.on('update_cursor_transform', (transformData) => {
-    if (activeDevelopers[socket.id]) {
-      activeDevelopers[socket.id].position = transformData.position;
-      socket.broadcast.emit('peer_cursor_transformed', {
-        id: socket.id,
-        position: transformData.position
-      });
-    }
+    const developer = activeDevelopers[socket.id];
+    const position = sanitizePosition(transformData && transformData.position);
+    if (!developer || !position) return;
+
+    developer.position = position;
+    socket.to(worldRoom(developer.activeWorld)).emit('peer_cursor_transformed', {
+      id: socket.id,
+      position
+    });
   });
 
-  // Listener to catch when a user alters their private room instance using chat commands triggers
-  socket.on('user_changed_world_instance', (worldThemeName) => {
-    if (activeDevelopers[socket.id]) {
-      activeDevelopers[socket.id].activeWorld = worldThemeName;
-      socket.broadcast.emit('peer_changed_instance_room', {
-        id: socket.id,
-        activeWorld: worldThemeName
-      });
-    }
+  // Listener to catch when a user alters their world instance using chat commands or the world list
+  socket.on('user_changed_world_instance', (worldKey) => {
+    const developer = activeDevelopers[socket.id];
+    if (!developer || !validWorldKeys.has(worldKey) || developer.activeWorld === worldKey) return;
+
+    const previousWorld = developer.activeWorld;
+    socket.leave(worldRoom(previousWorld));
+    socket.to(worldRoom(previousWorld)).emit('developer_left_network', socket.id);
+
+    joinWorld(socket, worldKey);
   });
 
-  // Clean-up memory garbage collection sequence triggers when a laptop connection drops down
-  socket.on('disconnect', () => {
-    if (activeDevelopers[socket.id]) {
-      console.log(`[NETWORK] Developer disconnected: ${activeDevelopers[socket.id].devTag}`);
-      delete activeDevelopers[socket.id];
-      io.emit('developer_left_network', socket.id);
-    }
-  });
-});
+  // Chat messages are spoken inside the current world and rendered as bubbles over the sender cursor
+  socket.on('chat_message', (rawText) => {
+    const developer = activeDevelopers[socket.id];
+    if (!developer || typeof rawText !== 'string') return;
 
-// Utility function creating visual styling standards for distinct arrow meshes profiles
-function getRandomPastelColor() {
-  const pastelColors = ['#ffb7b2', '#ffdac1', '#e2f0cb', '#b5ead7', '#c7ceea', '#ff9aa2', '#a8e6cf'];
-  return pastelColors[Math.floor(Math.random() * pastelColors.length)];
-}
+    const text = rawText.trim().slice(0, MAX_CHAT_LENGTH);
+    if (!text) return;
 
-const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-  console.log(`[ENGINE ACTIVE] GitVerse cluster rendering successfully deployed on: http://localhost:${PORT}`);
-});
+    io.to(worldRoom(developer.activeWorld)).emit('chat_message', {
+      id: socket.id,
+      devTag: developer.devTag,
+      color: developer.color,
+      text,
+      timestamp: Date.now()
+    });
+
