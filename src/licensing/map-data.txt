@@ -1,0 +1,16 @@
+OPEN DATABASE LICENSE (ODbL) v1.0
+Spatial Coordinates and World Map Architecture Data
+
+This Open Database License (the "Agreement") is a license agreement between You (the Licensee) and the project owners (the Licensor) governing the components of the structural JSON databases mapping out the coordinates of Genesis City and the Silicon Valley sector.
+
+1. Permitted Uses and Database Rights
+The Licensor grants You a worldwide, royalty-free, non-exclusive, revocable right to extract, utilize, and run data queries against the spatial layouts, parcel grid definitions, and coordinate markers contained within the map JSON folder.
+
+2. Content and Sourcing Restructuring
+If You publicly utilize a derivative database created from this spatial data (e.g., mapping an alternative grid or expanding the coordinate bounds), You must provide clear attribution to the original spatial architecture mapping of this repository.
+
+3. Structural Integrity Limitation
+This license specifically forbids the structural integration of these specific parcel mappings into external closed proprietary corporate mapping services without a supplementary data-sharing protocol signed by the principal author.
+
+4. No Warranty
+THIS DATABASE IS PROVIDED "AS IS" AND WITHOUT ANY WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, OR STATUTORY.
