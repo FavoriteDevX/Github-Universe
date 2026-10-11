@@ -375,5 +375,9 @@ const LootSystem = (() => {
     renderInventory();
   }
 
-  return { init, update, tryOpen, useSlot, command, modifiers, toggleInventory };
+  function addBuff(name, seconds) {
+    buffs[name] = performance.now() + seconds * 1000;
+  }
+
+  return { init, update, tryOpen, useSlot, command, modifiers, toggleInventory, addBuff };
 })();

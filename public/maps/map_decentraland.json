@@ -1,15 +1,1101 @@
 {
-  "themeName": "Genesis Plaza Multiverse (0,0 Template)",
-  "backgroundColor": "#110f1a",
-  "blocks": [
-    { "type": "grid_base_land", "position": [0, -0.5, 0], "scale": [32, 1, 32], "color": "#2c2a38", "label": "Genesis Land Parcel (16x16m Bounds)" },
-    { "type": "spawn_teleport_pad", "position": [0, 0.1, 0], "scale": [4, 0.2, 4], "color": "#ff007f", "label": "Default Spawn Node (0,0)" },
-    { "type": "center_hologram_pillar", "position": [0, 4, 0], "scale": [0.8, 8, 0.8], "color": "#00f0ff" },
-    { "type": "north_plaza_tower", "position": [0, 6, -14], "scale": [6, 12, 2], "color": "#3a364d", "label": "Marketplace Pavilion Info" },
-    { "type": "south_plaza_gate", "position": [0, 4, 14], "scale": [8, 8, 1], "color": "#4a4461" },
-    { "type": "west_district_block", "position": [-14, 2, 0], "scale": [2, 4, 8], "color": "#ffbc42", "label": "Aetheria Cyber Boundary" },
-    { "type": "east_district_block", "position": [14, 2, 0], "scale": [2, 4, 8], "color": "#d81159", "label": "Vegas Casino Boundary" },
-    { "type": "wayfinding_sign", "position": [4, 1.5, 4], "scale": [0.3, 3, 0.3], "color": "#ffffff" },
-    { "type": "wayfinding_board", "position": [4, 2.5, 4], "scale": [1.5, 1, 0.1], "color": "#00f0ff", "label": "Welcome to the Multiverse SDK" }
-  ]
+ "themeName": "Genesis Plaza - Heart of GitHub Multiverse",
+ "backgroundColor": "#c98b5a",
+ "blocks": [
+  {
+   "type": "plaza_floor",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    184,
+    0.4,
+    184
+   ],
+   "color": "#c98b5a",
+   "label": "Genesis Plaza"
+  },
+  {
+   "type": "glow_ring",
+   "position": [
+    0,
+    0.02,
+    0
+   ],
+   "scale": [
+    88,
+    0.2,
+    88
+   ],
+   "color": "#ffb703"
+  },
+  {
+   "type": "fountain",
+   "position": [
+    0,
+    0.5,
+    0
+   ],
+   "scale": [
+    20,
+    1,
+    20
+   ],
+   "color": "#4dabf7",
+   "label": "Genesis Fountain"
+  },
+  {
+   "type": "center_hologram_pillar",
+   "position": [
+    0,
+    12,
+    0
+   ],
+   "scale": [
+    2,
+    24,
+    2
+   ],
+   "color": "#00f0ff",
+   "label": "Genesis Hologram Pillar"
+  },
+  {
+   "type": "spawn_teleport_pad",
+   "position": [
+    0,
+    0.15,
+    24
+   ],
+   "scale": [
+    6,
+    0.3,
+    6
+   ],
+   "color": "#1877f2",
+   "label": "Default Spawn Node (0,0)"
+  },
+  {
+   "type": "welcome_hall",
+   "position": [
+    0,
+    0,
+    -62
+   ],
+   "scale": [
+    44,
+    14,
+    44
+   ],
+   "color": "#b07a45",
+   "label": "Welcome to GitHub Multiverse"
+  },
+  {
+   "type": "bar_counter",
+   "position": [
+    -9,
+    0.6,
+    -66
+   ],
+   "scale": [
+    6,
+    1.2,
+    6
+   ],
+   "color": "#6b3f22",
+   "label": "Espresso Bar"
+  },
+  {
+   "type": "floating_crystal",
+   "position": [
+    10,
+    1.5,
+    -68
+   ],
+   "scale": [
+    2,
+    3,
+    2
+   ],
+   "color": "#7048e8",
+   "label": "Genesis Crystal"
+  },
+  {
+   "type": "floating_crystal",
+   "position": [
+    12,
+    1.5,
+    -54
+   ],
+   "scale": [
+    2,
+    3,
+    2
+   ],
+   "color": "#9c36b5",
+   "label": "Genesis Crystal"
+  },
+  {
+   "type": "wall_tv",
+   "position": [
+    0,
+    7,
+    -82.5
+   ],
+   "scale": [
+    7,
+    4,
+    0.3
+   ],
+   "color": "#111111",
+   "label": "Multiverse Live TV"
+  },
+  {
+   "type": "theatre",
+   "position": [
+    -64,
+    0,
+    -44
+   ],
+   "scale": [
+    44,
+    16,
+    30
+   ],
+   "color": "#7b2d26",
+   "label": "GitHub Multiverse Theatre"
+  },
+  {
+   "type": "north_plaza_tower",
+   "position": [
+    62,
+    15,
+    -56
+   ],
+   "scale": [
+    14,
+    30,
+    14
+   ],
+   "color": "#d6dde8",
+   "label": "Marketplace Pavilion Info"
+  },
+  {
+   "type": "west_aetheria_neon_tower",
+   "position": [
+    -80,
+    12,
+    6
+   ],
+   "scale": [
+    16,
+    24,
+    26
+   ],
+   "color": "#3b1a5a",
+   "label": "Aetheria Cyber Boundary"
+  },
+  {
+   "type": "east_vegas_casino",
+   "position": [
+    80,
+    8,
+    6
+   ],
+   "scale": [
+    16,
+    16,
+    26
+   ],
+   "color": "#d81159",
+   "label": "Vegas Casino Boundary"
+  },
+  {
+   "type": "south_arch_gate",
+   "position": [
+    0,
+    9,
+    86
+   ],
+   "scale": [
+    24,
+    18,
+    3
+   ],
+   "color": "#e9d8b4",
+   "label": "GENESIS PLAZA"
+  },
+  {
+   "type": "wayfinding_sign",
+   "position": [
+    9,
+    1.5,
+    30
+   ],
+   "scale": [
+    0.3,
+    3,
+    0.3
+   ],
+   "color": "#ffffff"
+  },
+  {
+   "type": "wayfinding_board",
+   "position": [
+    9,
+    3.4,
+    30
+   ],
+   "scale": [
+    4,
+    2,
+    0.2
+   ],
+   "color": "#1877f2",
+   "label": "Welcome to the Multiverse SDK"
+  },
+  {
+   "type": "events_wall",
+   "position": [
+    46,
+    0,
+    54
+   ],
+   "scale": [
+    26,
+    6,
+    26
+   ],
+   "color": "#2a1450",
+   "label": "Events & Worlds - JUMP IN"
+  },
+  {
+   "type": "announcement_kiosk",
+   "position": [
+    30,
+    3,
+    40
+   ],
+   "scale": [
+    4,
+    6,
+    0.6
+   ],
+   "color": "#3a3f4b",
+   "label": "Next Supply Drop|falls every 3 minutes!|Open chests with E"
+  },
+  {
+   "type": "info_kiosk",
+   "position": [
+    36,
+    1.5,
+    30
+   ],
+   "scale": [
+    1.2,
+    3,
+    1.2
+   ],
+   "color": "#0d1b3e",
+   "label": "Jump into the Worlds"
+  },
+  {
+   "type": "pond",
+   "position": [
+    -46,
+    0,
+    50
+   ],
+   "scale": [
+    26,
+    0.6,
+    18
+   ],
+   "color": "#3fb6c6",
+   "label": "Cozy Pond"
+  },
+  {
+   "type": "poster_wall",
+   "position": [
+    -46,
+    4,
+    76
+   ],
+   "scale": [
+    26,
+    8,
+    1
+   ],
+   "color": "#b5533c",
+   "label": "Event Posters"
+  },
+  {
+   "type": "shop_info_center",
+   "position": [
+    -80,
+    5,
+    -82
+   ],
+   "scale": [
+    14,
+    10,
+    12
+   ],
+   "color": "#1877f2",
+   "label": "Info Center"
+  },
+  {
+   "type": "shop_coffee_commits",
+   "position": [
+    80,
+    5,
+    -82
+   ],
+   "scale": [
+    14,
+    10,
+    12
+   ],
+   "color": "#2f9e44",
+   "label": "Coffee & Commits"
+  },
+  {
+   "type": "shop_merch_wearables",
+   "position": [
+    -80,
+    5,
+    52
+   ],
+   "scale": [
+    14,
+    10,
+    12
+   ],
+   "color": "#e8590c",
+   "label": "Merch & Wearables"
+  },
+  {
+   "type": "shop_dev_marketplace",
+   "position": [
+    80,
+    5,
+    52
+   ],
+   "scale": [
+    14,
+    10,
+    12
+   ],
+   "color": "#7048e8",
+   "label": "Dev Marketplace"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    57.7,
+    3.5,
+    5.8
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    45.8,
+    3.5,
+    24.6
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#37b24d"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    15.0,
+    3.5,
+    49.8
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#f783ac"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -5.8,
+    3.5,
+    57.7
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#ff922b"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -24.6,
+    3.5,
+    45.8
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#ff6b6b"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -49.8,
+    3.5,
+    15.0
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#37b24d"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -57.7,
+    3.5,
+    -5.8
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#40c057"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -45.8,
+    3.5,
+    -24.6
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#f783ac"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -36.7,
+    3.5,
+    -44.9
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#ff922b"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    24.6,
+    3.5,
+    -45.8
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#37b24d"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    44.9,
+    3.5,
+    -36.7
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#40c057"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    49.8,
+    3.5,
+    -15.0
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#f783ac"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    46.0,
+    3,
+    0.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    39.8,
+    3,
+    23.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    23.0,
+    3,
+    39.8
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    0.0,
+    3,
+    46.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -23.0,
+    3,
+    39.8
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -39.8,
+    3,
+    23.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -46.0,
+    3,
+    0.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -39.8,
+    3,
+    -23.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -23.0,
+    3,
+    -39.8
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -0.0,
+    3,
+    -46.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    23.0,
+    3,
+    -39.8
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    39.8,
+    3,
+    -23.0
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "bench",
+   "position": [
+    35.3,
+    0,
+    7.2
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    19.9,
+    0,
+    30.0
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    -7.2,
+    0,
+    35.3
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    -30.0,
+    0,
+    19.9
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    -35.3,
+    0,
+    -7.2
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    -19.9,
+    0,
+    -30.0
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    7.2,
+    0,
+    -35.3
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    30.0,
+    0,
+    -19.9
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "flower_bed",
+   "position": [
+    14,
+    0.4,
+    14
+   ],
+   "scale": [
+    4,
+    0.8,
+    2
+   ],
+   "color": "#9c6644"
+  },
+  {
+   "type": "flower_bed",
+   "position": [
+    -14,
+    0.4,
+    14
+   ],
+   "scale": [
+    4,
+    0.8,
+    2
+   ],
+   "color": "#9c6644"
+  },
+  {
+   "type": "flower_bed",
+   "position": [
+    14,
+    0.4,
+    -14
+   ],
+   "scale": [
+    4,
+    0.8,
+    2
+   ],
+   "color": "#9c6644"
+  },
+  {
+   "type": "flower_bed",
+   "position": [
+    -14,
+    0.4,
+    -14
+   ],
+   "scale": [
+    4,
+    0.8,
+    2
+   ],
+   "color": "#9c6644"
+  },
+  {
+   "type": "hydrant",
+   "position": [
+    20,
+    0.4,
+    30
+   ],
+   "scale": [
+    0.6,
+    0.8,
+    0.6
+   ],
+   "color": "#d62828"
+  },
+  {
+   "type": "hydrant",
+   "position": [
+    -22,
+    0.4,
+    28
+   ],
+   "scale": [
+    0.6,
+    0.8,
+    0.6
+   ],
+   "color": "#d62828"
+  },
+  {
+   "type": "hydrant",
+   "position": [
+    26,
+    0.4,
+    -30
+   ],
+   "scale": [
+    0.6,
+    0.8,
+    0.6
+   ],
+   "color": "#d62828"
+  },
+  {
+   "type": "hot_air_balloon",
+   "position": [
+    52,
+    42,
+    -18
+   ],
+   "scale": [
+    10,
+    16,
+    10
+   ],
+   "color": "#e63946",
+   "label": "Multiverse Balloon"
+  },
+  {
+   "type": "hot_air_balloon",
+   "position": [
+    -40,
+    55,
+    30
+   ],
+   "scale": [
+    8,
+    13,
+    8
+   ],
+   "color": "#1877f2",
+   "label": "Multiverse Balloon"
+  },
+  {
+   "type": "showcase_shelf",
+   "position": [
+    50,
+    7,
+    -40
+   ],
+   "scale": [
+    9,
+    14,
+    2.4
+   ],
+   "color": "#efe6d6",
+   "label": "Classics",
+   "items": [
+    [
+     "Apple I-style kit computer (1976)",
+     "computer",
+     "Hand-built hobbyist computers in wooden cases started the personal computer revolution."
+    ],
+    [
+     "Cartridge handheld (1989)",
+     "handheld",
+     "A pocket console with a green-tinted screen and weeks of battery life."
+    ],
+    [
+     "The first mouse (1964)",
+     "mouse",
+     "Douglas Engelbart's wooden mouse was shown in the 'Mother of All Demos' in 1968."
+    ],
+    [
+     "Brick phone (1983)",
+     "phone",
+     "The first handheld cellular phones weighed about a kilogram and talked for 30 minutes."
+    ],
+    [
+     "3.5\" floppy disk (1982)",
+     "floppy",
+     "1.44 MB of storage: still the universal 'Save' icon today."
+    ],
+    [
+     "Mechanical keyboard (1984)",
+     "keyboard",
+     "Buckling-spring keys so loud the whole office knew you were coding."
+    ]
+   ]
+  },
+  {
+   "type": "showcase_shelf",
+   "position": [
+    56,
+    7,
+    -20
+   ],
+   "scale": [
+    9,
+    14,
+    2.4
+   ],
+   "color": "#efe6d6",
+   "label": "Web Legends",
+   "items": [
+    [
+     "The first website (1991)",
+     "globe",
+     "info.cern.ch explained what the World Wide Web was, written by Tim Berners-Lee at CERN."
+    ],
+    [
+     "The first @ email (1971)",
+     "envelope",
+     "Ray Tomlinson picked the @ sign to send the first network email between two computers."
+    ],
+    [
+     "Hello, World! (1972)",
+     "terminal",
+     "The classic first program, popularized by Kernighan's C tutorials."
+    ],
+    [
+     "90s web browser (1993)",
+     "browser",
+     "Graphical browsers turned the web into pages with images and links for everyone."
+    ],
+    [
+     "Git's first commit (2005)",
+     "commit",
+     "'Initial revision of git, the information manager from hell' - Linus Torvalds."
+    ],
+    [
+     "The Y2K bug (2000)",
+     "bug",
+     "Two-digit years almost broke the millennium; thousands of devs fixed it in time."
+    ]
+   ]
+  },
+  {
+   "type": "showcase_shelf",
+   "position": [
+    58,
+    7,
+    0
+   ],
+   "scale": [
+    9,
+    14,
+    2.4
+   ],
+   "color": "#efe6d6",
+   "label": "Dev Tools",
+   "items": [
+    [
+     "Rubber duck debugger",
+     "duck",
+     "Explain your code line by line to a duck and the bug reveals itself."
+    ],
+    [
+     "First merged PR trophy",
+     "trophy",
+     "Every open source journey starts with one merged pull request."
+    ],
+    [
+     "The terminal",
+     "terminal",
+     "Still the fastest way to talk to a computer."
+    ],
+    [
+     "The keyboard",
+     "keyboard",
+     "A developer's most important instrument."
+    ]
+   ]
+  }
+ ]
 }

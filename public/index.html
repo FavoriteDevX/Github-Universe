@@ -7,11 +7,11 @@
   <link rel="icon" type="image/png" href="assets/icon.png">
   <style>
     :root {
-      --panel-bg: rgba(17, 15, 26, 0.82);
+      --panel-bg: rgba(14, 25, 52, 0.84);
       --panel-border: rgba(255, 255, 255, 0.12);
       --text: #f0f0f5;
       --muted: #a3a1b5;
-      --accent: #ff2d7a;
+      --accent: #1877f2;
       --accent-2: #39d353;
       --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --mono: "SFMono-Regular", Consolas, "Courier New", monospace;
@@ -26,7 +26,8 @@
       font-family: var(--font);
       color: var(--text);
     }
-    canvas {
+    /* The 3D world canvas (other canvases, like the minimap, keep their own size) */
+    body > canvas {
       display: block;
       position: absolute;
       inset: 0;
@@ -169,7 +170,7 @@
 
     /* ---------- Controls help ---------- */
     #help-panel {
-      top: 16px;
+      bottom: 16px;
       right: 16px;
       padding: 10px 14px;
       font-size: 12px;
@@ -253,18 +254,64 @@
 
 
     /* ---------- Minimap ---------- */
+    /* Decentraland-style minimap in the top-right corner */
     #minimap-panel {
       right: 16px;
-      bottom: 16px;
+      top: 16px;
       padding: 6px;
-      line-height: 0;
+      width: 212px;
     }
     #minimap {
+      display: block;
       width: 200px;
       height: 200px;
       border-radius: 8px;
       cursor: crosshair;
     }
+    #minimap-caption { padding: 6px 4px 2px; font-size: 13px; line-height: 1.35; }
+    #minimap-caption b { display: block; }
+    #minimap-caption span { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+
+    /* ---------- Top bar: invite peers / private lobby ---------- */
+    #top-bar {
+      position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 22; display: flex; gap: 8px; align-items: center;
+    }
+    #top-bar button {
+      border: none; border-radius: 20px; padding: 9px 16px; font-weight: 700; font-size: 13px;
+      cursor: pointer; color: #fff; background: var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+    #top-bar button.secondary { background: rgba(14, 25, 52, 0.9); border: 1px solid rgba(255, 255, 255, 0.2); }
+    #lobby-badge {
+      display: none; padding: 7px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      background: #ffd43b; color: #1b1b1b;
+    }
+
+    /* ---------- Interaction prompt, work session, arcade, parkour timer ---------- */
+    #interact-prompt {
+      display: none; position: absolute; left: 50%; bottom: 128px; transform: translateX(-50%);
+      z-index: 20; padding: 8px 16px; border-radius: 8px; background: rgba(24, 119, 242, 0.9);
+      color: #fff; font-weight: 700; font-size: 14px; pointer-events: none;
+    }
+    #parkour-timer {
+      display: none; position: absolute; left: 50%; top: 64px; transform: translateX(-50%); z-index: 20;
+      padding: 8px 18px; border-radius: 10px; background: rgba(0, 0, 0, 0.7); color: #ffd43b;
+      font-family: var(--mono); font-size: 18px; font-weight: 700; pointer-events: none;
+    }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 45; background: rgba(5, 10, 25, 0.6);
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-box { width: min(760px, 100%); padding: 14px; }
+    .modal-box header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .modal-box header button { border: none; background: transparent; color: var(--text); font-size: 24px; cursor: pointer; }
+    #work-code {
+      height: 320px; overflow-y: auto; margin: 0; padding: 12px; border-radius: 8px;
+      background: #0d1117; color: #7ee787; font-family: var(--mono); font-size: 13px; white-space: pre-wrap;
+    }
+    #work-stats { margin: 8px 0; color: var(--muted); font-size: 12px; }
+    #work-commit { border: none; border-radius: 8px; padding: 10px 16px; background: #2da44e; color: #fff; font-weight: 700; cursor: pointer; }
+    #arcade-canvas { display: block; width: min(400px, 80vw); height: auto; margin: 0 auto; border-radius: 8px; image-rendering: pixelated; }
     #worlds-list button.sub-place { padding-left: 22px; font-size: 12px; }
     #worlds-list .list-header { padding: 10px 10px 4px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); }
     #chat-log .place-tag { color: var(--muted); font-size: 11px; }
@@ -369,7 +416,7 @@
     .auth-field input:focus { border-color: var(--accent); }
     #auth-submit {
       width: 100%; padding: 12px; border: none; border-radius: 8px; margin-top: 4px;
-      background: linear-gradient(90deg, #ff2d7a, #8338ec); color: #fff;
+      background: linear-gradient(90deg, #1877f2, #0b4fa8); color: #fff;
       font-size: 15px; font-weight: 700; cursor: pointer;
     }
     #auth-submit:disabled { opacity: 0.6; cursor: wait; }
@@ -445,8 +492,9 @@
 
     @media (max-width: 720px) {
       #help-panel, #worlds-panel { display: none; }
-      #minimap-panel { top: 200px; bottom: auto; }
+      #minimap-panel { top: 200px; width: 132px; }
       #minimap { width: 120px; height: 120px; }
+      #top-bar { top: auto; bottom: 280px; }
       #hotbar { bottom: 200px; }
       .hotbar-slot { width: 46px; height: 46px; font-size: 22px; }
       #loot-prompt { bottom: 260px; }
@@ -483,15 +531,43 @@
 
   <section id="help-panel" class="panel" aria-label="Controls">
     <div><kbd>W A S D</kbd> walk &middot; <kbd>Shift</kbd> run &middot; <kbd>Space</kbd> jump</div>
+    <div><kbd>Space</kbd><kbd>Space</kbd> fly &middot; <kbd>Space</kbd>/<kbd>Shift</kbd> up/down</div>
     <div><kbd>Drag</kbd> look around &middot; <kbd>Wheel</kbd> zoom</div>
     <div><kbd>Click</kbd> inspect &amp; interact &middot; <kbd>M</kbd> map</div>
-    <div><kbd>E</kbd> open loot &middot; <kbd>1-5</kbd> items &middot; <kbd>I</kbd> inventory</div>
+    <div><kbd>E</kbd> interact &amp; loot &middot; <kbd>1-5</kbd> items &middot; <kbd>I</kbd> inventory</div>
+    <div><kbd>/e wave</kbd> emotes &middot; laptops: <kbd>E</kbd> to work</div>
     <div><kbd>Enter</kbd> / <kbd>T</kbd> chat &middot; <kbd>/help</kbd> commands</div>
   </section>
 
   <section id="minimap-panel" class="panel" aria-label="Minimap">
     <canvas id="minimap" width="200" height="200" title="Click to teleport"></canvas>
+    <div id="minimap-caption"></div>
   </section>
+
+  <div id="top-bar">
+    <button id="invite-button" type="button">🔗 Invite peers</button>
+    <button id="lobby-button" type="button" class="secondary">🔒 New private lobby</button>
+    <span id="lobby-badge"></span>
+  </div>
+
+  <div id="interact-prompt"></div>
+  <div id="parkour-timer"></div>
+
+  <div id="work-overlay" class="modal-overlay" role="dialog" aria-label="Laptop work session">
+    <div class="modal-box panel">
+      <header><b>💻 Laptop · type anything to code, Ctrl+Enter or the button to commit, Esc to leave</b><button id="work-close" type="button" aria-label="Close">&times;</button></header>
+      <pre id="work-code"></pre>
+      <p id="work-stats"></p>
+      <button id="work-commit" type="button">git commit &amp;&amp; git push</button>
+    </div>
+  </div>
+
+  <div id="arcade-overlay" class="modal-overlay" role="dialog" aria-label="Arcade">
+    <div class="modal-box panel" style="width: min(440px, 100%)">
+      <header><b>🕹️ Pac-Git Snake · arrows/WASD · Esc to leave</b><button id="arcade-close" type="button" aria-label="Close">&times;</button></header>
+      <canvas id="arcade-canvas" width="400" height="400"></canvas>
+    </div>
+  </div>
 
   <section id="chat-panel" class="panel" aria-label="Chat">
     <ul id="chat-log" aria-live="polite"></ul>
@@ -547,11 +623,15 @@
   </section>
 
   <script src="props.js"></script>
+  <script src="brands.js"></script>
   <script src="landmarks.js"></script>
   <script src="museum.js"></script>
+  <script src="plaza.js"></script>
+  <script src="scenes.js"></script>
   <script src="games.js"></script>
   <script src="city.js"></script>
   <script src="loot.js"></script>
+  <script src="interactions.js"></script>
   <script src="auth.js"></script>
   <script src="main.js"></script>
 </body>

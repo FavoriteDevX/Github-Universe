@@ -38,7 +38,15 @@ const lastEmittedPosition = new THREE.Vector3(Infinity, Infinity, Infinity);
 // The local 3D cursor is the avatar: it walks, jumps and climbs like a Decentraland avatar
 const avatar = { position: new THREE.Vector3(0, 0, 0), velocityY: 0, grounded: true };
 let viewMode = 'explore'; // 'explore' (third person) or 'map' (aerial overview)
+let flying = false; // Minecraft creative-style flight: double-tap Space
+let lastSpaceTap = 0;
+let localCommits = 0;
+let lastDayPhase = null;
+const FLY_SPEED = 16;
+// Private lobbies: ?lobby=<id> in the URL puts you in an instance only invited devs can see
+const lobbyId = (new URLSearchParams(location.search).get('lobby') || '').replace(/[^a-z0-9]/gi, '').slice(0, 12) || null;
 const downRay = new THREE.Raycaster();
+const cameraRay = new THREE.Raycaster();
 const wallRay = new THREE.Raycaster();
 let lastWhisperFrom = null;
 let pendingTeleportRequest = null;
@@ -70,6 +78,7 @@ const ui = {
   infoType: document.getElementById('info-type'),
   infoClose: document.getElementById('info-close'),
   minimap: document.getElementById('minimap'),
+  minimapCaption: document.getElementById('minimap-caption'),
   streamModal: document.getElementById('stream-modal'),
   streamFrame: document.getElementById('stream-frame'),
   streamTitle: document.getElementById('stream-title'),
@@ -115,6 +124,7 @@ function initEngine() {
 // ============================================================================
 async function loadUniverse() {
   worldRegistry = await (await fetch('maps/worlds.json')).json();
+  window.MULTIVERSE_WORLDS = worldRegistry; // used by the Events Wall to build its JUMP IN cards
   const maps = await Promise.all(worldRegistry.map((world) => fetch(`maps/${world.file}`).then((response) => response.json())));
   worldRegistry.forEach((world, index) => {
     try {
@@ -132,7 +142,8 @@ async function loadUniverse() {
 function registerPlaces(district) {
   const { world, layout } = district;
   const view = world.view ? new THREE.Vector3(...world.view) : world.span ? new THREE.Vector3(0, 55, 75) : new THREE.Vector3(0, 30, 42);
-  places.push({ key: world.key, name: world.name, description: world.description, target: layout.center.clone(), view, color: world.color, isWorld: !!world.world });
+  const spawn = world.spawn ? new THREE.Vector3(world.spawn[0], 0, world.spawn[1]) : null;
+  places.push({ key: world.key, name: world.name, description: world.description, target: spawn ? layout.center.clone().add(spawn) : layout.center.clone(), exact: !!spawn, view, color: world.color, isWorld: !!world.world });
   (world.places || []).forEach((place) => {
     places.push({
       key: place.key,
@@ -227,6 +238,17 @@ function setViewMode(mode) {
   }
 }
 
+function toggleFlight() {
+  flying = !flying;
+  avatar.velocityY = 0;
+  appendSystemMessage(flying ? '🕊️ Flying! Space = up, Shift = down, double-tap Space to stop.' : '🛬 Flight off.');
+}
+
+// Place where a teleport lands: the exact spawn for places that define one
+function placeLanding(place) {
+  return place.exact ? place.target.clone() : place.target.clone().add(new THREE.Vector3(0, 0, place.parent ? 14 : 8));
+}
+
 // Highest walkable surface under (x, z), searching downward from fromY
 function groundHeightAt(x, z, fromY) {
   downRay.set(new THREE.Vector3(x, fromY, z), new THREE.Vector3(0, -1, 0));
@@ -245,9 +267,11 @@ function isSolidHit(hit) {
 // Walking physics: WASD relative to the camera, gravity, jumping, stairs and walls
 function updateAvatar(deltaSeconds) {
   if (viewMode !== 'explore') return;
-  const forwardInput = (keysPressed.has('w') || keysPressed.has('arrowup') ? 1 : 0) - (keysPressed.has('s') || keysPressed.has('arrowdown') ? 1 : 0);
-  const strafeInput = (keysPressed.has('d') || keysPressed.has('arrowright') ? 1 : 0) - (keysPressed.has('a') || keysPressed.has('arrowleft') ? 1 : 0);
+  const busy = Interactions.isBusy();
+  const forwardInput = busy ? 0 : (keysPressed.has('w') || keysPressed.has('arrowup') ? 1 : 0) - (keysPressed.has('s') || keysPressed.has('arrowdown') ? 1 : 0);
+  const strafeInput = busy ? 0 : (keysPressed.has('d') || keysPressed.has('arrowright') ? 1 : 0) - (keysPressed.has('a') || keysPressed.has('arrowleft') ? 1 : 0);
   const previous = avatar.position.clone();
+  avatar.moving = !!(forwardInput || strafeInput);
 
   if (forwardInput || strafeInput) {
     const forward = new THREE.Vector3();
@@ -255,7 +279,8 @@ function updateAvatar(deltaSeconds) {
     forward.y = 0;
     forward.normalize();
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-    const move = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(strafeInput)).normalize().multiplyScalar((keysPressed.has('shift') ? RUN_SPEED : WALK_SPEED) * LootSystem.modifiers().speed * deltaSeconds);
+    const speed = flying ? FLY_SPEED : keysPressed.has('shift') ? RUN_SPEED : WALK_SPEED;
+    const move = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(strafeInput)).normalize().multiplyScalar(speed * LootSystem.modifiers().speed * deltaSeconds);
     // Try the full move, then slide along each axis when a wall blocks it
     [move, new THREE.Vector3(move.x, 0, 0), new THREE.Vector3(0, 0, move.z)].some((attempt) => {
       if (attempt.lengthSq() === 0 || isBlocked(attempt)) return false;
@@ -265,23 +290,36 @@ function updateAvatar(deltaSeconds) {
   }
 
   const lootModifiers = LootSystem.modifiers();
-  if (keysPressed.has(' ') && lootModifiers.jetpack) {
+  if (flying) {
+    // Creative flight: Space goes up, Shift goes down, no gravity
+    const vertical = busy ? 0 : (keysPressed.has(' ') ? 1 : 0) - (keysPressed.has('shift') ? 1 : 0);
+    avatar.velocityY = 0;
+    avatar.position.y = Math.min(400, avatar.position.y + vertical * 12 * deltaSeconds);
+    avatar.moving = avatar.moving || vertical !== 0;
+    const flightGround = groundHeightAt(avatar.position.x, avatar.position.z, avatar.position.y + 0.5);
+    if (avatar.position.y <= flightGround) {
+      avatar.position.y = flightGround;
+      if (vertical < 0) { flying = false; appendSystemMessage('🛬 Landed. Double-tap Space to fly again.'); }
+    }
+    avatar.grounded = false;
+  } else if (keysPressed.has(' ') && lootModifiers.jetpack) {
     avatar.velocityY = 9; // Jetpack.js: hold Space to fly
     avatar.grounded = false;
   } else if (keysPressed.has(' ') && avatar.grounded) {
     avatar.velocityY = JUMP_SPEED * Math.sqrt(lootModifiers.jump);
     avatar.grounded = false;
   }
-  avatar.velocityY -= GRAVITY * deltaSeconds;
-  avatar.position.y += avatar.velocityY * deltaSeconds;
-
-  const ground = groundHeightAt(avatar.position.x, avatar.position.z, Math.max(previous.y, avatar.position.y) + STEP_HEIGHT);
-  if (avatar.position.y <= ground) {
-    avatar.position.y = ground;
-    avatar.velocityY = 0;
-    avatar.grounded = true;
-  } else {
-    avatar.grounded = avatar.position.y - ground < 0.05;
+  if (!flying) {
+    avatar.velocityY -= GRAVITY * deltaSeconds;
+    avatar.position.y += avatar.velocityY * deltaSeconds;
+    const ground = groundHeightAt(avatar.position.x, avatar.position.z, Math.max(previous.y, avatar.position.y) + STEP_HEIGHT);
+    if (avatar.position.y <= ground) {
+      avatar.position.y = ground;
+      avatar.velocityY = 0;
+      avatar.grounded = true;
+    } else {
+      avatar.grounded = avatar.position.y - ground < 0.05;
+    }
   }
   if (avatar.position.y < City.GROUND_LEVEL - 20) flyTo(places[0].target, null, 'You fell out of the world. Back to spawn!');
 
@@ -306,7 +344,7 @@ function isBlocked(move) {
 }
 
 function teleportToPlace(place) {
-  flyTo(place.target.clone().add(new THREE.Vector3(0, 0, place.parent ? 14 : 8)), null, `Teleported to ${place.name}.`);
+  flyTo(placeLanding(place), null, `Teleported to ${place.name}.`);
   history.replaceState(null, '', `#${place.key}`);
 }
 
@@ -518,9 +556,16 @@ function bindInputEvents() {
       if (event.key === '/') ui.chatInput.value = '/';
       return;
     }
+    if (Interactions.isBusy()) { Interactions.handleKey(event); return; }
     if (event.key === 'Escape') { closeInfoCard(); closeStream(); }
     if (event.key.toLowerCase() === 'm') { setViewMode(viewMode === 'map' ? 'explore' : 'map'); return; }
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && LootSystem.tryOpen()) return;
+    if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && Interactions.handleKey(event)) return;
+    if (event.key === ' ' && !event.repeat) {
+      const now = performance.now();
+      if (now - lastSpaceTap < 320) toggleFlight();
+      lastSpaceTap = now;
+    }
     if (event.key.toLowerCase() === 'i') { LootSystem.toggleInventory(); return; }
     if (/^[1-5]$/.test(event.key)) { LootSystem.useSlot(parseInt(event.key, 10) - 1); return; }
     if (event.key === ' ') event.preventDefault();
@@ -662,21 +707,31 @@ function updateHud() {
   const district = City.districtAt(position.x, position.z);
   ui.district.textContent = district ? zoneName(district, position) : 'Genesis City';
   ui.parcel.textContent = district && district.world.world ? 'World' : `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
-  ui.clock.textContent = `${ticksToClock(currentTicks())} · ${worldClock.weather}`;
+  // Minecraft-length day: 10 min of day, then night (20 min full cycle)
+  const ticks = currentTicks();
+  const isDay = ticks < 12000;
+  const secondsLeft = Math.max(0, Math.round(((isDay ? 12000 : 24000) - ticks) / TICKS_PER_SECOND));
+  const countdown = `${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`;
+  // While it is day, count down to nightfall; at night, count down to sunrise
+  ui.clock.textContent = `${ticksToClock(ticks)} · ${isDay ? '☀️ night in' : '🌙 day in'} ${worldClock.cycle ? countdown : '--:--'}`;
+  if (lastDayPhase !== null && lastDayPhase !== isDay) appendSystemMessage(isDay ? '☀️ A new day dawns over GitHub Multiverse.' : '🌙 Night has fallen over GitHub Multiverse. The billboards light up!');
+  lastDayPhase = isDay;
   if (hudFrame % 60 === 1) renderWorldList();
   drawMinimap();
 }
 
+// Decentraland-style minimap (top right): your district highlighted in blue,
+// roads, neighbors, compass letters and the devs that share your district
 function drawMinimap() {
   const ctx = ui.minimap.getContext('2d');
   const size = ui.minimap.width;
   const scale = size / (MINIMAP_RADIUS * 2);
-  const focus = controls.target;
+  const focus = localCursor.target;
   const toMap = (x, z) => [(x - focus.x) * scale + size / 2, (z - focus.z) * scale + size / 2];
-  ctx.fillStyle = '#6a9a3a';
+  const current = City.districtAt(focus.x, focus.z);
+  ctx.fillStyle = '#6fbf73';
   ctx.fillRect(0, 0, size, size);
-  // City blocks and roads
-  ctx.fillStyle = '#4a4f55';
+  ctx.fillStyle = '#5f6673';
   const extent = (City.CITY_RADIUS + 0.5) * City.CELL_SIZE;
   for (let line = -City.CITY_RADIUS - 1; line <= City.CITY_RADIUS; line++) {
     const offset = (line + 0.5) * City.CELL_SIZE;
@@ -688,36 +743,50 @@ function drawMinimap() {
   City.districts.forEach((district) => {
     const { center, size: districtSize } = district.layout;
     const [x, y] = toMap(center.x - districtSize[0] / 2, center.z - districtSize[1] / 2);
-    ctx.fillStyle = district.world.color;
-    ctx.globalAlpha = district.world.region ? 0.35 : 0.8;
+    ctx.fillStyle = district === current ? '#3b5bdb' : '#8fd18f';
     ctx.fillRect(x, y, districtSize[0] * scale, districtSize[1] * scale);
-    ctx.globalAlpha = 1;
-    if (district.world.region) {
-      district.mapData.blocks.filter((block) => /^hq_|campus|apple_park|googleplex|factory|stadium/.test(block.type)).forEach((block) => {
-        const [bx, by] = toMap(center.x + block.position[0], center.z + block.position[2]);
-        ctx.fillStyle = block.color;
-        ctx.fillRect(bx - 2, by - 2, 4, 4);
-      });
-    }
   });
+  // Devs in the same district (real time)
   Object.values(remoteMeshPointers).forEach((record) => {
+    if (City.districtAt(record.target.x, record.target.z) !== current) return;
     const [x, y] = toMap(record.target.x, record.target.z);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = record.metadata.color;
-    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
   });
-  const [lx, ly] = toMap(localCursor.target.x, localCursor.target.z);
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#111';
-  ctx.beginPath(); ctx.arc(lx, ly, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  // Camera view direction
+  // You: red dot with the camera heading
   const direction = new THREE.Vector3();
   camera.getWorldDirection(direction);
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(size / 2, size / 2);
-  ctx.lineTo(size / 2 + direction.x * 22, size / 2 + direction.z * 22);
-  ctx.stroke();
+  const angle = Math.atan2(direction.z, direction.x);
+  ctx.save();
+  ctx.translate(size / 2, size / 2);
+  ctx.rotate(angle);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(4, -6); ctx.lineTo(4, 6); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(size / 2, size / 2, 8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e03131';
+  ctx.beginPath(); ctx.arc(size / 2, size / 2, 6, 0, Math.PI * 2); ctx.fill();
+  // Compass letters
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px Segoe UI, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('N', size / 2, 10);
+  ctx.fillText('S', size / 2, size - 10);
+  ctx.fillText('W', 10, size / 2);
+  ctx.fillText('E', size - 10, size / 2);
+  if (ui.minimapCaption) {
+    const peersHere = Object.values(remoteMeshPointers).filter((record) => City.districtAt(record.target.x, record.target.z) === current).length;
+    ui.minimapCaption.innerHTML = '';
+    const title = document.createElement('b');
+    title.textContent = current ? current.world.name : 'Genesis City';
+    const info = document.createElement('span');
+    info.textContent = `${ui.parcel.textContent} · ${peersHere + 1} here`;
+    ui.minimapCaption.append(title, info);
+  }
 }
 
 // ============================================================================
@@ -759,7 +828,8 @@ const HELP_PAGES = [
   ['Teleport', '/tp <player> | /tp <x> <z> | /tp <x> <y> <z> (supports ~ relative) | /tpa <player> | /tpahere <player> | /tpaccept | /tpdeny'],
   ['Places', '/world <place> (alias /warp /goto) | /worlds | /spawn | /sethome | /home'],
   ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder>'],
-  ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear'],
+  ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear | /invite'],
+  ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or double-tap Space) | E near laptops, seats, coffee, arcades, fishing spots | /commits'],
   ['Dungeon', '/bugs | /script <gc|try-catch|break|mutex|unit-test|reboot> | click bugs with the Git Commit Hammer'],
   ['Open Source HQ', '/mural <1-4> <code> | /pr <slot 1-8> <tree|lamp|banner|fountain|duck|flag|neon|bench> [hex] | /prs | /approve <n> | /merge <n> | /close <n>'],
   ['Loot', 'E open chests & supply drops | 1-5 use hotbar items | I or /inv inventory | /use <n> | /drop <n> | /loot (nearest chest)'],
@@ -923,6 +993,22 @@ function interpretChatCommand(inputBuffer) {
     case 'clear':
       ui.chatLog.innerHTML = '';
       break;
+    case 'e':
+    case 'emote': {
+      const emote = (args[0] || '').toLowerCase();
+      if (!Interactions.EMOTES[emote]) { appendSystemMessage(`Emotes: ${Object.keys(Interactions.EMOTES).map((name) => `/e ${name}`).join(', ')}`); break; }
+      playLocalEmote(emote);
+      break;
+    }
+    case 'fly':
+      toggleFlight();
+      break;
+    case 'commits':
+      appendSystemMessage(`You shipped ${localCommits} commits. Sit at any laptop (E) to write more.`);
+      break;
+    case 'invite':
+      copyInviteLink();
+      break;
     default:
       if (!GameSystems.command(command, args, context) && !LootSystem.command(command, args)) appendSystemMessage(`Unknown command "/${command}". Type /help.`);
   }
@@ -1073,6 +1159,12 @@ function setupNetwork(session) {
     if ('wearable' in update) setCursorWearable(peer, update.wearable);
   });
   socket.on('chat_message', displayChatMessage);
+  socket.on('peer_emote', ({ id, emote }) => applyEmote(remoteMeshPointers[id], emote));
+  socket.on('commit_leaderboard', (leaderboard) => {
+    updateCommitBoards(leaderboard);
+    const mine = leaderboard.find(([name]) => localDeveloperData && name === localDeveloperData.devTag);
+    if (mine) localCommits = mine[1];
+  });
   socket.on('private_message', (message) => {
     if (message.fromId !== localDeveloperData.id) lastWhisperFrom = message.fromId;
     displayChatMessage({ ...message, private: true, devTag: message.fromId === localDeveloperData.id ? `You -> ${message.toTag}` : message.devTag });
@@ -1113,6 +1205,7 @@ function animate() {
 
   PropKit.animatedObjects.forEach((object) => object.userData.animate(elapsed));
   LootSystem.update(elapsed, deltaSeconds);
+  Interactions.update(avatar.position, !!avatar.moving);
   // District titles fade out when the camera gets close, so they never block the view
   City.districts.forEach((district) => {
     const titlePosition = district.title.getWorldPosition(new THREE.Vector3());
@@ -1125,12 +1218,102 @@ function animate() {
   [localCursor, ...Object.values(remoteMeshPointers)].forEach((record, index) => {
     record.mesh.position.lerp(record.target, record.isLocal || record.target.distanceTo(record.mesh.position) > 60 ? 1 : smoothing);
     record.mesh.rotation.y = Math.atan2(camera.position.x - record.mesh.position.x, camera.position.z - record.mesh.position.z);
-    record.mesh.userData.arrowPivot.position.y = 1.9 + Math.sin(elapsed * 3 + index) * 0.08;
+    const pivot = record.mesh.userData.arrowPivot;
+    pivot.position.y = 1.9 + Math.sin(elapsed * 3 + index) * 0.08;
+    pivot.rotation.set(0, 0, 0);
+    pivot.scale.setScalar(1);
+    // Emote animations (wave, dance, cheer, clap, sit...)
+    const emote = record.emote && record.emote.until > performance.now() ? record.emote.type : null;
+    if (emote === 'wave') pivot.rotation.z = Math.sin(elapsed * 10) * 0.35;
+    else if (emote === 'dance') { pivot.rotation.y = elapsed * 6; pivot.position.y += Math.abs(Math.sin(elapsed * 8)) * 0.5; }
+    else if (emote === 'cheer') pivot.position.y += Math.abs(Math.sin(elapsed * 7)) * 1.2;
+    else if (emote === 'clap') pivot.scale.setScalar(1 + Math.abs(Math.sin(elapsed * 12)) * 0.15);
+    else if (emote === 'think') pivot.rotation.z = 0.25;
+    else if (emote === 'sit') pivot.position.y = 1.2;
     projectToScreen(record);
   });
 
   updateHud();
+  // Keep the third-person camera from clipping through walls and ceilings
+  let restoreCamera = null;
+  if (viewMode === 'explore') {
+    const toCamera = camera.position.clone().sub(controls.target);
+    const distance = toCamera.length();
+    cameraRay.set(controls.target, toCamera.normalize());
+    cameraRay.far = distance;
+    const hit = cameraRay.intersectObjects(City.collidablesAt(controls.target.x, controls.target.z), true).find(isSolidHit);
+    if (hit && hit.distance > 0.5) {
+      restoreCamera = camera.position.clone();
+      camera.position.copy(controls.target).addScaledVector(toCamera, hit.distance - 0.3);
+    }
+  }
   renderer.render(scene, camera);
+  if (restoreCamera) camera.position.copy(restoreCamera);
+}
+
+// ============================================================================
+// EMOTES, COMMITS, INVITES AND PRIVATE LOBBIES
+// ============================================================================
+function applyEmote(record, type) {
+  if (!record) return;
+  record.emote = type ? { type, until: performance.now() + (type === 'sit' ? 600000 : 4000) } : null;
+  if (type && Interactions.EMOTES[type]) showChatBubble(record, Interactions.EMOTES[type]);
+}
+
+function playLocalEmote(type) {
+  applyEmote(localCursor, type);
+  if (socket && socket.connected) socket.emit('emote', type);
+}
+
+function updateCommitBoards(leaderboard) {
+  (window.commitBoards || []).forEach((draw) => draw(leaderboard));
+}
+
+function inviteLink() {
+  const url = new URL(location.href);
+  url.hash = '';
+  const district = City.districtAt(avatar.position.x, avatar.position.z);
+  if (district) url.hash = district.world.key;
+  return url.toString();
+}
+
+async function copyInviteLink() {
+  const link = inviteLink();
+  try {
+    await navigator.clipboard.writeText(link);
+    appendSystemMessage(`🔗 Invite link copied: ${link}`);
+  } catch (error) {
+    appendSystemMessage(`🔗 Share this invite link: ${link}`);
+  }
+}
+
+function createPrivateLobby() {
+  const id = Math.random().toString(36).slice(2, 8);
+  const url = new URL(location.href);
+  url.searchParams.set('lobby', id);
+  url.hash = 'plaza';
+  location.href = url.toString();
+}
+
+function interactionHooks() {
+  return {
+    system: appendSystemMessage,
+    buff: (name, seconds) => LootSystem.addBuff(name, seconds),
+    emote: (type) => (type ? playLocalEmote(type) : applyEmote(localCursor, null)),
+    setAvatarPosition: (position) => { avatar.position.copy(position); avatar.velocityY = 0; flying = false; },
+    inspect: (title, info) => { ui.infoTitle.textContent = title; ui.infoType.textContent = info; ui.infoCard.style.display = 'block'; },
+    jumpTo: (key) => { const place = findPlace(key); if (place) teleportToPlace(place); },
+    commitCount: () => localCommits,
+    commit: (lines) => {
+      localCommits++;
+      if (socket && socket.connected) socket.emit('commit', { lines });
+      else { appendSystemMessage(`✔ Commit #${localCommits} pushed (${lines} lines).`); updateCommitBoards([[localDeveloperData.devTag, localCommits]]); }
+    },
+    broadcast: (text) => {
+      if (socket && socket.connected) socket.emit('chat_message', `/me ${text}`);
+      else displayChatMessage({ id: localDeveloperData.id, devTag: localDeveloperData.devTag, color: localDeveloperData.color, text: `/me ${text}` });
+    }
+  };
 }
 
 // ============================================================================
@@ -1184,7 +1367,7 @@ initEngine();
 const universeReady = loadUniverse()
   .then(() => {
     const requested = findPlace(location.hash.slice(1) || 'plaza') || places[0];
-    flyTo(requested.target.clone().add(new THREE.Vector3(0, 0, requested.parent ? 12 : 6)), null);
+    flyTo(placeLanding(requested), null);
   })
   .catch((error) => {
     console.error('Could not load the universe:', error);
@@ -1192,9 +1375,17 @@ const universeReady = loadUniverse()
   });
 
 Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
-  if (Auth.hasServer) socket = io({ auth: { token: session.token } });
+  if (Auth.hasServer) socket = io({ auth: { token: session.token, lobby: lobbyId } });
   setupNetwork(session);
   LootSystem.init(lootHooks());
+  Interactions.init(interactionHooks());
+  document.getElementById('invite-button').addEventListener('click', copyInviteLink);
+  document.getElementById('lobby-button').addEventListener('click', createPrivateLobby);
+  if (lobbyId) {
+    document.getElementById('lobby-badge').textContent = `🔒 Private lobby ${lobbyId}`;
+    document.getElementById('lobby-badge').style.display = 'inline-block';
+    appendSystemMessage(`🔒 You are in private lobby "${lobbyId}". Only devs with your invite link can see you here.`);
+  }
   document.getElementById('logout-button').addEventListener('click', () => Auth.signOut());
   appendSystemMessage(`Welcome to GitHub Multiverse, ${session.username}! Walk with W A S D, jump with Space, run with Shift, drag to look around, M for the map.`);
   appendSystemMessage('Open chests with E for dev loot (hotbar 1-5, inventory I). Press Enter (or T, or /) to chat. Type /help for every command.');

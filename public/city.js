@@ -21,6 +21,7 @@ const City = (() => {
   let sun;
   let hemisphere;
   let stars;
+  let moon;
   let clouds;
   let rain;
   let snow;
@@ -218,7 +219,7 @@ const City = (() => {
     scene.add(posts, streetLampHeads);
 
     // Colorful street banners hanging from every lamp post
-    const bannerColors = ['#ff2d7a', '#2da44e', '#3a86ff', '#ffbe0b', '#8338ec', '#fb5607'];
+    const bannerColors = ['#1877f2', '#2da44e', '#4dabf7', '#ffbe0b', '#0b4fa8', '#fb5607'];
     const banners = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.1, 2.2), new THREE.MeshStandardMaterial({ color: '#ffffff', side: THREE.DoubleSide, roughness: 0.8 }), lampPositions.length);
     const bannerColor = new THREE.Color();
     lampPositions.forEach(([x, z], index) => {
@@ -335,7 +336,9 @@ const City = (() => {
       trunkMesh.setMatrixAt(index, matrix);
       matrix.compose(position.set(tree.x, GROUND_LEVEL + tree.size * 3.4, tree.z), quaternion.identity(), scale.set(tree.size * 1.8, tree.size * 2, tree.size * 1.8));
       crownMesh.setMatrixAt(index, matrix);
-      crownMesh.setColorAt(index, color.setHSL(0.27 + tree.shade * 0.08, 0.5, 0.32 + tree.shade * 0.12));
+      // Mostly green, with Decentraland-style autumn pinks and oranges
+      if (tree.shade > 0.7) crownMesh.setColorAt(index, color.set(['#ff7f50', '#f78fb3', '#ffb347', '#ff4d6d'][Math.floor(tree.shade * 100) % 4]));
+      else crownMesh.setColorAt(index, color.setHSL(0.27 + tree.shade * 0.08, 0.5, 0.32 + tree.shade * 0.12));
     });
     addInstanced(trunkMesh);
     // Foliage is decorative: the avatar walks under it instead of landing on treetops
@@ -446,6 +449,9 @@ const City = (() => {
       const phi = Math.acos(random() * 0.95);
       starPositions.push(Math.sin(phi) * Math.cos(theta) * 1200, Math.cos(phi) * 1200, Math.sin(phi) * Math.sin(theta) * 1200);
     }
+    moon = new THREE.Mesh(new THREE.SphereGeometry(28, 24, 16), new THREE.MeshBasicMaterial({ color: '#f1f3ff', fog: false }));
+    moon.add(new THREE.Mesh(new THREE.SphereGeometry(40, 24, 16), new THREE.MeshBasicMaterial({ color: '#9fb4ff', transparent: true, opacity: 0.12, fog: false, depthWrite: false })));
+    scene.add(moon);
     stars = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3)), new THREE.PointsMaterial({ color: '#ffffff', size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     scene.add(stars);
 
@@ -484,8 +490,8 @@ const City = (() => {
     { tick: 2000, top: '#3d8bfd', bottom: '#dff1ff', light: 1 },
     { tick: 10000, top: '#3d8bfd', bottom: '#dff1ff', light: 1 },
     { tick: 12000, top: '#4b4a8f', bottom: '#ff8c5a', light: 0.5 },
-    { tick: 13500, top: '#0b1026', bottom: '#1b2a4a', light: 0.12 },
-    { tick: 22500, top: '#0b1026', bottom: '#1b2a4a', light: 0.12 },
+    { tick: 13500, top: '#0b1430', bottom: '#2a2160', light: 0.14 },
+    { tick: 22500, top: '#0b1430', bottom: '#2a2160', light: 0.14 },
     { tick: 24000, top: '#5b7fcf', bottom: '#ffb38a', light: 0.55 }
   ];
 
@@ -534,6 +540,9 @@ const City = (() => {
 
     const night = 1 - Math.min(1, colors.light / 0.5);
     stars.material.opacity = weather === 'clear' ? Math.max(0, night) : 0;
+    // The moon rises opposite the sun
+    moon.position.set(camera.position.x - Math.cos(sunAngle) * 900, Math.max(-200, -Math.sin(sunAngle) * 700 + 150), camera.position.z - 500);
+    moon.visible = night > 0.1 && weather === 'clear';
     stars.position.copy(camera.position);
     clouds.material.color.set(weather === 'clear' ? '#ffffff' : '#9aa5b1');
     clouds.position.x = (time * 2) % 200;
@@ -633,7 +642,8 @@ const City = (() => {
       tower.add(new THREE.Mesh(new THREE.BoxGeometry(width, height, width), towerMaterial));
       tower.children[0].position.y = height / 2;
       // Giant LED billboard facing the city center, lit at night
-      const screenMaterial = new THREE.MeshBasicMaterial({ map: brandTexture(name, tagline, background, foreground) });
+      // Real logos (Simple Icons) when available, the brand wordmark otherwise
+      const screenMaterial = new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture(name, { tagline, background, foreground }) });
       const screen = new THREE.Mesh(new THREE.PlaneGeometry(width * 1.6, width * 0.8), screenMaterial);
       screen.position.set(0, height * 0.72, width / 2 + 0.6);
       tower.add(screen);
@@ -655,7 +665,7 @@ const City = (() => {
     });
 
     // Blimps with banners circling above the city
-    [['GitHub Multiverse', '#ff2d7a'], ['Ship it with Git', '#2da44e'], ['Join the Multiverse', '#3a86ff']].forEach(([text, color], index) => {
+    [['GitHub Multiverse', '#1877f2'], ['Ship it with Git', '#2da44e'], ['Join the Multiverse', '#0b4fa8']].forEach(([text, color], index) => {
       const blimp = new THREE.Group();
       const body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), material('#eceff1', { roughness: 0.4 }));
       body.scale.set(26, 8, 8);
@@ -693,12 +703,85 @@ const City = (() => {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // Horizon: red low-poly mesas with autumn trees, a sweeping arch landmark and
+  // puffy cumulus clouds, so the sky around Genesis City never feels empty
+  // --------------------------------------------------------------------------
+  function buildHorizon() {
+    const random = seededRandom(9001);
+    const rock = new THREE.MeshStandardMaterial({ color: '#d9603b', roughness: 1, flatShading: true });
+    const rockTop = new THREE.MeshStandardMaterial({ color: '#f08a5d', roughness: 1, flatShading: true });
+    const autumn = ['#ff7f50', '#ff4d6d', '#ffb347', '#f78fb3', '#e84a5f', '#fdcb6e'];
+    const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: '#ffffff', flatShading: true }), 220);
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+    let crownIndex = 0;
+    for (let i = 0; i < 26; i++) {
+      const angle = (i / 26) * Math.PI * 2 + random() * 0.15;
+      const distance = 650 + random() * 250;
+      const radius = 35 + random() * 50;
+      const height = 30 + random() * 70;
+      const mesa = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.75, radius, height, 7), rock);
+      mesa.position.set(Math.cos(angle) * distance, GROUND_LEVEL + height / 2, Math.sin(angle) * distance);
+      mesa.rotation.y = random() * Math.PI;
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.78, radius * 0.75, 3, 7), rockTop);
+      cap.position.y = height / 2 + 1.5;
+      mesa.add(cap);
+      scene.add(mesa);
+      for (let t = 0; t < 8 && crownIndex < 220; t++) {
+        const treeAngle = random() * Math.PI * 2;
+        const treeDistance = random() * radius * 0.6;
+        const size = 5 + random() * 6;
+        matrix.compose(new THREE.Vector3(mesa.position.x + Math.cos(treeAngle) * treeDistance, GROUND_LEVEL + height + 3 + size, mesa.position.z + Math.sin(treeAngle) * treeDistance), new THREE.Quaternion(), new THREE.Vector3(size, size * 1.2, size));
+        crowns.setMatrixAt(crownIndex, matrix);
+        crowns.setColorAt(crownIndex, color.set(autumn[Math.floor(random() * autumn.length)]));
+        crownIndex++;
+      }
+    }
+    crowns.count = crownIndex;
+    scene.add(crowns);
+
+    // Sweeping arch landmark on the northern horizon
+    const arch = new THREE.Mesh(new THREE.TorusGeometry(160, 9, 12, 64, Math.PI), new THREE.MeshStandardMaterial({ color: '#e8d5c4', roughness: 0.6 }));
+    arch.position.set(-120, GROUND_LEVEL, -760);
+    arch.rotation.y = 0.3;
+    scene.add(arch);
+    for (let i = 0; i < 18; i++) {
+      const t = (i + 0.5) / 18;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(9.5, 1, 6, 16), glow('#ffb703', 0.6));
+      ring.position.set(Math.cos(Math.PI * t) * 160, Math.sin(Math.PI * t) * 160, 0);
+      ring.rotation.y = Math.PI / 2;
+      arch.add(ring);
+    }
+
+    // Puffy cumulus clouds made of clustered spheres
+    const cloudMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, emissive: '#ffffff', emissiveIntensity: 0.15 });
+    for (let i = 0; i < 18; i++) {
+      const cloud = new THREE.Group();
+      const puffs = 5 + Math.floor(random() * 4);
+      for (let p = 0; p < puffs; p++) {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), cloudMaterial);
+        const size = 14 + random() * 16;
+        puff.scale.set(size, size * 0.8, size);
+        puff.position.set((p - puffs / 2) * 14 + random() * 6, random() * 10 + (p % 2) * 8, random() * 10);
+        cloud.add(puff);
+      }
+      const angle = random() * Math.PI * 2;
+      const distance = 350 + random() * 450;
+      cloud.position.set(Math.cos(angle) * distance, 130 + random() * 90, Math.sin(angle) * distance);
+      cloud.traverse((node) => { node.raycast = () => {}; });
+      scene.add(cloud);
+      animatedCity.push((time) => { cloud.position.x += Math.sin(time * 0.01 + i) * 0.02; });
+    }
+  }
+
   // Called once every district is loaded
   function finalize() {
     buildGround();
     buildRoads();
     buildNeighborhoods();
     buildSkyline();
+    buildHorizon();
   }
 
   return {
