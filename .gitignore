@@ -1,3 +1,6 @@
+# GitVerse accounts, sessions and inventories (never commit this)
+data/
+
 # Logs
 logs
 *.log

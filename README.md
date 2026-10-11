@@ -17,7 +17,9 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **Silicon Valley**: a stylized recreation of the valley, from the Golden Gate Bridge to San Jose, with Apple Park, Googleplex, Anthropic, Tesla, EA, Meta, NVIDIA, Oracle, Stanford and more.
 - **Living World**: a 20-minute day/night cycle with stars and lit windows, rain, snow and thunderstorms, drifting clouds, traffic on US-101 and a Caltrain running along the peninsula.
 - **Immersive Lighting & Shadows**: PCF soft shadow maps give the whole world an organic architectural-maquette look.
-- **Solo Mode**: on static hosts with no server, the world still loads and every single-player feature works.
+- **Welcome Screen & Accounts**: a sign-up / log-in screen over the README banner. Accounts live on the server with scrypt-hashed passwords and session tokens; your inventory is saved with your account. Already signed in? You go straight in.
+- **Fortnite-Style Loot (for devs)**: golden chests on street corners all over Genesis City and Silicon Valley, plus a **supply drop** that falls from the sky every 3 minutes. Instead of weapons you find dev items in five rarities, from a Common Espresso Shot to a Legendary Jetpack.js.
+- **Solo Mode**: on static hosts with no server, the world still loads and every single-player feature works (the account and inventory are then kept only in that browser).
 
 ---
 
@@ -32,6 +34,9 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 | Mouse wheel | Zoom the camera in and out |
 | Click | Inspect an object, or interact (monsters, screens, booths, hammer) |
 | `M` | Toggle the map view; click anywhere on the map to jump there |
+| `E` | Open a nearby chest or supply drop |
+| `1` - `5` | Use / equip the item in that hotbar slot |
+| `I` | Open the inventory |
 | Minimap click | Jump to that spot |
 | `Enter`, `T` or `/` | Open the chat |
 | `Esc` | Close the chat, info cards and the video player |
@@ -76,6 +81,14 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/coords` | Your position and parcel |
 | `/clear` | Clear the chat log |
 
+### Loot
+| Command | Action |
+| --- | --- |
+| `/inv` (also `/inventory`) | Open the inventory |
+| `/use <n>` | Use or equip item number `n` |
+| `/drop <n>` | Throw item number `n` away |
+| `/loot` | Show the nearest available chest or supply drop |
+
 ### District mini-games
 | Command | Where | Action |
 | --- | --- | --- |
@@ -90,6 +103,37 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/wear <hoodie\|mug\|cap\|headphones\|none>` | Anywhere | Dress your cursor with a dev wearable |
 | `/plant` | Green-Tech Sandbox | Plant a tree where your cursor stands (up to 10 per dev) |
 | `/energy` | Green-Tech Sandbox | Show the district's renewable energy level |
+
+---
+
+## 🔐 Accounts
+
+The first screen asks you to **create an account** (username + password) or **log in**.
+
+- Usernames: 3-16 letters, numbers or `_` (case-insensitive and unique). Passwords: at least 8 characters.
+- The server stores accounts in `data/users.json` (ignored by git): passwords are hashed with `scrypt` and a random salt, never stored in plain text. Logins and sign-ups are rate-limited per IP.
+- After signing in you get a session token (valid for 30 days) saved in your browser, so the next visit skips the screen. **Log out** is in the top-left panel.
+- Your username is your in-world name, and your loot inventory is saved with your account.
+- In production, always serve the site over **HTTPS** so passwords are encrypted in transit.
+- On static hosts without the server (solo mode) the account is saved only in that browser, as the welcome screen warns.
+
+The welcome screen uses the README banner. For the most reliable result, save the banner image as `public/assets/banner.png`; if that file does not exist, the screen loads the original image from GitHub.
+
+---
+
+## 🎁 Loot
+
+Golden **chests** sit on street corners all over Genesis City and next to the Silicon Valley headquarters. Walk up to one and press **E**: the server rolls an item, and the chest respawns 2 minutes later. Every 3 minutes a **supply drop** falls from the sky under a balloon, with a blue beam of light visible from far away and a chat announcement; it holds Rare to Legendary loot for whoever opens it first. Epic and Legendary finds are announced to everyone.
+
+| Rarity | Chest odds | Supply drop odds | Items |
+| --- | --- | --- | --- |
+| Common (grey) | 45% | - | ☕ Espresso Shot (run faster 20s), 🧢 Hackathon Cap, ✅ Green CI Badge (confetti), 🗒️ Sticky Note of Wisdom (dev tip) |
+| Uncommon (green) | 30% | - | ⚡ Energy Drink (jump higher 20s), 🍵 Mug of Infinite Coffee, 💡 Accepted Stack Overflow Answer |
+| Rare (blue) | 15% | 45% | 🦆 Rubber Duck Debugger (a pet that follows you), 🎧 Noise-Cancelling Headphones, 🔨 Git Commit Hammer, 🌀 Teleport Token |
+| Epic (purple) | 8% | 40% | 🧥 Senior Dev Hoodie, 🔍 Debugger Lens (double damage vs bugs 60s), ⏪ git revert Scroll (undo your last teleport) |
+| Legendary (gold) | 2% | 15% | 🚀 Jetpack.js (hold Space to fly 30s), 👑 10x Engineer Crown |
+
+Wearables show on your cursor for everyone. Consumables are used up; wearables, the duck and the hammer can be equipped any time. The inventory holds 20 items. The catalog, odds and chest spots live in `public/maps/loot.json`.
 
 ---
 
@@ -150,15 +194,18 @@ A large region south of the city, reached by the avenue that becomes **US-101**.
 ```text
 gitverse/
 ├── package.json         # Node.js dependencies and run scripts
-├── server.js            # Express + Socket.io: cursors, chat, world clock & weather, teleports, game state
+├── server.js            # Express + Socket.io: accounts, cursors, chat, world clock & weather, teleports, loot, game state
+├── data/                # Created at runtime: accounts, sessions and inventories (git-ignored)
 └── public/
-    ├── index.html       # HUD, chat, minimap, video player overlay
+    ├── index.html       # Welcome screen, HUD, chat, minimap, hotbar, video player overlay
+    ├── auth.js          # Sign-up / log-in screen and sessions
     ├── main.js          # Engine, avatar physics, third-person camera, teleports, chat commands, network
     ├── city.js          # Genesis City: parcel grid, roads, generated parcels, sky, day/night, weather
     ├── props.js         # Turns every map block "type" into a low-poly object
     ├── landmarks.js     # Silicon Valley headquarters, highways, traffic, Caltrain, billboards
     ├── museum.js        # Museum of Forgotten Hardware & Software exhibits
     ├── games.js         # Debug Dungeon, Open Source HQ, Keynote Amphitheater, Green-Tech Sandbox
+    ├── loot.js          # Chests, supply drops, hotbar, inventory and item effects
     ├── maps/            # One JSON per map + worlds.json (layout of the city)
     └── vendor/          # Three.js r128 + OrbitControls, served locally (MIT)
 ```
@@ -189,7 +236,7 @@ npm start
 http://localhost:3000
 ```
 
-*💡 **Pro Tip**: Open a second Incognito/Private window next to the first one to see two developers walking, chatting and squashing bugs together.*
+*💡 **Pro Tip**: Open a second Incognito/Private window next to the first one, create a second account, and see two developers walking, chatting, looting and squashing bugs together.*
 
 Deep links drop you straight into a place, e.g. `http://localhost:3000/#applepark` or `http://localhost:3000/#dungeon`.
 
@@ -222,7 +269,9 @@ The block `type` decides the model. Some of the recognized types: `floor`, `wall
 
 Multiplayer needs the Node server running on a host that keeps a Node process alive and supports WebSockets (e.g. Render, Railway or Fly.io). Static hosts such as Vercel only serve the `public/` folder: the universe still loads, but in **solo mode** (no other devs; mini-game state stays local).
 
-Game state (leaderboard, murals, Pull Requests, planted trees, live stream) lives in the server's memory and resets when the server restarts.
+Accounts and inventories are saved in `data/users.json`; give the host a persistent disk (or volume) so they survive redeploys. The rest of the game state (leaderboard, murals, Pull Requests, planted trees, live stream, chests) lives in the server's memory and resets when the server restarts.
+
+Optional environment variables: `PORT` (default 3000) and `SUPPLY_DROP_EVERY_MS` (default 180000, 3 minutes).
 
 ---
 
@@ -238,3 +287,4 @@ Company names appear as plain text wordmarks in brand colors to identify the lan
 - [ ] **Proximity Voice Chat**: WebRTC voice that fades in as cursors get closer.
 - [ ] **Interactive File Editing Node**: Click objects to open repository trees or shared notepads in 3D.
 - [ ] **Persistent Game State**: Save leaderboards, murals and merged Pull Requests to a database.
+- [ ] **Trading**: Swap loot with other devs.

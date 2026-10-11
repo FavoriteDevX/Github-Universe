@@ -843,6 +843,7 @@ const GameSystems = (() => {
     monster_hit({ id, damage }) {
       const monster = monsters[id];
       if (!monster || !monster.alive) return;
+      if (hooks.lensActive && hooks.lensActive()) damage *= 2;
       const hp = Math.max(0, monster.hp - damage);
       const alive = hp > 0;
       receive.monster_update({ id, hp, alive, by: hooks.localTag(), damage });
@@ -1059,5 +1060,11 @@ const GameSystems = (() => {
     }
   }
 
-  return { init, handleClick, command, toEmbedUrl, findMonster, WEARABLES, DECOR_ITEMS, get greenTechGroup() { return greenTechGroup; } };
+  function equipHammer() {
+    localToolEquipped = true;
+    hooks.setWearable('hammer');
+    hooks.system('🔨 Git Commit Hammer equipped. Click bugs in the Debug Dungeon to squash them!');
+  }
+
+  return { init, handleClick, command, toEmbedUrl, findMonster, equipHammer, WEARABLES, DECOR_ITEMS, get greenTechGroup() { return greenTechGroup; } };
 })();

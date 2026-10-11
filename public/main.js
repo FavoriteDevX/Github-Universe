@@ -46,8 +46,10 @@ let lightningUntil = 0;
 
 const worldClock = { ticks: 1000, at: performance.now(), cycle: true, weather: 'clear' };
 
-// Socket.io only exists when served by server.js; static hosts (e.g. Vercel) fall back to solo mode
-const socket = typeof io === 'function' ? io() : null;
+// Socket.io only exists when served by server.js; static hosts (e.g. Vercel) fall back to solo mode.
+// The connection opens only after the developer signs in (see auth.js).
+let socket = null;
+let lastPositionBeforeTeleport = null;
 
 const ui = {
   overlay: document.getElementById('ui-overlay-container'),
@@ -176,6 +178,7 @@ function renderWorldList() {
 // ============================================================================
 // Teleports the avatar (with a short white fade, like Decentraland's jump-in)
 function flyTo(target, view, announce) {
+  lastPositionBeforeTeleport = avatar.position.clone();
   avatar.position.set(target.x, 0, target.z);
   avatar.position.y = groundHeightAt(target.x, target.z, Math.max(target.y, 0) + 80);
   avatar.velocityY = 0;
@@ -239,7 +242,7 @@ function updateAvatar(deltaSeconds) {
     forward.y = 0;
     forward.normalize();
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-    const move = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(strafeInput)).normalize().multiplyScalar((keysPressed.has('shift') ? RUN_SPEED : WALK_SPEED) * deltaSeconds);
+    const move = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(strafeInput)).normalize().multiplyScalar((keysPressed.has('shift') ? RUN_SPEED : WALK_SPEED) * LootSystem.modifiers().speed * deltaSeconds);
     // Try the full move, then slide along each axis when a wall blocks it
     [move, new THREE.Vector3(move.x, 0, 0), new THREE.Vector3(0, 0, move.z)].some((attempt) => {
       if (attempt.lengthSq() === 0 || isBlocked(attempt)) return false;
@@ -248,8 +251,12 @@ function updateAvatar(deltaSeconds) {
     });
   }
 
-  if (keysPressed.has(' ') && avatar.grounded) {
-    avatar.velocityY = JUMP_SPEED;
+  const lootModifiers = LootSystem.modifiers();
+  if (keysPressed.has(' ') && lootModifiers.jetpack) {
+    avatar.velocityY = 9; // Jetpack.js: hold Space to fly
+    avatar.grounded = false;
+  } else if (keysPressed.has(' ') && avatar.grounded) {
+    avatar.velocityY = JUMP_SPEED * Math.sqrt(lootModifiers.jump);
     avatar.grounded = false;
   }
   avatar.velocityY -= GRAVITY * deltaSeconds;
@@ -350,6 +357,13 @@ function buildWearable(item, color) {
     band.rotation.y = Math.PI / 2;
     add(new THREE.CylinderGeometry(0.16, 0.16, 0.12, 12), '#ef233c', 0.4, -0.85, 0.42).rotation.x = Math.PI / 2;
     add(new THREE.CylinderGeometry(0.16, 0.16, 0.12, 12), '#ef233c', 0.4, -0.85, -0.42).rotation.x = Math.PI / 2;
+  } else if (item === 'crown') {
+    add(new THREE.CylinderGeometry(0.42, 0.36, 0.3, 8, 1, true), '#ffd166', 0.15, 0.25, 0, { metalness: 0.9, roughness: 0.2, emissive: '#ffb703', emissiveIntensity: 0.4, side: THREE.DoubleSide });
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      add(new THREE.ConeGeometry(0.08, 0.25, 4), '#ffd166', 0.15 + Math.cos(angle) * 0.4, 0.5, Math.sin(angle) * 0.4, { metalness: 0.9, roughness: 0.2, emissive: '#ffb703', emissiveIntensity: 0.4 });
+    }
+    add(new THREE.SphereGeometry(0.07, 8, 6), '#e63946', 0.15, 0.27, 0.4, { emissive: '#e63946', emissiveIntensity: 0.6 });
   } else if (item === 'hammer') {
     add(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 6), '#6d4c41', 1.3, -1, 0).rotation.z = 0.6;
     add(new THREE.BoxGeometry(0.6, 0.3, 0.3), '#ffd54f', 1.0, -0.55, 0, { metalness: 0.7 }).rotation.z = 0.6;
@@ -483,6 +497,8 @@ function bindInputEvents() {
       if (event.key === 'Escape') ui.chatInput.blur();
       return;
     }
+    // Typing in any other field (e.g. the sign-in form) never triggers game shortcuts
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
     if (event.key === 'Enter' || event.key === '/' || event.key.toLowerCase() === 't') {
       event.preventDefault();
       ui.chatInput.focus();
@@ -491,6 +507,9 @@ function bindInputEvents() {
     }
     if (event.key === 'Escape') { closeInfoCard(); closeStream(); }
     if (event.key.toLowerCase() === 'm') { setViewMode(viewMode === 'map' ? 'explore' : 'map'); return; }
+    if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && LootSystem.tryOpen()) return;
+    if (event.key.toLowerCase() === 'i') { LootSystem.toggleInventory(); return; }
+    if (/^[1-5]$/.test(event.key)) { LootSystem.useSlot(parseInt(event.key, 10) - 1); return; }
     if (event.key === ' ') event.preventDefault();
     keysPressed.add(event.key.toLowerCase());
   });
@@ -730,6 +749,7 @@ const HELP_PAGES = [
   ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear'],
   ['Dungeon', '/bugs | /script <gc|try-catch|break|mutex|unit-test|reboot> | click bugs with the Git Commit Hammer'],
   ['Open Source HQ', '/mural <1-4> <code> | /pr <slot 1-8> <tree|lamp|banner|fountain|duck|flag|neon|bench> [hex] | /prs | /approve <n> | /merge <n> | /close <n>'],
+  ['Loot', 'E open chests & supply drops | 1-5 use hotbar items | I or /inv inventory | /use <n> | /drop <n> | /loot (nearest chest)'],
   ['Keynote & Green-Tech', '/keynotes | /watch [n] | /stream <YouTube/Twitch URL> [title] | /endstream | /wear <hoodie|mug|cap|headphones|none> | /plant | /energy']
 ];
 
@@ -891,7 +911,7 @@ function interpretChatCommand(inputBuffer) {
       ui.chatLog.innerHTML = '';
       break;
     default:
-      if (!GameSystems.command(command, args, context)) appendSystemMessage(`Unknown command "/${command}". Type /help.`);
+      if (!GameSystems.command(command, args, context) && !LootSystem.command(command, args)) appendSystemMessage(`Unknown command "/${command}". Type /help.`);
   }
 }
 
@@ -975,22 +995,27 @@ function setLocalWearable(item) {
   if (socket && socket.connected) socket.emit('set_wearable', item);
 }
 
-function setupNetwork() {
+function setupNetwork(session) {
   GameSystems.init({
     socket,
     scene,
     system: appendSystemMessage,
-    localTag: () => (localDeveloperData ? localDeveloperData.devTag : 'you'),
+    localTag: () => (localDeveloperData ? localDeveloperData.devTag : session.username),
     setWearable: setLocalWearable,
-    openStream
+    openStream,
+    lensActive: () => LootSystem.modifiers().lens
   });
 
   if (!socket) {
     setConnectionStatus('offline', 'Solo mode (no server)');
-    registerLocalDeveloper({ id: 'local', devTag: `Dev_${Math.floor(1000 + Math.random() * 9000)}`, color: '#b5ead7' });
+    registerLocalDeveloper({ id: 'local', devTag: session.username, color: '#b5ead7' });
     appendSystemMessage('Multiplayer server not found: run "npm start" to explore with other devs.');
     return;
   }
+
+  socket.on('connect_error', (error) => {
+    if (error.message === 'unauthorized') Auth.signOut();
+  });
 
   socket.on('connect', () => setConnectionStatus('online', 'Connected'));
   socket.on('disconnect', () => { setConnectionStatus('offline', 'Reconnecting...'); clearRemotePeers(); });
@@ -1074,6 +1099,7 @@ function animate() {
   ui.flash.style.opacity = performance.now() < lightningUntil ? '0.55' : '0';
 
   PropKit.animatedObjects.forEach((object) => object.userData.animate(elapsed));
+  LootSystem.update(elapsed, deltaSeconds);
   // District titles fade out when the camera gets close, so they never block the view
   City.districts.forEach((district) => {
     const titlePosition = district.title.getWorldPosition(new THREE.Vector3());
@@ -1095,18 +1121,68 @@ function animate() {
 }
 
 // ============================================================================
-// BOOT
+// LOOT HOOKS
+// ============================================================================
+function lootHooks() {
+  return {
+    socket,
+    scene,
+    system: appendSystemMessage,
+    localTag: () => (localDeveloperData ? localDeveloperData.devTag : 'you'),
+    groundHeightAt,
+    avatarPosition: () => avatar.position,
+    equipHammer: () => GameSystems.equipHammer(),
+    toggleWearable: (item) => {
+      const next = localWearable === item ? null : item;
+      localWearable = next;
+      setCursorWearable(localCursor, next);
+      if (!(socket && socket.connected)) return;
+      // Online, the server already broadcast the change to everyone else
+    },
+    teleportRandom: () => {
+      const place = places[Math.floor(Math.random() * places.length)];
+      teleportToPlace(place);
+    },
+    revertTeleport: () => {
+      if (!lastPositionBeforeTeleport) { appendSystemMessage('⏪ Nothing to revert: you have not teleported yet.'); return; }
+      flyTo(lastPositionBeforeTeleport.clone(), null, '⏪ git revert: back to where you were.');
+    },
+    confetti: launchConfetti
+  };
+}
+
+function launchConfetti() {
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti';
+    piece.style.left = `${50 + (Math.random() - 0.5) * 30}vw`;
+    piece.style.background = ['#2da44e', '#ffd166', '#3a86ff', '#ff006e', '#8338ec'][i % 5];
+    piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 60}vw`);
+    piece.style.animationDelay = `${Math.random() * 0.3}s`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 2200);
+  }
+}
+
+// ============================================================================
+// BOOT: the world renders behind the welcome screen while the dev signs in
 // ============================================================================
 initEngine();
-setupNetwork();
-loadUniverse()
+const universeReady = loadUniverse()
   .then(() => {
     const requested = findPlace(location.hash.slice(1) || 'plaza') || places[0];
     flyTo(requested.target.clone().add(new THREE.Vector3(0, 0, requested.parent ? 12 : 6)), null);
-    appendSystemMessage('Welcome to GitVerse! Walk with W A S D, jump with Space, run with Shift, drag to look around, M for the map.');
-    appendSystemMessage('Press Enter (or T, or /) to chat. Type /help for every command.');
   })
   .catch((error) => {
     console.error('Could not load the universe:', error);
     appendSystemMessage('Could not load maps/worlds.json.');
   });
+
+Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
+  if (Auth.hasServer) socket = io({ auth: { token: session.token } });
+  setupNetwork(session);
+  LootSystem.init(lootHooks());
+  document.getElementById('logout-button').addEventListener('click', () => Auth.signOut());
+  appendSystemMessage(`Welcome to GitHub Multiverse, ${session.username}! Walk with W A S D, jump with Space, run with Shift, drag to look around, M for the map.`);
+  appendSystemMessage('Open chests with E for dev loot (hotbar 1-5, inventory I). Press Enter (or T, or /) to chat. Type /help for every command.');
+});
