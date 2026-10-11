@@ -2,21 +2,18 @@
   "themeName": "Genesis Plaza & Decentraland Districts",
   "backgroundColor": "#110f1a",
   "blocks": [
-    { "type": "district_ground", "position": [0, -0.25, 0], "scale": [40, 0.5, 40], "color": "#1e1b2e" },
-    { "type": "genesis_plaza", "position": [0, 0.1, 0], "scale": [8, 0.4, 8], "color": "#2ecc71", "label": "Genesis Plaza (0,0) - Spawn Padrão (Verde)" },
-    { "type": "center_monolith", "position": [0, 3, 0], "scale": [1.5, 6, 1.5], "color": "#27ae60" },
-
-    { "type": "road_north", "position": [0, 0.05, -12], "scale": [3, 0.2, 16], "color": "#bdc3c7", "label": "Estrada Norte - Via Pública (Cinza Claro)" },
-    { "type": "road_south", "position": [0, 0.05, 12], "scale": [3, 0.2, 16], "color": "#bdc3c7", "label": "Estrada Sul - Via Pública (Cinza Claro)" },
-    { "type": "road_east", "position": [12, 0.05, 0], "scale": [16, 0.2, 3], "color": "#bdc3c7", "label": "Estrada Leste - Via Pública (Cinza Claro)" },
-    { "type": "road_west", "position": [-12, 0.05, 0], "scale": [16, 0.2, 3], "color": "#bdc3c7", "label": "Estrada Oeste - Via Pública (Cinza Claro)" },
-
-    { "type": "district_vegas", "position": [-12, 1, -12], "scale": [8, 2, 8], "color": "#9b59b6", "label": "Distrito Vegas City - Cassinos & Poker (Roxo)" },
-    { "type": "district_fashion", "position": [12, 2, -12], "scale": [8, 4, 8], "color": "#8e44ad", "label": "Distrito Fashion Street - Marcas de Luxo (Roxo)" },
-    { "type": "district_aetheria", "position": [-12, 3, 12], "scale": [8, 6, 8], "color": "#6c5ce7", "label": "Distrito Aetheria - Cyberpunk Dev (Roxo)" },
-
-    { "type": "private_land_github", "position": [12, 1.5, 12], "scale": [8, 3, 8], "color": "#34495e", "label": "Lote Privado: GitHub Enterprise HQ (Cinza Escuro)" },
-    { "type": "private_land_vercel", "position": [6, 0.8, 6], "scale": [4, 1.6, 4], "color": "#2c3e50", "label": "Lote Privado: Vercel Deploy Zone (Cinza Escuro)" },
-    { "type": "private_land_stack", "position": [-6, 0.5, -6], "scale": [4, 1, 4], "color": "#212f3d", "label": "Lote Privado: StackOverflow Lab (Cinza Escuro)" }
+    { "type": "district_ground", "position": [ 0, -0.25, 0 ], "scale": [ 40, 0.5, 40 ], "color": "#1e1b2e" },
+    { "type": "genesis_plaza", "position": [ 0, 0.1, 0 ], "scale": [ 8, 0.4, 8 ], "color": "#2ecc71", "label": "Genesis Plaza (0,0) - Default Spawn" },
+    { "type": "center_monolith", "position": [ 0, 3, 0 ], "scale": [ 1.5, 6, 1.5 ], "color": "#27ae60" },
+    { "type": "road_north", "position": [ 0, 0.05, -12 ], "scale": [ 3, 0.2, 16 ], "color": "#bdc3c7", "label": "North Road - Public Street" },
+    { "type": "road_south", "position": [ 0, 0.05, 12 ], "scale": [ 3, 0.2, 16 ], "color": "#bdc3c7", "label": "South Road - Public Street" },
+    { "type": "road_east", "position": [ 12, 0.05, 0 ], "scale": [ 16, 0.2, 3 ], "color": "#bdc3c7", "label": "East Road - Public Street" },
+    { "type": "road_west", "position": [ -12, 0.05, 0 ], "scale": [ 16, 0.2, 3 ], "color": "#bdc3c7", "label": "West Road - Public Street" },
+    { "type": "district_vegas", "position": [ -12, 1, -12 ], "scale": [ 8, 2, 8 ], "color": "#9b59b6", "label": "Vegas City District - Casinos & Poker" },
+    { "type": "district_fashion", "position": [ 12, 2, -12 ], "scale": [ 8, 4, 8 ], "color": "#8e44ad", "label": "Fashion Street District - Luxury Brands" },
+    { "type": "district_aetheria", "position": [ -12, 3, 12 ], "scale": [ 8, 6, 8 ], "color": "#6c5ce7", "label": "Aetheria District - Cyberpunk Dev" },
+    { "type": "private_land_github", "position": [ 12, 1.5, 12 ], "scale": [ 8, 3, 8 ], "color": "#34495e", "label": "Private Lot: GitHub Enterprise HQ" },
+    { "type": "private_land_vercel", "position": [ 6, 0.8, 6 ], "scale": [ 4, 1.6, 4 ], "color": "#2c3e50", "label": "Private Lot: Vercel Deploy Zone" },
+    { "type": "private_land_stack", "position": [ -6, 0.5, -6 ], "scale": [ 4, 1, 4 ], "color": "#212f3d", "label": "Private Lot: StackOverflow Lab" }
   ]
 }

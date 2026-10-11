@@ -1,0 +1,532 @@
+{
+ "themeName": "The Debug Dungeon - Labyrinth of Bugs",
+ "backgroundColor": "#1a1520",
+ "blocks": [
+  {
+   "type": "dungeon_floor",
+   "position": [
+    0,
+    -0.25,
+    0
+   ],
+   "scale": [
+    116,
+    0.5,
+    116
+   ],
+   "color": "#2a2530",
+   "label": "Debug Dungeon Floor"
+  },
+  {
+   "type": "dungeon_gate",
+   "position": [
+    0,
+    4,
+    55
+   ],
+   "scale": [
+    20,
+    8,
+    2
+   ],
+   "color": "#4e4452",
+   "label": "THE DEBUG DUNGEON - Labyrinth of Bugs"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    0,
+    4,
+    -55
+   ],
+   "scale": [
+    116,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    -57,
+    4,
+    0
+   ],
+   "scale": [
+    2,
+    8,
+    112
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    57,
+    4,
+    0
+   ],
+   "scale": [
+    2,
+    8,
+    112
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    -35,
+    4,
+    40
+   ],
+   "scale": [
+    40,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    35,
+    4,
+    40
+   ],
+   "scale": [
+    40,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    -20,
+    4,
+    20
+   ],
+   "scale": [
+    2,
+    8,
+    40
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    20,
+    4,
+    10
+   ],
+   "scale": [
+    2,
+    8,
+    40
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    0,
+    4,
+    -10
+   ],
+   "scale": [
+    50,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    -40,
+    4,
+    0
+   ],
+   "scale": [
+    2,
+    8,
+    40
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    40,
+    4,
+    -20
+   ],
+   "scale": [
+    2,
+    8,
+    40
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    -25,
+    4,
+    -35
+   ],
+   "scale": [
+    30,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    25,
+    4,
+    -35
+   ],
+   "scale": [
+    30,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    0,
+    4,
+    -25
+   ],
+   "scale": [
+    2,
+    8,
+    20
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    -45,
+    4,
+    25
+   ],
+   "scale": [
+    24,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_wall",
+   "position": [
+    45,
+    4,
+    20
+   ],
+   "scale": [
+    24,
+    8,
+    2
+   ],
+   "color": "#6d6478"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    -50,
+    2,
+    48
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    50,
+    2,
+    48
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    -10,
+    2,
+    -5
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    10,
+    2,
+    30
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    -30,
+    2,
+    -48
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    30,
+    2,
+    -48
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    48,
+    2,
+    -5
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "dungeon_torch",
+   "position": [
+    -48,
+    2,
+    10
+   ],
+   "scale": [
+    0.5,
+    4,
+    0.5
+   ],
+   "color": "#ff9800"
+  },
+  {
+   "type": "git_commit_hammer",
+   "position": [
+    0,
+    1,
+    46
+   ],
+   "scale": [
+    2,
+    2,
+    2
+   ],
+   "color": "#ffd54f",
+   "label": "Git Commit Hammer - click to equip"
+  },
+  {
+   "type": "bug_monster_memory_leak",
+   "position": [
+    -30,
+    1.5,
+    28
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#8e24aa",
+   "label": "Memory Leak",
+   "id": "leak1",
+   "hp": 120,
+   "weakness": "gc"
+  },
+  {
+   "type": "bug_monster_memory_leak",
+   "position": [
+    45,
+    1.5,
+    -45
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#8e24aa",
+   "label": "Memory Leak",
+   "id": "leak2",
+   "hp": 120,
+   "weakness": "gc"
+  },
+  {
+   "type": "bug_monster_null_pointer",
+   "position": [
+    30,
+    1.5,
+    25
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#eceff1",
+   "label": "NullPointerException",
+   "id": "npe1",
+   "hp": 80,
+   "weakness": "try-catch"
+  },
+  {
+   "type": "bug_monster_null_pointer",
+   "position": [
+    -48,
+    1.5,
+    -20
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#eceff1",
+   "label": "NullPointerException",
+   "id": "npe2",
+   "hp": 80,
+   "weakness": "try-catch"
+  },
+  {
+   "type": "bug_monster_infinite_loop",
+   "position": [
+    10,
+    1.5,
+    -20
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#00bcd4",
+   "label": "Infinite Loop",
+   "id": "loop1",
+   "hp": 100,
+   "weakness": "break"
+  },
+  {
+   "type": "bug_monster_race_condition",
+   "position": [
+    -30,
+    1.5,
+    -15
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#ff5722",
+   "label": "Race Condition",
+   "id": "race1",
+   "hp": 90,
+   "weakness": "mutex"
+  },
+  {
+   "type": "bug_monster_off_by_one",
+   "position": [
+    30,
+    1.5,
+    -5
+   ],
+   "scale": [
+    3,
+    3,
+    3
+   ],
+   "color": "#cddc39",
+   "label": "Off-By-One Error",
+   "id": "obo1",
+   "hp": 60,
+   "weakness": "unit-test"
+  },
+  {
+   "type": "bug_monster_blue_screen",
+   "position": [
+    0,
+    5.0,
+    -42
+   ],
+   "scale": [
+    8,
+    10,
+    6
+   ],
+   "color": "#0a3ea8",
+   "label": "Blue Screen of Death (Boss)",
+   "id": "bsod",
+   "hp": 400,
+   "weakness": "reboot"
+  },
+  {
+   "type": "scoreboard",
+   "position": [
+    -50,
+    4,
+    52
+   ],
+   "scale": [
+    10,
+    5,
+    0.4
+   ],
+   "color": "#212121",
+   "label": "Bug Bounty Leaderboard"
+  }
+ ]
+}
