@@ -606,7 +606,7 @@ const GameSystems = (() => {
       ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, w, 50);
       ctx.fillStyle = '#c9d1d9'; ctx.font = 'bold 26px Segoe UI, Arial'; ctx.fillText(`mural-${mural.index}.js  —  /mural ${mural.index} <code>`, 18, 34);
       ctx.font = '22px Consolas, monospace';
-      const shown = lines.length ? lines.slice(-14) : [{ devTag: 'GitVerse', text: '// Post your code snippet here!' }];
+      const shown = lines.length ? lines.slice(-14) : [{ devTag: 'GitHub Multiverse', text: '// Post your code snippet here!' }];
       shown.forEach((entry, index) => {
         ctx.fillStyle = '#6e7681'; ctx.fillText(String(index + 1).padStart(2, ' '), 14, 84 + index * 30);
         ctx.fillStyle = '#7ee787'; ctx.fillText(entry.text.slice(0, 48), 60, 84 + index * 30);
@@ -843,6 +843,7 @@ const GameSystems = (() => {
     monster_hit({ id, damage }) {
       const monster = monsters[id];
       if (!monster || !monster.alive) return;
+      if (hooks.lensActive && hooks.lensActive()) damage *= 2;
       const hp = Math.max(0, monster.hp - damage);
       const alive = hp > 0;
       receive.monster_update({ id, hp, alive, by: hooks.localTag(), damage });
@@ -1059,5 +1060,11 @@ const GameSystems = (() => {
     }
   }
 
-  return { init, handleClick, command, toEmbedUrl, findMonster, WEARABLES, DECOR_ITEMS, get greenTechGroup() { return greenTechGroup; } };
+  function equipHammer() {
+    localToolEquipped = true;
+    hooks.setWearable('hammer');
+    hooks.system('🔨 Git Commit Hammer equipped. Click bugs in the Debug Dungeon to squash them!');
+  }
+
+  return { init, handleClick, command, toEmbedUrl, findMonster, equipHammer, WEARABLES, DECOR_ITEMS, get greenTechGroup() { return greenTechGroup; } };
 })();

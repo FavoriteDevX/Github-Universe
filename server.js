@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path'); // Core module to handle absolute system directory paths smoothly
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
@@ -11,14 +12,109 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Serves all static layout assets (index.html, scripts, maps JSON directories) nested inside public folder
 app.use(express.static(PUBLIC_DIR));
+app.use(express.json({ limit: '10kb' }));
+
+// ----------------------------------------------------------------------------
+// Accounts: usernames + scrypt-hashed passwords, persisted in data/users.json
+// ----------------------------------------------------------------------------
+const DATA_DIR = path.join(__dirname, 'data');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_INVENTORY = 20;
+let accounts = { users: {}, sessions: {} };
+try {
+  accounts = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+} catch (error) {
+  if (error.code !== 'ENOENT') console.error('[ACCOUNTS] Could not read users file:', error.message);
+}
+
+let saveTimer = null;
+function saveAccounts() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFile(USERS_FILE, JSON.stringify(accounts), (error) => {
+      if (error) console.error('[ACCOUNTS] Could not save users file:', error.message);
+    });
+  }, 300);
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+
+function createSession(userKey) {
+  const token = crypto.randomBytes(32).toString('hex');
+  accounts.sessions[token] = { user: userKey, expiresAt: Date.now() + SESSION_TTL_MS };
+  saveAccounts();
+  return token;
+}
+
+function userFromToken(token) {
+  const session = typeof token === 'string' ? accounts.sessions[token] : null;
+  if (!session || session.expiresAt < Date.now()) return null;
+  return accounts.users[session.user] || null;
+}
+
+// Simple per-IP rate limit for login and sign-up attempts
+const authAttempts = new Map();
+function rateLimited(ip) {
+  const now = Date.now();
+  const entry = authAttempts.get(ip) || { count: 0, resetAt: now + 5 * 60 * 1000 };
+  if (entry.resetAt < now) { entry.count = 0; entry.resetAt = now + 5 * 60 * 1000; }
+  entry.count++;
+  authAttempts.set(ip, entry);
+  return entry.count > 10;
+}
+
+const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
+
+app.post('/api/signup', (req, res) => {
+  if (rateLimited(req.ip)) return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
+  const { username, password } = req.body || {};
+  if (!USERNAME_PATTERN.test(username || '')) return res.status(400).json({ error: 'Usernames have 3-16 letters, numbers or _.' });
+  if (typeof password !== 'string' || password.length < 8 || password.length > 128) return res.status(400).json({ error: 'Passwords need at least 8 characters.' });
+  const key = username.toLowerCase();
+  if (accounts.users[key]) return res.status(409).json({ error: 'That username is taken. Log in instead?' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  accounts.users[key] = { username, salt, hash: hashPassword(password, salt), createdAt: Date.now(), inventory: [] };
+  res.json({ token: createSession(key), username });
+});
+
+app.post('/api/login', (req, res) => {
+  if (rateLimited(req.ip)) return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
+  const { username, password } = req.body || {};
+  const user = typeof username === 'string' ? accounts.users[username.toLowerCase()] : null;
+  const candidate = user && typeof password === 'string' ? Buffer.from(hashPassword(password, user.salt), 'hex') : null;
+  if (!user || !crypto.timingSafeEqual(candidate, Buffer.from(user.hash, 'hex'))) {
+    return res.status(401).json({ error: 'Wrong username or password.' });
+  }
+  res.json({ token: createSession(username.toLowerCase()), username: user.username });
+});
+
+app.get('/api/session', (req, res) => {
+  const user = userFromToken(req.get('x-session-token'));
+  if (!user) return res.status(401).json({ error: 'Session expired.' });
+  res.json({ username: user.username });
+});
+
+app.post('/api/logout', (req, res) => {
+  delete accounts.sessions[req.get('x-session-token')];
+  saveAccounts();
+  res.json({ ok: true });
+});
 
 const MAX_CHAT_LENGTH = 200;
 const MAX_COORDINATE = 3000;
 const TICKS_PER_SECOND = 20; // Minecraft pace: a full day lasts 20 minutes
 const MONSTER_RESPAWN_MS = 30000;
 const ALLOWED_DAMAGE = new Set([10, 15, 40]);
+const CHEST_RESPAWN_MS = 2 * 60 * 1000;
+const SUPPLY_DROP_EVERY_MS = Number(process.env.SUPPLY_DROP_EVERY_MS) || 3 * 60 * 1000;
+const SUPPLY_DROP_FALL_MS = 20000;
+const LOOT_REACH = 7;
 const DECOR_ITEMS = new Set(['tree', 'lamp', 'banner', 'fountain', 'duck', 'flag', 'neon', 'bench']);
-const WEARABLES = new Set(['hoodie', 'mug', 'cap', 'headphones', 'hammer']);
+const WEARABLES = new Set(['hoodie', 'mug', 'cap', 'headphones', 'hammer']); // the crown only comes from Legendary loot
 
 // Active tracking memory for connected developers network clients
 const activeDevelopers = {};
@@ -52,6 +148,43 @@ const gameState = {
   stream: null,
   trees: []
 };
+
+// ----------------------------------------------------------------------------
+// Fortnite-style loot: chests on the streets and supply drops from the sky
+// ----------------------------------------------------------------------------
+const lootTable = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'loot.json'), 'utf8'));
+const lootSpawns = {};
+lootTable.spawns.forEach((spawn, index) => {
+  lootSpawns[`chest${index}`] = { id: `chest${index}`, kind: 'chest', x: spawn.x, z: spawn.z, area: spawn.area, openUntil: 0 };
+});
+let supplyDropCounter = 0;
+
+function publicLoot() {
+  return Object.values(lootSpawns).map(({ id, kind, x, z, area, openUntil, landsAt }) => ({ id, kind, x, z, area, open: openUntil > Date.now(), landsAt }));
+}
+
+function rollItem(kind) {
+  const weightKey = kind === 'drop' ? 'dropWeight' : 'chestWeight';
+  const rarities = Object.entries(lootTable.rarities).filter(([, rarity]) => rarity[weightKey] > 0);
+  let roll = Math.random() * rarities.reduce((sum, [, rarity]) => sum + rarity[weightKey], 0);
+  const [rarityKey] = rarities.find(([, rarity]) => (roll -= rarity[weightKey]) < 0) || rarities[0];
+  const options = lootTable.items.filter((item) => item.rarity === rarityKey);
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function spawnSupplyDrop() {
+  if (!Object.keys(activeDevelopers).length) return;
+  const spot = lootTable.spawns[Math.floor(Math.random() * lootTable.spawns.length)];
+  const id = `drop${++supplyDropCounter}`;
+  lootSpawns[id] = { id, kind: 'drop', x: spot.x + (Math.random() - 0.5) * 6, z: spot.z + (Math.random() - 0.5) * 6, area: spot.area, openUntil: 0, landsAt: Date.now() + SUPPLY_DROP_FALL_MS };
+  io.emit('loot_spawned', publicLoot().find((loot) => loot.id === id));
+  io.emit('system_message', `📦 A SUPPLY DROP is falling over ${spot.area}! First dev to reach it gets Rare-to-Legendary loot.`);
+  // Unopened drops disappear after five minutes
+  setTimeout(() => {
+    if (lootSpawns[id] && !lootSpawns[id].openUntil) { delete lootSpawns[id]; io.emit('loot_removed', id); }
+  }, 5 * 60 * 1000);
+}
+setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
 
 function publicGameState() {
   const monsterState = {};
@@ -95,11 +228,18 @@ function toEmbedUrl(rawUrl, hostForTwitch) {
   return null;
 }
 
+// Only logged-in developers can join the multiverse
+io.use((socket, next) => {
+  const user = userFromToken(socket.handshake.auth && socket.handshake.auth.token);
+  if (!user) return next(new Error('unauthorized'));
+  socket.data.userKey = user.username.toLowerCase();
+  next();
+});
+
 // This manages every developer that connects to your multiverse environment cluster
 io.on('connection', (socket) => {
-  // Generates a unique 4-digit corporate dev tag identifier
-  const uniqueId = Math.floor(1000 + Math.random() * 9000);
-  const developerTag = `Dev_${uniqueId}`;
+  const account = accounts.users[socket.data.userKey];
+  const developerTag = account.username;
 
   // Assigns initial state parameters to the joining tridimensional cursor mesh pointer
   activeDevelopers[socket.id] = {
@@ -116,6 +256,8 @@ io.on('connection', (socket) => {
   socket.emit('sync_entire_developer_pool', Object.values(activeDevelopers));
   socket.emit('world_state', worldStatePayload());
   socket.emit('game_state', publicGameState());
+  socket.emit('loot_spawns', publicLoot());
+  socket.emit('inventory', account.inventory);
   socket.broadcast.emit('new_developer_joined', activeDevelopers[socket.id]);
 
   const developer = () => activeDevelopers[socket.id];
@@ -143,13 +285,8 @@ io.on('connection', (socket) => {
     socket.emit('private_message', message);
   });
 
-  socket.on('set_nick', (rawNick) => {
-    const nick = typeof rawNick === 'string' ? rawNick.trim() : '';
-    if (!developer() || !/^[A-Za-z0-9_]{3,16}$/.test(nick)) return;
-    const taken = Object.values(activeDevelopers).some((peer) => peer.id !== socket.id && peer.devTag.toLowerCase() === nick.toLowerCase());
-    if (taken) { socket.emit('system_message', `The name ${nick} is already taken.`); return; }
-    developer().devTag = nick;
-    io.emit('peer_updated', { id: socket.id, devTag: nick });
+  socket.on('set_nick', () => {
+    socket.emit('system_message', 'Your name is your account username. Create a new account to use another name.');
   });
 
   socket.on('set_wearable', (item) => {
@@ -198,6 +335,7 @@ io.on('connection', (socket) => {
   socket.on('monster_hit', ({ id, damage } = {}) => {
     const monster = monsters[id];
     if (!developer() || !monster || !monster.alive || !ALLOWED_DAMAGE.has(damage)) return;
+    if (developer().lensUntil > Date.now()) damage *= 2; // Debugger Lens buff
     monster.hp = Math.max(0, monster.hp - damage);
     monster.alive = monster.hp > 0;
     io.emit('monster_update', { id, hp: monster.hp, alive: monster.alive, by: developer().devTag, damage });
@@ -280,6 +418,65 @@ io.on('connection', (socket) => {
     io.emit('system_message', `${developer().devTag} planted a tree in the Green-Tech Sandbox. Renewable energy: ${Math.min(100, 40 + gameState.trees.length * 2)}%`);
   });
 
+  // Sent by the client once its loot catalog is loaded
+  socket.on('loot_sync', () => {
+    socket.emit('loot_spawns', publicLoot());
+    socket.emit('inventory', account.inventory);
+  });
+
+  // Loot: open a chest or supply drop next to your cursor
+  socket.on('loot_open', ({ id } = {}) => {
+    const loot = lootSpawns[id];
+    const dev = developer();
+    if (!dev || !loot) return;
+    if (loot.openUntil > Date.now()) { socket.emit('system_message', 'Someone already looted this one.'); return; }
+    if (loot.landsAt && loot.landsAt > Date.now()) { socket.emit('system_message', 'The supply drop is still falling!'); return; }
+    if (Math.hypot(dev.position.x - loot.x, dev.position.z - loot.z) > LOOT_REACH) { socket.emit('system_message', 'Get closer to open it.'); return; }
+    if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', `Your inventory is full (${MAX_INVENTORY}). Use or /drop something first.`); return; }
+
+    const item = rollItem(loot.kind);
+    account.inventory.push({ id: item.id, foundAt: Date.now() });
+    saveAccounts();
+    socket.emit('inventory', account.inventory);
+    socket.emit('loot_result', { item: item.id, from: loot.kind });
+    if (loot.kind === 'drop') {
+      delete lootSpawns[id];
+      io.emit('loot_removed', id);
+    } else {
+      loot.openUntil = Date.now() + CHEST_RESPAWN_MS;
+      io.emit('loot_state', { id, open: true });
+      setTimeout(() => io.emit('loot_state', { id, open: false }), CHEST_RESPAWN_MS);
+    }
+    if (item.rarity === 'legendary' || item.rarity === 'epic') {
+      io.emit('system_message', `✨ ${dev.devTag} found a ${lootTable.rarities[item.rarity].name.toUpperCase()} ${item.name}!`);
+    }
+  });
+
+  socket.on('item_use', ({ index } = {}) => {
+    const dev = developer();
+    const entry = account.inventory[index];
+    const item = entry && lootTable.items.find((candidate) => candidate.id === entry.id);
+    if (!dev || !item) return;
+    if (item.kind === 'consumable') {
+      account.inventory.splice(index, 1);
+      saveAccounts();
+      if (item.effect === 'lens') dev.lensUntil = Date.now() + item.seconds * 1000;
+    }
+    if (item.kind === 'wearable') {
+      dev.wearable = dev.wearable === item.wearable ? null : item.wearable;
+      io.emit('peer_updated', { id: socket.id, devTag: dev.devTag, wearable: dev.wearable });
+    }
+    socket.emit('inventory', account.inventory);
+    socket.emit('item_effect', { item: item.id });
+  });
+
+  socket.on('item_drop', ({ index } = {}) => {
+    if (!developer() || !account.inventory[index]) return;
+    account.inventory.splice(index, 1);
+    saveAccounts();
+    socket.emit('inventory', account.inventory);
+  });
+
   // Clean-up memory garbage collection sequence triggers when a laptop connection drops down
   socket.on('disconnect', () => {
     if (developer()) {
@@ -298,5 +495,5 @@ function getRandomPastelColor() {
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log(`[ENGINE ACTIVE] GitVerse cluster rendering successfully deployed on: http://localhost:${PORT}`);
+  console.log(`[ENGINE ACTIVE] GitHub Multiverse cluster rendering successfully deployed on: http://localhost:${PORT}`);
 });
