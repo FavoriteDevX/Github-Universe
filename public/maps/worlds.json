@@ -1,18 +1,422 @@
 [
-  { "key": "plaza",     "file": "map_decentraland.json",       "name": "Genesis Plaza",            "description": "Spawn padrão (0,0), estilo Decentraland" },
-  { "key": "districts", "file": "map_genesis_plaza.json",      "name": "Distritos",                "description": "Vegas, Fashion, Aetheria e lotes privados" },
-  { "key": "lobby",     "file": "map_lobby.json",              "name": "HQ Lobby",                 "description": "Sala social com a mesa central" },
-  { "key": "pavilion",  "file": "map_repository_pavilion.json","name": "Repository Pavilion",      "description": "Exposição de blocos verdes e azuis" },
-  { "key": "agile",     "file": "map_agile_board.json",        "name": "Scrum & Agile",            "description": "Quadros Kanban e post-its" },
-  { "key": "sandbox",   "file": "map_sandbox_voxels.json",     "name": "Sandbox Voxels",           "description": "Cluster de voxels" },
-  { "key": "social",    "file": "map_horizon_somnium.json",    "name": "Horizon & Somnium",        "description": "Hub social" },
-  { "key": "gallery",   "file": "map_upland_voxels.json",      "name": "Upland Gallery",           "description": "Imóveis e galeria de arte" },
-  { "key": "mall",      "file": "map_gamimall.json",           "name": "GamiMall",                 "description": "Shopping de vestíveis" },
-  { "key": "apple",     "file": "map_apple_house.json",        "name": "House of MAC",             "description": "Praça de alumínio" },
-  { "key": "zen",       "file": "map_world_zen.json",          "name": "Zen Temple",               "description": "Ilha flutuante privada" },
-  { "key": "cyberpunk", "file": "map_cyberpunk.json",          "name": "Cyberpunk Repo",           "description": "Pilares neon" },
-  { "key": "retro",     "file": "map_retro.json",              "name": "Retro Contributions",      "description": "Gráfico de contribuições em 3D" },
-  { "key": "beach",     "file": "map_beach.json",              "name": "Tropical Beach",           "description": "Ilha de praia" },
-  { "key": "house",     "file": "map_modern_house.json",       "name": "Hacker House",             "description": "Casa de dois andares" },
-  { "key": "arcade",    "file": "map_game_room.json",          "name": "Arcade Room",              "description": "Fliperamas e sinuca" }
+ {
+  "key": "plaza",
+  "file": "map_decentraland.json",
+  "name": "Genesis Plaza",
+  "description": "The default spawn at parcel (0,0), Decentraland style",
+  "cell": [
+   0,
+   0
+  ],
+  "color": "#ff007f"
+ },
+ {
+  "key": "districts",
+  "file": "map_genesis_plaza.json",
+  "name": "Genesis Districts",
+  "description": "Vegas, Fashion, Aetheria and private lots",
+  "cell": [
+   1,
+   0
+  ],
+  "color": "#9b59b6"
+ },
+ {
+  "key": "social",
+  "file": "map_horizon_somnium.json",
+  "name": "Horizon & Somnium",
+  "description": "Social hub with a keynote podium",
+  "cell": [
+   -1,
+   0
+  ],
+  "color": "#3498db"
+ },
+ {
+  "key": "lobby",
+  "file": "map_lobby.json",
+  "name": "HQ Lobby",
+  "description": "Social room around the central desk",
+  "cell": [
+   0,
+   -1
+  ],
+  "color": "#4a4a5a"
+ },
+ {
+  "key": "pavilion",
+  "file": "map_repository_pavilion.json",
+  "name": "Repository Pavilion",
+  "description": "Exhibition of green and blue blocks",
+  "cell": [
+   1,
+   -1
+  ],
+  "color": "#39d353"
+ },
+ {
+  "key": "agile",
+  "file": "map_agile_board.json",
+  "name": "Scrum & Agile",
+  "description": "Kanban whiteboards and sticky notes",
+  "cell": [
+   -1,
+   -1
+  ],
+  "color": "#4dabf7"
+ },
+ {
+  "key": "gallery",
+  "file": "map_upland_voxels.json",
+  "name": "Upland Gallery",
+  "description": "Real estate and an art wall",
+  "cell": [
+   0,
+   1
+  ],
+  "color": "#27ae60"
+ },
+ {
+  "key": "mall",
+  "file": "map_gamimall.json",
+  "name": "GamiMall",
+  "description": "Wearables mall",
+  "cell": [
+   1,
+   1
+  ],
+  "color": "#ff007f"
+ },
+ {
+  "key": "apple",
+  "file": "map_apple_house.json",
+  "name": "House of MAC",
+  "description": "Aluminum plaza with a live music stage",
+  "cell": [
+   -1,
+   1
+  ],
+  "color": "#a2aaad"
+ },
+ {
+  "key": "cyberpunk",
+  "file": "map_cyberpunk.json",
+  "name": "Cyberpunk Repo",
+  "description": "Neon pillars and server racks",
+  "cell": [
+   2,
+   -1
+  ],
+  "color": "#00ffcc"
+ },
+ {
+  "key": "arcade",
+  "file": "map_game_room.json",
+  "name": "Arcade Room",
+  "description": "Arcade cabinets and a pool table",
+  "cell": [
+   2,
+   0
+  ],
+  "color": "#00a8ff"
+ },
+ {
+  "key": "house",
+  "file": "map_modern_house.json",
+  "name": "Hacker House",
+  "description": "Two-story house",
+  "cell": [
+   2,
+   1
+  ],
+  "color": "#e84118"
+ },
+ {
+  "key": "sandbox",
+  "file": "map_sandbox_voxels.json",
+  "name": "Sandbox Voxels",
+  "description": "Voxel castle and quest node",
+  "cell": [
+   -2,
+   -1
+  ],
+  "color": "#00d2ff"
+ },
+ {
+  "key": "retro",
+  "file": "map_retro.json",
+  "name": "Retro Contributions",
+  "description": "A 3D contribution graph",
+  "cell": [
+   -2,
+   0
+  ],
+  "color": "#39d353"
+ },
+ {
+  "key": "beach",
+  "file": "map_beach.json",
+  "name": "Tropical Beach",
+  "description": "Palm trees, chairs and umbrellas",
+  "cell": [
+   -2,
+   1
+  ],
+  "color": "#ffeaa7"
+ },
+ {
+  "key": "zen",
+  "file": "map_world_zen.json",
+  "name": "Zen Temple",
+  "description": "Private floating island above the lake",
+  "cell": [
+   0,
+   -2
+  ],
+  "elevation": 26,
+  "color": "#2ed573"
+ },
+ {
+  "key": "museum",
+  "file": "map_museum.json",
+  "name": "Museum of Forgotten Tech",
+  "description": "Walk inside a floppy, climb a giant CPU, parkour a CRT",
+  "cell": [
+   -2,
+   2
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#8d6e63"
+ },
+ {
+  "key": "dungeon",
+  "file": "map_debug_dungeon.json",
+  "name": "Debug Dungeon",
+  "description": "Co-op dungeon crawler: squash famous bugs",
+  "cell": [
+   1,
+   2
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#8e24aa"
+ },
+ {
+  "key": "opensource",
+  "file": "map_open_source_hq.json",
+  "name": "Open Source HQ",
+  "description": "Code murals, floating rooms and visual Pull Requests",
+  "cell": [
+   -2,
+   -3
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#2da44e"
+ },
+ {
+  "key": "keynote",
+  "file": "map_keynote_arena.json",
+  "name": "Keynote Amphitheater",
+  "description": "Live tech keynotes and dev wearables",
+  "cell": [
+   1,
+   -3
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#ef233c"
+ },
+ {
+  "key": "greentech",
+  "file": "map_green_tech.json",
+  "name": "Green-Tech Sandbox",
+  "description": "Solar, wind and greener code: plant trees with /plant",
+  "cell": [
+   3,
+   -1
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#2f9e44"
+ },
+ {
+  "key": "valley",
+  "file": "map_silicon_valley.json",
+  "name": "Silicon Valley",
+  "description": "Apple Park, Googleplex, Anthropic, Tesla, EA, Meta, NVIDIA and more",
+  "region": {
+   "center": [
+    0,
+    612
+   ],
+   "size": [
+    560,
+    640
+   ]
+  },
+  "color": "#f39c12",
+  "view": [
+   0,
+   180,
+   240
+  ],
+  "places": [
+   {
+    "key": "sf",
+    "name": "San Francisco",
+    "at": [
+     -40,
+     -255
+    ]
+   },
+   {
+    "key": "anthropic",
+    "name": "Anthropic",
+    "at": [
+     45,
+     -238
+    ]
+   },
+   {
+    "key": "openai",
+    "name": "OpenAI",
+    "at": [
+     -85,
+     -238
+    ]
+   },
+   {
+    "key": "github",
+    "name": "GitHub HQ",
+    "at": [
+     -130,
+     -238
+    ]
+   },
+   {
+    "key": "goldengate",
+    "name": "Golden Gate Bridge",
+    "at": [
+     -200,
+     -300
+    ]
+   },
+   {
+    "key": "oracle",
+    "name": "Oracle",
+    "at": [
+     100,
+     -170
+    ]
+   },
+   {
+    "key": "ea",
+    "name": "Electronic Arts",
+    "at": [
+     -85,
+     -160
+    ]
+   },
+   {
+    "key": "meta",
+    "name": "Meta",
+    "at": [
+     95,
+     -95
+    ]
+   },
+   {
+    "key": "stanford",
+    "name": "Stanford",
+    "at": [
+     -130,
+     12
+    ]
+   },
+   {
+    "key": "tesla",
+    "name": "Tesla HQ",
+    "at": [
+     90,
+     8
+    ]
+   },
+   {
+    "key": "google",
+    "name": "Googleplex",
+    "at": [
+     95,
+     85
+    ]
+   },
+   {
+    "key": "chm",
+    "name": "Computer History Museum",
+    "at": [
+     -75,
+     70
+    ]
+   },
+   {
+    "key": "nasa",
+    "name": "NASA Hangar One",
+    "at": [
+     95,
+     150
+    ]
+   },
+   {
+    "key": "applepark",
+    "name": "Apple Park",
+    "at": [
+     -181,
+     222
+    ]
+   },
+   {
+    "key": "nvidia",
+    "name": "NVIDIA",
+    "at": [
+     78,
+     195
+    ]
+   },
+   {
+    "key": "levis",
+    "name": "Levi's Stadium",
+    "at": [
+     178,
+     200
+    ]
+   },
+   {
+    "key": "sanjose",
+    "name": "San Jose",
+    "at": [
+     0,
+     290
+    ]
+   },
+   {
+    "key": "fremont",
+    "name": "Tesla Fremont Factory",
+    "at": [
+     248,
+     -20
+    ]
+   }
+  ]
+ }
 ]

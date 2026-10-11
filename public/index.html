@@ -85,10 +85,10 @@
 
     /* ---------- World list (Decentraland "places") ---------- */
     #worlds-panel {
-      top: 150px;
+      top: 172px;
       left: 16px;
       width: 240px;
-      max-height: calc(100vh - 470px);
+      max-height: calc(100vh - 500px);
       min-height: 120px;
       display: flex;
       flex-direction: column;
@@ -250,8 +250,73 @@
       cursor: pointer;
     }
 
+
+    /* ---------- Minimap ---------- */
+    #minimap-panel {
+      right: 16px;
+      bottom: 16px;
+      padding: 6px;
+      line-height: 0;
+    }
+    #minimap {
+      width: 200px;
+      height: 200px;
+      border-radius: 8px;
+      cursor: crosshair;
+    }
+    #worlds-list button.sub-place { padding-left: 22px; font-size: 12px; }
+    #chat-log .place-tag { color: var(--muted); font-size: 11px; }
+    #chat-log .whisper { color: #d0bfff; font-style: italic; }
+
+    /* ---------- Live stream modal ---------- */
+    #stream-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+    }
+    #stream-modal .stream-box {
+      position: relative;
+      width: min(960px, calc(100vw - 32px));
+      padding: 10px;
+    }
+    #stream-modal header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px 8px;
+    }
+    #stream-modal header button {
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 24px;
+      cursor: pointer;
+    }
+    #stream-frame {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 0;
+      border-radius: 8px;
+      background: #000;
+    }
+    #lightning-flash {
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 15;
+      transition: opacity 0.08s;
+    }
+
     @media (max-width: 720px) {
       #help-panel, #worlds-panel { display: none; }
+      #minimap-panel { top: 150px; bottom: auto; }
+      #minimap { width: 120px; height: 120px; }
       #hud { left: 16px; right: 16px; min-width: 0; }
       #chat-panel { left: 16px; right: 16px; width: auto; }
       #chat-log { height: 110px; }
@@ -270,10 +335,11 @@
 
   <section id="hud" class="panel" aria-label="Status">
     <h1>Git<span>Verse</span></h1>
-    <div class="hud-row"><span>World</span><b id="hud-world">Loading...</b></div>
+    <div class="hud-row"><span>District</span><b id="hud-world">Loading...</b></div>
     <div class="hud-row"><span>Parcel</span><b id="hud-parcel">0,0</b></div>
     <div class="hud-row"><span>You</span><b id="hud-devtag">-</b></div>
-    <div class="hud-row"><span><i id="connection-dot"></i><span id="hud-connection">Connecting...</span></span><b id="hud-online">1 here</b></div>
+    <div class="hud-row"><span>Time</span><b id="hud-clock">07:00</b></div>
+    <div class="hud-row"><span><i id="connection-dot"></i><span id="hud-connection">Connecting...</span></span><b id="hud-online">1 online</b></div>
   </section>
 
   <nav id="worlds-panel" class="panel" aria-label="Worlds">
@@ -282,17 +348,20 @@
   </nav>
 
   <section id="help-panel" class="panel" aria-label="Controls">
-    <div><kbd>Mouse</kbd> move your 3D cursor</div>
-    <div><kbd>Drag</kbd> orbit &middot; <kbd>Wheel</kbd> zoom</div>
-    <div><kbd>W A S D</kbd> walk the camera</div>
-    <div><kbd>Click</kbd> inspect objects</div>
-    <div><kbd>Enter</kbd> chat &middot; <kbd>/help</kbd> commands</div>
+    <div><kbd>W A S D</kbd> walk &middot; <kbd>Shift</kbd> run &middot; <kbd>Space</kbd> jump</div>
+    <div><kbd>Drag</kbd> look around &middot; <kbd>Wheel</kbd> zoom</div>
+    <div><kbd>Click</kbd> inspect &amp; interact &middot; <kbd>M</kbd> map</div>
+    <div><kbd>Enter</kbd> / <kbd>T</kbd> chat &middot; <kbd>/help</kbd> commands</div>
+  </section>
+
+  <section id="minimap-panel" class="panel" aria-label="Minimap">
+    <canvas id="minimap" width="200" height="200" title="Click to teleport"></canvas>
   </section>
 
   <section id="chat-panel" class="panel" aria-label="Chat">
     <ul id="chat-log" aria-live="polite"></ul>
     <form id="chat-form" autocomplete="off">
-      <input id="chat-input" maxlength="200" placeholder="Say something or type /world plaza">
+      <input id="chat-input" maxlength="200" placeholder="Say something or type /help">
       <button type="submit">Send</button>
     </form>
   </section>
@@ -303,6 +372,19 @@
     <button id="info-close" type="button">Close</button>
   </div>
 
+  <div id="stream-modal" role="dialog" aria-label="Live stream">
+    <div class="stream-box panel">
+      <header><b id="stream-title">Live</b><button id="stream-close" type="button" aria-label="Close stream">&times;</button></header>
+      <iframe id="stream-frame" title="Live stream" src="about:blank" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </div>
+  <div id="lightning-flash"></div>
+
+  <script src="props.js"></script>
+  <script src="landmarks.js"></script>
+  <script src="museum.js"></script>
+  <script src="games.js"></script>
+  <script src="city.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

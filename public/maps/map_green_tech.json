@@ -1,0 +1,246 @@
+{
+ "themeName": "Green-Tech Sandbox - Eco-Digital Gamification",
+ "backgroundColor": "#d8f3dc",
+ "blocks": [
+  {
+   "type": "green_floor",
+   "position": [
+    0,
+    -0.25,
+    0
+   ],
+   "scale": [
+    116,
+    0.5,
+    116
+   ],
+   "color": "#8fbf5a",
+   "label": "Green-Tech Sandbox Meadow"
+  },
+  {
+   "type": "solar_array",
+   "position": [
+    -30,
+    0.5,
+    -30
+   ],
+   "scale": [
+    44,
+    1,
+    36
+   ],
+   "color": "#0d2b52",
+   "label": "Solar Farm - 2.4 MW of clean power for CI pipelines"
+  },
+  {
+   "type": "wind_turbine",
+   "position": [
+    -48,
+    15,
+    20
+   ],
+   "scale": [
+    2,
+    30,
+    2
+   ],
+   "color": "#ffffff",
+   "label": "Wind Turbine - powering green builds"
+  },
+  {
+   "type": "wind_turbine",
+   "position": [
+    -48,
+    15,
+    40
+   ],
+   "scale": [
+    2,
+    30,
+    2
+   ],
+   "color": "#ffffff",
+   "label": "Wind Turbine - powering green builds"
+  },
+  {
+   "type": "wind_turbine",
+   "position": [
+    48,
+    15,
+    -48
+   ],
+   "scale": [
+    2,
+    30,
+    2
+   ],
+   "color": "#ffffff",
+   "label": "Wind Turbine - powering green builds"
+  },
+  {
+   "type": "wind_turbine",
+   "position": [
+    30,
+    15,
+    -48
+   ],
+   "scale": [
+    2,
+    30,
+    2
+   ],
+   "color": "#ffffff",
+   "label": "Wind Turbine - powering green builds"
+  },
+  {
+   "type": "wind_turbine",
+   "position": [
+    12,
+    15,
+    -48
+   ],
+   "scale": [
+    2,
+    30,
+    2
+   ],
+   "color": "#ffffff",
+   "label": "Wind Turbine - powering green builds"
+  },
+  {
+   "type": "green_data_center",
+   "position": [
+    25,
+    6,
+    -12
+   ],
+   "scale": [
+    34,
+    12,
+    20
+   ],
+   "color": "#2b8a3e",
+   "label": "Green Data Center - liquid cooled, living roof"
+  },
+  {
+   "type": "greenhouse",
+   "position": [
+    -22,
+    3,
+    22
+   ],
+   "scale": [
+    16,
+    6,
+    20
+   ],
+   "color": "#d3f9d8",
+   "label": "Vertical Farm Greenhouse"
+  },
+  {
+   "type": "energy_meter",
+   "position": [
+    5,
+    5,
+    40
+   ],
+   "scale": [
+    4,
+    10,
+    1
+   ],
+   "color": "#212529",
+   "label": "Renewable Energy Meter - plant trees with /plant"
+  },
+  {
+   "type": "efficiency_lab",
+   "position": [
+    40,
+    4,
+    25
+   ],
+   "scale": [
+    1.5,
+    8,
+    18
+   ],
+   "color": "#343a40",
+   "label": "Code Efficiency Lab - greener algorithms use less energy"
+  },
+  {
+   "type": "ev_chargers",
+   "position": [
+    18,
+    0,
+    50
+   ],
+   "scale": [
+    24,
+    1,
+    8
+   ],
+   "color": "#495057",
+   "label": "EV Charging Station"
+  },
+  {
+   "type": "battery_bank",
+   "position": [
+    45,
+    1.5,
+    -30
+   ],
+   "scale": [
+    16,
+    3,
+    3
+   ],
+   "color": "#f1f3f5",
+   "label": "Grid Battery Storage"
+  },
+  {
+   "type": "bike_path_walkway",
+   "position": [
+    0,
+    0.03,
+    10
+   ],
+   "scale": [
+    4,
+    0.06,
+    100
+   ],
+   "color": "#6c8f3c",
+   "label": "Bike Path"
+  },
+  {
+   "type": "water",
+   "position": [
+    -5,
+    -0.02,
+    5
+   ],
+   "scale": [
+    16,
+    0.12,
+    12
+   ],
+   "color": "#4dabf7",
+   "label": "Rain Water Pond"
+  },
+  {
+   "type": "planting_zone",
+   "position": [
+    10,
+    0.02,
+    22
+   ],
+   "scale": [
+    22,
+    0.04,
+    18
+   ],
+   "color": "#7c5e3c",
+   "label": "Community Planting Zone - type /plant with your cursor here"
+  }
+ ]
+}

@@ -1,0 +1,980 @@
+{
+ "themeName": "Silicon Valley - Headquarters of the Tech World",
+ "backgroundColor": "#87ceeb",
+ "blocks": [
+  {
+   "type": "valley_ground",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    560,
+    0.4,
+    640
+   ],
+   "color": "#a9c27a",
+   "label": "Silicon Valley (Santa Clara Valley)"
+  },
+  {
+   "type": "water",
+   "position": [
+    175,
+    -0.02,
+    -90
+   ],
+   "scale": [
+    70,
+    0.2,
+    460
+   ],
+   "color": "#4a90c2",
+   "label": "San Francisco Bay"
+  },
+  {
+   "type": "water",
+   "position": [
+    -40,
+    -0.02,
+    -308
+   ],
+   "scale": [
+    480,
+    0.2,
+    24
+   ],
+   "color": "#4a90c2",
+   "label": "Golden Gate Strait"
+  },
+  {
+   "type": "hills",
+   "position": [
+    -255,
+    0,
+    10
+   ],
+   "scale": [
+    50,
+    26,
+    560
+   ],
+   "color": "#7a9a4f",
+   "label": "Santa Cruz Mountains"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    -70,
+    0.02,
+    -255
+   ],
+   "scale": [
+    300,
+    0.04,
+    70
+   ],
+   "color": "#c9c3b6",
+   "label": "San Francisco"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    -10,
+    0.02,
+    -170
+   ],
+   "scale": [
+    260,
+    0.04,
+    60
+   ],
+   "color": "#b9cf8c",
+   "label": "Redwood City"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    -10,
+    0.02,
+    -105
+   ],
+   "scale": [
+    260,
+    0.04,
+    60
+   ],
+   "color": "#b4cc86",
+   "label": "Menlo Park"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    -40,
+    0.02,
+    -12
+   ],
+   "scale": [
+    320,
+    0.04,
+    100
+   ],
+   "color": "#bcd290",
+   "label": "Palo Alto"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    40,
+    0.02,
+    85
+   ],
+   "scale": [
+    200,
+    0.04,
+    70
+   ],
+   "color": "#b0c98a",
+   "label": "Mountain View"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    40,
+    0.02,
+    148
+   ],
+   "scale": [
+    200,
+    0.04,
+    46
+   ],
+   "color": "#b8cc90",
+   "label": "Sunnyvale"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    -145,
+    0.02,
+    185
+   ],
+   "scale": [
+    150,
+    0.04,
+    130
+   ],
+   "color": "#aac682",
+   "label": "Cupertino"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    95,
+    0.02,
+    212
+   ],
+   "scale": [
+    270,
+    0.04,
+    74
+   ],
+   "color": "#b6ca8e",
+   "label": "Santa Clara"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    0,
+    0.02,
+    288
+   ],
+   "scale": [
+    540,
+    0.04,
+    60
+   ],
+   "color": "#c7c2b5",
+   "label": "San Jose"
+  },
+  {
+   "type": "city_zone",
+   "position": [
+    248,
+    0.02,
+    0
+   ],
+   "scale": [
+    64,
+    0.04,
+    240
+   ],
+   "color": "#bdbdbd",
+   "label": "Fremont"
+  },
+  {
+   "type": "us_101_freeway",
+   "position": [
+    32,
+    0.08,
+    0
+   ],
+   "scale": [
+    16,
+    0.12,
+    640
+   ],
+   "color": "#3d4247",
+   "label": "US-101 Bayshore Freeway"
+  },
+  {
+   "type": "highway_traffic",
+   "position": [
+    32,
+    0.14,
+    0
+   ],
+   "scale": [
+    16,
+    1,
+    640
+   ],
+   "color": "#ffffff",
+   "label": "US-101 Traffic"
+  },
+  {
+   "type": "i_280_freeway",
+   "position": [
+    -215,
+    0.08,
+    30
+   ],
+   "scale": [
+    12,
+    0.12,
+    560
+   ],
+   "color": "#3d4247",
+   "label": "I-280 Junipero Serra Freeway"
+  },
+  {
+   "type": "el_camino_real_road",
+   "position": [
+    -40,
+    0.07,
+    0
+   ],
+   "scale": [
+    8,
+    0.1,
+    600
+   ],
+   "color": "#4a4f55",
+   "label": "El Camino Real"
+  },
+  {
+   "type": "caltrain_rail",
+   "position": [
+    -15,
+    0.08,
+    0
+   ],
+   "scale": [
+    4,
+    0.12,
+    620
+   ],
+   "color": "#7f6a55",
+   "label": "Caltrain"
+  },
+  {
+   "type": "sand_hill_road",
+   "position": [
+    -125,
+    0.07,
+    -22
+   ],
+   "scale": [
+    170,
+    0.1,
+    8
+   ],
+   "color": "#4a4f55",
+   "label": "Sand Hill Road"
+  },
+  {
+   "type": "dumbarton_bridge_road",
+   "position": [
+    175,
+    0.3,
+    0
+   ],
+   "scale": [
+    76,
+    0.4,
+    8
+   ],
+   "color": "#5a6067",
+   "label": "Dumbarton Bridge"
+  },
+  {
+   "type": "tasman_drive_road",
+   "position": [
+    100,
+    0.07,
+    240
+   ],
+   "scale": [
+    120,
+    0.1,
+    8
+   ],
+   "color": "#4a4f55",
+   "label": "Tasman Drive"
+  },
+  {
+   "type": "stevens_creek_road",
+   "position": [
+    -110,
+    0.07,
+    250
+   ],
+   "scale": [
+    200,
+    0.1,
+    8
+   ],
+   "color": "#4a4f55",
+   "label": "Stevens Creek Blvd"
+  },
+  {
+   "type": "golden_gate_bridge",
+   "position": [
+    -200,
+    0,
+    -308
+   ],
+   "scale": [
+    10,
+    34,
+    40
+   ],
+   "color": "#c0362c",
+   "label": "Golden Gate Bridge"
+  },
+  {
+   "type": "salesforce_tapered_tower",
+   "position": [
+    0,
+    35,
+    -260
+   ],
+   "scale": [
+    12,
+    70,
+    12
+   ],
+   "color": "#b0bec5",
+   "label": "Salesforce Tower"
+  },
+  {
+   "type": "transamerica_pyramid_tower",
+   "position": [
+    -40,
+    25,
+    -265
+   ],
+   "scale": [
+    10,
+    50,
+    10
+   ],
+   "color": "#eceff1",
+   "label": "Transamerica Pyramid"
+  },
+  {
+   "type": "hq_anthropic",
+   "position": [
+    45,
+    12,
+    -250
+   ],
+   "scale": [
+    22,
+    24,
+    20
+   ],
+   "color": "#d97757",
+   "label": "Anthropic - San Francisco"
+  },
+  {
+   "type": "hq_openai",
+   "position": [
+    -85,
+    9,
+    -250
+   ],
+   "scale": [
+    22,
+    18,
+    20
+   ],
+   "color": "#10a37f",
+   "label": "OpenAI - San Francisco"
+  },
+  {
+   "type": "hq_github",
+   "position": [
+    -130,
+    8,
+    -250
+   ],
+   "scale": [
+    22,
+    16,
+    20
+   ],
+   "color": "#24292f",
+   "label": "GitHub - San Francisco"
+  },
+  {
+   "type": "hq_uber",
+   "position": [
+    -175,
+    7,
+    -250
+   ],
+   "scale": [
+    18,
+    14,
+    18
+   ],
+   "color": "#000000",
+   "label": "Uber - San Francisco"
+  },
+  {
+   "type": "tree_cluster",
+   "position": [
+    100,
+    0,
+    -255
+   ],
+   "scale": [
+    60,
+    1,
+    50
+   ],
+   "color": "#2e7d32"
+  },
+  {
+   "type": "oracle_campus",
+   "position": [
+    100,
+    0,
+    -170
+   ],
+   "scale": [
+    50,
+    24,
+    44
+   ],
+   "color": "#c74634",
+   "label": "Oracle - Redwood Shores"
+  },
+  {
+   "type": "ea_campus",
+   "position": [
+    -85,
+    7,
+    -170
+   ],
+   "scale": [
+    44,
+    14,
+    34
+   ],
+   "color": "#ff4747",
+   "label": "Electronic Arts - Redwood Shores"
+  },
+  {
+   "type": "meta_campus",
+   "position": [
+    95,
+    5,
+    -105
+   ],
+   "scale": [
+    70,
+    10,
+    44
+   ],
+   "color": "#0866ff",
+   "label": "Meta - 1 Hacker Way, Menlo Park"
+  },
+  {
+   "type": "vc_row",
+   "position": [
+    -125,
+    3,
+    -36
+   ],
+   "scale": [
+    150,
+    6,
+    14
+   ],
+   "color": "#8d6e63",
+   "label": "Sand Hill Road Venture Capital Row"
+  },
+  {
+   "type": "stanford_campus",
+   "position": [
+    -130,
+    15,
+    12
+   ],
+   "scale": [
+    100,
+    30,
+    52
+   ],
+   "color": "#e0c9a6",
+   "label": "Stanford University"
+  },
+  {
+   "type": "hp_garage",
+   "position": [
+    -62,
+    2,
+    30
+   ],
+   "scale": [
+    6,
+    4,
+    6
+   ],
+   "color": "#f5f5dc",
+   "label": "HP Garage - Birthplace of Silicon Valley"
+  },
+  {
+   "type": "hq_tesla",
+   "position": [
+    90,
+    6,
+    0
+   ],
+   "scale": [
+    44,
+    12,
+    32
+   ],
+   "color": "#cc0000",
+   "label": "Tesla - Global Engineering HQ, Palo Alto"
+  },
+  {
+   "type": "hq_hp",
+   "position": [
+    90,
+    6,
+    -40
+   ],
+   "scale": [
+    30,
+    12,
+    24
+   ],
+   "color": "#0096d6",
+   "label": "HP - Palo Alto"
+  },
+  {
+   "type": "googleplex",
+   "position": [
+    95,
+    7,
+    85
+   ],
+   "scale": [
+    84,
+    14,
+    64
+   ],
+   "color": "#4285f4",
+   "label": "Googleplex - Mountain View"
+  },
+  {
+   "type": "hq_museum_computer_history",
+   "position": [
+    -75,
+    5,
+    62
+   ],
+   "scale": [
+    28,
+    10,
+    22
+   ],
+   "color": "#5c6bc0",
+   "label": "Computer History Museum"
+  },
+  {
+   "type": "hq_microsoft",
+   "position": [
+    -75,
+    6,
+    100
+   ],
+   "scale": [
+    26,
+    12,
+    22
+   ],
+   "color": "#737373",
+   "label": "Microsoft Silicon Valley Campus"
+  },
+  {
+   "type": "hangar_one",
+   "position": [
+    95,
+    11,
+    150
+   ],
+   "scale": [
+    70,
+    22,
+    26
+   ],
+   "color": "#b0bec5",
+   "label": "NASA Ames Research Center - Hangar One"
+  },
+  {
+   "type": "hq_linkedin",
+   "position": [
+    4,
+    7,
+    150
+   ],
+   "scale": [
+    30,
+    14,
+    24
+   ],
+   "color": "#0a66c2",
+   "label": "LinkedIn - Sunnyvale"
+  },
+  {
+   "type": "apple_park",
+   "position": [
+    -145,
+    6,
+    185
+   ],
+   "scale": [
+    110,
+    12,
+    110
+   ],
+   "color": "#f2f2f2",
+   "label": "Apple Park - Cupertino"
+  },
+  {
+   "type": "nvidia_campus",
+   "position": [
+    78,
+    7,
+    195
+   ],
+   "scale": [
+    56,
+    14,
+    36
+   ],
+   "color": "#76b900",
+   "label": "NVIDIA - Santa Clara"
+  },
+  {
+   "type": "hq_intel",
+   "position": [
+    3,
+    6,
+    228
+   ],
+   "scale": [
+    30,
+    12,
+    22
+   ],
+   "color": "#0071c5",
+   "label": "Intel - Santa Clara"
+  },
+  {
+   "type": "levis_stadium",
+   "position": [
+    178,
+    8,
+    200
+   ],
+   "scale": [
+    60,
+    16,
+    50
+   ],
+   "color": "#aa0000",
+   "label": "Levi's Stadium"
+  },
+  {
+   "type": "adobe_towers",
+   "position": [
+    60,
+    20,
+    290
+   ],
+   "scale": [
+    40,
+    40,
+    30
+   ],
+   "color": "#fa0f00",
+   "label": "Adobe - San Jose"
+  },
+  {
+   "type": "sap_arena",
+   "position": [
+    130,
+    6,
+    290
+   ],
+   "scale": [
+    40,
+    12,
+    30
+   ],
+   "color": "#0070f2",
+   "label": "SAP Center"
+  },
+  {
+   "type": "downtown_skyline",
+   "position": [
+    -60,
+    15,
+    292
+   ],
+   "scale": [
+    70,
+    30,
+    40
+   ],
+   "color": "#90a4ae",
+   "label": "Downtown San Jose"
+  },
+  {
+   "type": "hq_cisco",
+   "position": [
+    -160,
+    6,
+    292
+   ],
+   "scale": [
+    40,
+    12,
+    28
+   ],
+   "color": "#049fd9",
+   "label": "Cisco - San Jose"
+  },
+  {
+   "type": "hq_netflix",
+   "position": [
+    -245,
+    6,
+    292
+   ],
+   "scale": [
+    30,
+    12,
+    24
+   ],
+   "color": "#e50914",
+   "label": "Netflix - Los Gatos"
+  },
+  {
+   "type": "hq_ebay",
+   "position": [
+    200,
+    6,
+    290
+   ],
+   "scale": [
+    30,
+    12,
+    24
+   ],
+   "color": "#e53238",
+   "label": "eBay - San Jose"
+  },
+  {
+   "type": "tesla_factory",
+   "position": [
+    248,
+    9,
+    -20
+   ],
+   "scale": [
+    44,
+    18,
+    130
+   ],
+   "color": "#cc0000",
+   "label": "Tesla Fremont Factory"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    -230
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#2c3e50",
+   "label": "WELCOME TO SILICON VALLEY"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    -150
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#8e44ad",
+   "label": "SHIP IT. THEN FIX IT."
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    -70
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#16a085",
+   "label": "HIRING: ENGINEERS WHO WRITE TESTS"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    20
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#d35400",
+   "label": "COMMIT EARLY. COMMIT OFTEN."
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    110
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#c0392b",
+   "label": "GIT PUSH --FORCE? THINK TWICE."
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    190
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#2980b9",
+   "label": "VISIT THE COMPUTER HISTORY MUSEUM"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    52,
+    6,
+    260
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#27ae60",
+   "label": "GITVERSE: DEVS ONLY BEYOND THIS POINT"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    12,
+    6,
+    -190
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#f39c12",
+   "label": "YOUR SERIES A COULD BE HERE"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    12,
+    6,
+    60
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#34495e",
+   "label": "IT WORKS ON MY MACHINE"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    12,
+    6,
+    230
+   ],
+   "scale": [
+    0.6,
+    12,
+    14
+   ],
+   "color": "#e84393",
+   "label": "TABS VS SPACES: CHOOSE WISELY"
+  }
+ ]
+}
