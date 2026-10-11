@@ -2,7 +2,7 @@
 
 <img width="1370" height="768" alt="GitVerse screenshot" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
 
-A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**, through one continuous low-poly universe: a Genesis City of themed districts, interactive mini-games, and a stylized recreation of Silicon Valley.
+A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**, through one continuous low-poly universe: a Genesis City of themed districts, interactive resources, and a stylized recreation of Silicon Valley.
 
 ---
 
