@@ -84,6 +84,9 @@ const City = (() => {
       if (!layout.center.y) root.add(lot);
     }
 
+    // Separate Worlds (big maps) float on their own island of land, far from Genesis City
+    if (world.world) root.add(buildWorldIsland(layout.size, world.key));
+
     mapData.blocks.forEach((blockData) => root.add(PropKit.buildBlock(blockData)));
 
     // District name floating above it, like Decentraland's scene titles
@@ -98,6 +101,38 @@ const City = (() => {
     const district = { world, layout, root, mapData, title };
     districts.push(district);
     return district;
+  }
+
+  function buildWorldIsland(size, key) {
+    const island = new THREE.Group();
+    const radius = Math.max(size[0], size[1]) * 0.75 + 120;
+    const grass = new THREE.Mesh(new THREE.CircleGeometry(radius, 64), material('#7cb342', { roughness: 1 }));
+    grass.rotation.x = -Math.PI / 2;
+    grass.position.y = GROUND_LEVEL;
+    grass.receiveShadow = true;
+    island.add(grass);
+    // A ring of trees frames the World
+    const random = seededRandom(key.length * 977);
+    const count = 120;
+    const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3, 0.4, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), count);
+    const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material('#ffffff', { flatShading: true }), count);
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+    for (let i = 0; i < count; i++) {
+      const angle = random() * Math.PI * 2;
+      const distance = Math.max(size[0], size[1]) * 0.62 + 10 + random() * (radius - Math.max(size[0], size[1]) * 0.62 - 20);
+      const treeScale = 1 + random() * 1.2;
+      const x = Math.cos(angle) * distance;
+      const z = Math.sin(angle) * distance;
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), new THREE.Quaternion(), new THREE.Vector3(treeScale, treeScale * 2.6, treeScale));
+      trunks.setMatrixAt(i, matrix);
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + treeScale * 3.6, z), new THREE.Quaternion(), new THREE.Vector3(treeScale * 2, treeScale * 2.2, treeScale * 2));
+      crowns.setMatrixAt(i, matrix);
+      crowns.setColorAt(i, color.setHSL(0.26 + random() * 0.08, 0.5, 0.3 + random() * 0.12));
+    }
+    trunks.castShadow = crowns.castShadow = true;
+    island.add(trunks, crowns);
+    return island;
   }
 
   function hexToRgba(hex, alpha) {
@@ -166,10 +201,6 @@ const City = (() => {
         roads.add(intersection);
       }
     }
-    // Avenue connecting the city to Silicon Valley (south)
-    const avenue = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, 0.1, 40), new THREE.MeshStandardMaterial({ map: repeated(asphalt, 1, 5), roughness: 0.9 }));
-    avenue.position.set(CELL_SIZE / 2, GROUND_LEVEL + 0.1, extent + 10);
-    roads.add(avenue);
     scene.add(roads);
     pickables.push(roads);
     sharedCollidables.push(roads);
@@ -185,6 +216,19 @@ const City = (() => {
       streetLampHeads.setMatrixAt(index, matrix);
     });
     scene.add(posts, streetLampHeads);
+
+    // Colorful street banners hanging from every lamp post
+    const bannerColors = ['#ff2d7a', '#2da44e', '#3a86ff', '#ffbe0b', '#8338ec', '#fb5607'];
+    const banners = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.1, 2.2), new THREE.MeshStandardMaterial({ color: '#ffffff', side: THREE.DoubleSide, roughness: 0.8 }), lampPositions.length);
+    const bannerColor = new THREE.Color();
+    lampPositions.forEach(([x, z], index) => {
+      matrix.makeRotationY(Math.PI / 2);
+      matrix.setPosition(x, GROUND_LEVEL + 3.4, z + 0.62);
+      banners.setMatrixAt(index, matrix);
+      banners.setColorAt(index, bannerColor.set(bannerColors[index % bannerColors.length]));
+    });
+    banners.raycast = () => {};
+    scene.add(banners);
   }
 
   // Deterministic Decentraland-style parcels for every cell without a district:
@@ -520,11 +564,141 @@ const City = (() => {
     buildSky();
   }
 
+  // --------------------------------------------------------------------------
+  // Skyline ring: giant towers with LED billboards of big tech and dev tools,
+  // plus blimps carrying banners over Genesis City
+  // --------------------------------------------------------------------------
+  const BRANDS = [
+    ['GitHub', 'Where the world builds software', '#24292f', '#ffffff'],
+    ['VS Code', 'Code editor', '#007acc', '#ffffff'],
+    ['Docker', 'Containers', '#1d63ed', '#ffffff'],
+    ['Kubernetes', 'Container orchestration', '#326ce5', '#ffffff'],
+    ['Node.js', 'JavaScript runtime', '#3c873a', '#ffffff'],
+    ['Python', 'Programming language', '#306998', '#ffd43b'],
+    ['TypeScript', 'Typed JavaScript', '#3178c6', '#ffffff'],
+    ['Rust', 'Systems programming', '#b7410e', '#ffffff'],
+    ['React', 'UI library', '#20232a', '#61dafb'],
+    ['Linux', 'Open source kernel', '#111111', '#fcc624'],
+    ['Git', 'Version control', '#f05032', '#ffffff'],
+    ['npm', 'Package registry', '#cb3837', '#ffffff'],
+    ['Stack Overflow', 'Developer Q&A', '#f48024', '#ffffff'],
+    ['Claude', 'AI assistant by Anthropic', '#d97757', '#ffffff'],
+    ['OpenAI', 'AI research', '#10a37f', '#ffffff'],
+    ['NVIDIA', 'GPUs & accelerated computing', '#76b900', '#000000'],
+    ['AWS', 'Cloud computing', '#232f3e', '#ff9900'],
+    ['Google Cloud', 'Cloud computing', '#4285f4', '#ffffff'],
+    ['Microsoft Azure', 'Cloud computing', '#0078d4', '#ffffff'],
+    ['Apple', 'WWDC & developer tools', '#1d1d1f', '#ffffff'],
+    ['Meta', 'Open source AI & React', '#0866ff', '#ffffff'],
+    ['Vercel', 'Frontend cloud', '#000000', '#ffffff'],
+    ['Figma', 'Interface design', '#a259ff', '#ffffff'],
+    ['Postman', 'API platform', '#ff6c37', '#ffffff']
+  ];
+
+  function brandTexture(name, tagline, background, foreground) {
+    return PropKit.kit.canvasTexture(`brand|${name}`, 1024, 512, (ctx, w, h) => {
+      const gradient = ctx.createLinearGradient(0, 0, w, h);
+      gradient.addColorStop(0, background);
+      gradient.addColorStop(1, new THREE.Color(background).offsetHSL(0, 0, 0.12).getStyle());
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = foreground;
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(24, 24, w - 48, h - 48);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = foreground;
+      ctx.textAlign = 'center';
+      ctx.font = `bold ${name.length > 10 ? 120 : 160}px Segoe UI, Helvetica, Arial, sans-serif`;
+      ctx.fillText(name, w / 2, h / 2 + 20);
+      ctx.font = '48px Segoe UI, Helvetica, Arial, sans-serif';
+      ctx.globalAlpha = 0.85;
+      ctx.fillText(tagline, w / 2, h / 2 + 110);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function buildSkyline() {
+    const ringRadius = (CITY_RADIUS + 0.5) * CELL_SIZE + 90;
+    const random = seededRandom(4242);
+    const towerTexture = repeated(windowsTexture('#2b2f3a', '#ffe9a8'), 3, 10);
+    const towerMaterial = new THREE.MeshStandardMaterial({ map: towerTexture, emissiveMap: towerTexture, emissive: '#000000', roughness: 0.4, metalness: 0.4 });
+    nightWindowMaterials.push(towerMaterial);
+    BRANDS.forEach(([name, tagline, background, foreground], index) => {
+      const angle = (index / BRANDS.length) * Math.PI * 2 + 0.07;
+      const distance = ringRadius + random() * 70;
+      const height = 70 + random() * 70;
+      const width = 26 + random() * 10;
+      const tower = new THREE.Group();
+      tower.add(new THREE.Mesh(new THREE.BoxGeometry(width, height, width), towerMaterial));
+      tower.children[0].position.y = height / 2;
+      // Giant LED billboard facing the city center, lit at night
+      const screenMaterial = new THREE.MeshBasicMaterial({ map: brandTexture(name, tagline, background, foreground) });
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(width * 1.6, width * 0.8), screenMaterial);
+      screen.position.set(0, height * 0.72, width / 2 + 0.6);
+      tower.add(screen);
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(width * 1.66, width * 0.86, 0.8), material('#111111', { metalness: 0.6 }));
+      frame.position.set(0, height * 0.72, width / 2 + 0.1);
+      tower.add(frame);
+      // Rooftop antenna with a blinking aviation light
+      const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 18, 6), material('#9e9e9e'));
+      antenna.position.y = height + 9;
+      tower.add(antenna);
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), glow('#ff3b30', 2));
+      beacon.position.y = height + 18.5;
+      tower.add(beacon);
+      animatedCity.push((time) => { beacon.visible = Math.sin(time * 3 + index) > 0; });
+      tower.position.set(Math.cos(angle) * distance, GROUND_LEVEL, Math.sin(angle) * distance);
+      tower.rotation.y = Math.atan2(-tower.position.x, -tower.position.z);
+      tower.traverse((node) => { if (node.isMesh) { node.castShadow = false; node.receiveShadow = false; } });
+      scene.add(tower);
+    });
+
+    // Blimps with banners circling above the city
+    [['GitHub Multiverse', '#ff2d7a'], ['Ship it with Git', '#2da44e'], ['Join the Multiverse', '#3a86ff']].forEach(([text, color], index) => {
+      const blimp = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), material('#eceff1', { roughness: 0.4 }));
+      body.scale.set(26, 8, 8);
+      blimp.add(body);
+      const gondola = new THREE.Mesh(new THREE.BoxGeometry(8, 2.5, 3), material('#37474f'));
+      gondola.position.y = -8.5;
+      blimp.add(gondola);
+      [-1, 1].forEach((side) => {
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(5, 0.5, 6), material(color));
+        fin.position.set(-24, 0, side * 3);
+        fin.rotation.x = side * 0.6;
+        blimp.add(fin);
+      });
+      const bannerTexture = PropKit.kit.labelTexture(text, { bg: color, fg: '#ffffff', width: 1024, height: 200, font: 'bold 110px Segoe UI, Helvetica, Arial, sans-serif' });
+      [-1, 1].forEach((side) => {
+        const banner = new THREE.Mesh(new THREE.PlaneGeometry(36, 7), new THREE.MeshBasicMaterial({ map: bannerTexture, side: THREE.DoubleSide }));
+        banner.position.set(0, -15, side * 0.2);
+        blimp.add(banner);
+      });
+      const ropeMaterial = material('#90a4ae');
+      [-14, 14].forEach((x) => {
+        const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 9, 4), ropeMaterial);
+        rope.position.set(x, -9, 0);
+        blimp.add(rope);
+      });
+      blimp.traverse((node) => { node.raycast = () => {}; });
+      scene.add(blimp);
+      const radius = 160 + index * 70;
+      const height = 75 + index * 15;
+      animatedCity.push((time) => {
+        const angle = time * (0.02 + index * 0.006) + index * 2.1;
+        blimp.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+        blimp.rotation.y = -angle - Math.PI / 2 * (index % 2 ? -1 : 1);
+      });
+    });
+  }
+
   // Called once every district is loaded
   function finalize() {
     buildGround();
     buildRoads();
     buildNeighborhoods();
+    buildSkyline();
   }
 
   return {

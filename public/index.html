@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GitHub Multiverse</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
   <style>
     :root {
       --panel-bg: rgba(17, 15, 26, 0.82);
@@ -62,7 +63,7 @@
       font-size: 15px;
       letter-spacing: 0.5px;
     }
-    #hud h1 span { color: var(--accent); }
+    #hud-logo { display: block; height: 28px; width: auto; max-width: 220px; }
     .hud-row {
       display: flex;
       justify-content: space-between;
@@ -265,6 +266,7 @@
       cursor: crosshair;
     }
     #worlds-list button.sub-place { padding-left: 22px; font-size: 12px; }
+    #worlds-list .list-header { padding: 10px 10px 4px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); }
     #chat-log .place-tag { color: var(--muted); font-size: 11px; }
     #chat-log .whisper { color: #d0bfff; font-style: italic; }
 
@@ -347,6 +349,7 @@
       backdrop-filter: blur(10px);
       color: var(--text);
     }
+    .auth-logo { display: block; width: 100%; max-width: 300px; margin: 0 auto 18px; }
     .auth-card h1 { margin: 0 0 10px; font-size: 26px; line-height: 1.2; }
     .auth-card h1 span { color: var(--accent); }
     .auth-card p { margin: 0 0 18px; color: #cfcde0; font-size: 14px; line-height: 1.55; }
@@ -464,7 +467,7 @@
   </div>
 
   <section id="hud" class="panel" aria-label="Status">
-    <h1>Git<span>Verse</span></h1>
+    <h1><img id="hud-logo" src="assets/logo.png" alt="GitHub Multiverse"></h1>
     <div class="hud-row"><span>District</span><b id="hud-world">Loading...</b></div>
     <div class="hud-row"><span>Parcel</span><b id="hud-parcel">0,0</b></div>
     <div class="hud-row"><span>You</span><b id="hud-devtag">-</b></div>
@@ -515,6 +518,7 @@
   <!-- Welcome screen shown before entering the multiverse -->
   <div id="auth-screen">
     <section class="auth-card" aria-labelledby="auth-title">
+      <img class="auth-logo" src="assets/logo.png" alt="GitHub Multiverse logo">
       <h1 id="auth-title">Welcome to <span>GitHub Multiverse</span></h1>
       <p>GitHub Multiverse is an online Decentraland-like dimension that allows devs from all platforms to interact in virtual spaces. To start, create a username and a password below so you can come back later. Already have an account? Just log in.</p>
       <div id="auth-tabs" role="tablist">

@@ -1,8 +1,8 @@
-# 🌐 GitVerse — GitHub Multiverse
+# 🌐 GitHub Multiverse
 
-<img width="1370" height="768" alt="GitVerse screenshot" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
+<img width="1370" height="768" alt="GitHub Multiverse banner" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
 
-A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**, through one continuous low-poly universe: a Genesis City of themed districts, interactive mini-games, and a stylized recreation of Silicon Valley.
+A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**. Everyone starts in **Genesis City**, a single space around Genesis Plaza made of small themed scenes, and can jump into bigger **Worlds**: interactive mini-games and a stylized recreation of Silicon Valley.
 
 ---
 
@@ -12,7 +12,8 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **3D Cursor Avatars**: Everyone is a clean, pastel-colored 3D arrow with a developer tag (`Dev_XXXX`, or your own name with `/nick`). You walk, run and jump in third person, like in Decentraland.
 - **Chat Bubbles**: Messages float as bubbles above the sender's cursor and appear in the chat log, tagged with the district where they were said.
 - **Minecraft-Style Chat Commands**: Teleports, a shared day/night cycle, weather, warps, homes, whispers and more (see [Chat commands](#-chat-commands)).
-- **One Continuous Universe**: Every map is a district on a 16m × 16m parcel grid (Genesis City style), connected by roads, surrounded by generated parcels with gardens, houses, art sculptures, market kiosks and "parcel for sale" lots.
+- **Genesis City + Worlds (like Decentraland)**: new developers spawn at **Genesis Plaza**. The small maps are scenes of one walkable city on a 16m × 16m parcel grid, connected by roads and generated parcels (gardens, houses, art sculptures, kiosks, "parcel for sale" lots, street banners). The big maps (Silicon Valley, Museum, Debug Dungeon, Open Source HQ, Keynote Amphitheater, Green-Tech Sandbox) are separate **Worlds** you enter only through the side menu or chat commands (`/world valley`).
+- **Skyline of Tech**: a ring of skyscrapers around the city carries giant LED billboards for big tech companies and developer tools, and blimps with banners circle the sky.
 - **Interactive Districts**: a co-op dungeon crawler against famous bugs, an Open Source HQ where Pull Requests change the map, a keynote amphitheater showing Apple's WWDC keynotes, a museum of forgotten tech and a Green-Tech sandbox.
 - **Silicon Valley**: a stylized recreation of the valley, from the Golden Gate Bridge to San Jose, with Apple Park, Googleplex, Anthropic, Tesla, EA, Meta, NVIDIA, Oracle, Stanford and more.
 - **Living World**: a 20-minute day/night cycle with stars and lit windows, rain, snow and thunderstorms, drifting clouds, traffic on US-101 and a Caltrain running along the peninsula.
@@ -27,8 +28,8 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 
 | Input | Action |
 | --- | --- |
-| `W A S D` / arrow keys | Walk |
-| `Shift` | Run |
+| `W A S D` / arrow keys | Walk (10 m/s) |
+| `Shift` | Run (20 m/s) |
 | `Space` | Jump (climb stairs, platforms and the CRT parkour) |
 | Mouse drag | Look around (third-person camera) |
 | Mouse wheel | Zoom the camera in and out |
@@ -117,7 +118,7 @@ The first screen asks you to **create an account** (username + password) or **lo
 - In production, always serve the site over **HTTPS** so passwords are encrypted in transit.
 - On static hosts without the server (solo mode) the account is saved only in that browser, as the welcome screen warns.
 
-The welcome screen uses the README banner. For the most reliable result, save the banner image as `public/assets/banner.png`; if that file does not exist, the screen loads the original image from GitHub.
+The welcome screen shows the GitHub Multiverse logo over the README banner. For the most reliable result, save the banner image as `public/assets/banner.png`; if that file does not exist, the screen loads the original image from GitHub.
 
 ---
 
@@ -139,9 +140,9 @@ Wearables show on your cursor for everyone. Consumables are used up; wearables, 
 
 ## 🗺️ Maps
 
-Every map is a JSON file in `public/maps/` and is registered in `public/maps/worlds.json`, which places it on the city grid. Each `type` in a map is turned into the object it describes (a palm tree, an arcade cabinet, a Kanban board...) by the builders in `public/props.js`, `landmarks.js`, `museum.js` and `games.js`.
+Every map is a JSON file in `public/maps/` and is registered in `public/maps/worlds.json`: small maps get a `cell` on the Genesis City grid, big maps are marked `"world": true` and get their own far-away `region`. Each `type` in a map is turned into the object it describes (a palm tree, an arcade cabinet, a Kanban board...) by the builders in `public/props.js`, `landmarks.js`, `museum.js` and `games.js`.
 
-### Genesis City districts
+### Genesis City (walkable scenes around the spawn)
 | `/world` key | District | What you'll find |
 | --- | --- | --- |
 | `plaza` | **Genesis Plaza** | The spawn at parcel (0,0): teleport pad, hologram pillar, plaza gate, Marketplace tower, Aetheria and Vegas boundaries |
@@ -161,7 +162,7 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `beach` | **Tropical Beach** | Palm trees, beach chairs and umbrellas by the water |
 | `zen` | **Zen Temple** | A private floating island above a lake, with a waterfall, cherry trees and a meditation altar |
 
-### Interactive districts
+### Worlds (enter with the side menu or `/world <key>`)
 | `/world` key | District | How it works |
 | --- | --- | --- |
 | `museum` | **Museum of Forgotten Hardware & Software** | Walk inside a giant 3.5" floppy disk, climb the stairs onto a Pentium-era processor and its circuits, parkour up a giant CRT monitor, and browse a clicky keyboard, a cassette, a spinning CD-ROM, a vacuum-tube wall, punch cards, a ball mouse and the Hall of Forgotten Software (DOS, BASIC, early desktops, 90s homepages) |
@@ -171,7 +172,7 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `greentech` | **Green-Tech Sandbox** | Green IT: a solar farm, spinning wind turbines, a liquid-cooled data center with a living roof, a vertical farm, EV chargers, battery storage and a Code Efficiency Lab comparing the energy cost of algorithms. Plant trees with `/plant` to raise the district's renewable energy meter |
 
 ### Silicon Valley (`/world valley`)
-A large region south of the city, reached by the avenue that becomes **US-101**. Distances are compressed, but the geography keeps the real north-to-south order: San Francisco → Redwood City → Menlo Park → Palo Alto → Mountain View → Sunnyvale → Cupertino / Santa Clara → San Jose, with Fremont across the bay. It includes US-101 with moving traffic, I-280, El Camino Real, Sand Hill Road, a running Caltrain, the Dumbarton Bridge and billboards along the freeway.
+A separate World. Distances are compressed, but the geography keeps the real north-to-south order: San Francisco → Redwood City → Menlo Park → Palo Alto → Mountain View → Sunnyvale → Cupertino / Santa Clara → San Jose, with Fremont across the bay. It includes US-101 with moving traffic, I-280, El Camino Real, Sand Hill Road, a running Caltrain, the Dumbarton Bridge and billboards along the freeway.
 
 | `/world` key | Landmark |
 | --- | --- |
@@ -192,7 +193,7 @@ A large region south of the city, reached by the avenue that becomes **US-101**.
 ## 🛠️ Architecture & Tech Stack
 
 ```text
-gitverse/
+github-multiverse/
 ├── package.json         # Node.js dependencies and run scripts
 ├── server.js            # Express + Socket.io: accounts, cursors, chat, world clock & weather, teleports, loot, game state
 ├── data/                # Created at runtime: accounts, sessions and inventories (git-ignored)
@@ -206,7 +207,8 @@ gitverse/
     ├── museum.js        # Museum of Forgotten Hardware & Software exhibits
     ├── games.js         # Debug Dungeon, Open Source HQ, Keynote Amphitheater, Green-Tech Sandbox
     ├── loot.js          # Chests, supply drops, hotbar, inventory and item effects
-    ├── maps/            # One JSON per map + worlds.json (layout of the city)
+    ├── maps/            # One JSON per map, worlds.json (city layout + Worlds) and loot.json
+    ├── assets/          # logo.png (HUD and welcome screen), icon.png (browser tab)
     └── vendor/          # Three.js r128 + OrbitControls, served locally (MIT)
 ```
 
@@ -256,9 +258,13 @@ Deep links drop you straight into a place, e.g. `http://localhost:3000/#applepar
    }
    ```
    `position` and `scale` are `[x, y, z]` in meters relative to the district center. `label` shows on hover and in the info card.
-2. Register it in `public/maps/worlds.json` with a free `cell` on the city grid (each cell is 64m = 4×4 parcels) and an optional `span` for bigger districts:
+2. Register it in `public/maps/worlds.json`. A small scene takes a free `cell` on the city grid (each cell is 64m = 4×4 parcels):
    ```json
-   { "key": "mydistrict", "file": "map_my_district.json", "name": "My District", "description": "...", "cell": [-3, 2], "span": [1, 1], "color": "#ff2d7a" }
+   { "key": "mydistrict", "file": "map_my_district.json", "name": "My District", "description": "...", "cell": [-3, 2], "color": "#ff2d7a" }
+   ```
+   A big map becomes a separate World with its own island, far from the city:
+   ```json
+   { "key": "myworld", "file": "map_my_world.json", "name": "My World", "description": "...", "world": true, "region": { "center": [17000, 0], "size": [120, 120] }, "color": "#3a86ff" }
    ```
 
 The block `type` decides the model. Some of the recognized types: `floor`, `wall`, `road`, `water`, `desk`, `table`, `sofa`, `stairs_step`, `kanban_board_*`, `sticky_note`, `palm_trunk`, `palm_leaves`, `arcade_cabinet_*`, `pool_table_base`, `server_rack`, `neon_pillar`, `stage`, `pedestal`, `plant`, `billboard`, `hq_<company>`, and many more (see the rule lists at the end of each builder file). Unknown types fall back to an outlined block.
@@ -277,7 +283,7 @@ Optional environment variables: `PORT` (default 3000) and `SUPPLY_DROP_EVERY_MS`
 
 ## ⚖️ Trademarks & media
 
-Company names appear as plain text wordmarks in brand colors to identify the landmarks they represent; no trademarked logo artwork is reproduced, and the buildings are stylized recreations. The WWDC keynotes are not stored in this repository: they are played through YouTube's official embedded player from Apple's own YouTube channel, and the screen shows YouTube's thumbnails. All trademarks belong to their respective owners; this project is not affiliated with or endorsed by any of these companies.
+Company and product names (on the headquarters and on the skyline billboards) appear as plain text wordmarks in brand colors with a factual description of what each product is to identify the landmarks they represent; no trademarked logo artwork is reproduced, and the buildings are stylized recreations. The WWDC keynotes are not stored in this repository: they are played through YouTube's official embedded player from Apple's own YouTube channel, and the screen shows YouTube's thumbnails. The GitHub Multiverse logo is based on GitHub's Octocat mark. All trademarks, including GitHub and the Octocat, belong to their respective owners; this is a fan project, not affiliated with or endorsed by any of these companies.
 
 ---
 

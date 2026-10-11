@@ -250,7 +250,7 @@ const LootSystem = (() => {
   };
 
   function saveLocalInventory() {
-    try { localStorage.setItem(`gitverse-inventory-${hooks.localTag()}`, JSON.stringify(inventory)); } catch (error) { /* storage unavailable */ }
+    try { localStorage.setItem(`github-multiverse-inventory-${hooks.localTag()}`, JSON.stringify(inventory)); } catch (error) { /* storage unavailable */ }
   }
 
   function online() {
@@ -364,7 +364,7 @@ const LootSystem = (() => {
       hooks.socket.emit('loot_sync');
     } else {
       catalog.spawns.forEach((spawn, index) => upsertLoot({ id: `chest${index}`, kind: 'chest', x: spawn.x, z: spawn.z, area: spawn.area, open: false }));
-      try { inventory = JSON.parse(localStorage.getItem(`gitverse-inventory-${hooks.localTag()}`)) || []; } catch (error) { inventory = []; }
+      try { inventory = JSON.parse(localStorage.getItem(`github-multiverse-inventory-${hooks.localTag()}`)) || []; } catch (error) { inventory = []; }
       // Solo supply drops every three minutes too
       setInterval(() => {
         const spot = catalog.spawns[Math.floor(Math.random() * catalog.spawns.length)];

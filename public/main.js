@@ -1,10 +1,10 @@
 // ============================================================================
-// GITVERSE CLIENT: ENGINE, 3D CURSORS, TELEPORTS, MINIMAP, CHAT COMMANDS, NETWORK
+// GITHUB MULTIVERSE CLIENT: ENGINE, 3D CURSORS, TELEPORTS, MINIMAP, CHAT COMMANDS, NETWORK
 // ============================================================================
 const CURSOR_EMIT_INTERVAL_MS = 50;
 const CHAT_BUBBLE_DURATION_MS = 7000;
-const WALK_SPEED = 6;
-const RUN_SPEED = 12;
+const WALK_SPEED = 10;
+const RUN_SPEED = 20;
 const JUMP_SPEED = 10;
 const GRAVITY = 26;
 const STEP_HEIGHT = 1.15; // the avatar climbs stairs and ledges up to this height
@@ -100,7 +100,8 @@ function initEngine() {
   controls.maxDistance = 40;
   controls.minPolarAngle = 0.25;
   controls.maxPolarAngle = Math.PI / 1.85;
-  controls.rotateSpeed = 0.7;
+  controls.rotateSpeed = 1.2;
+  controls.zoomSpeed = 1.4;
   controls.addEventListener('change', () => { pointerDirty = true; });
 
   City.init(scene);
@@ -131,12 +132,13 @@ async function loadUniverse() {
 function registerPlaces(district) {
   const { world, layout } = district;
   const view = world.view ? new THREE.Vector3(...world.view) : world.span ? new THREE.Vector3(0, 55, 75) : new THREE.Vector3(0, 30, 42);
-  places.push({ key: world.key, name: world.name, description: world.description, target: layout.center.clone(), view, color: world.color });
+  places.push({ key: world.key, name: world.name, description: world.description, target: layout.center.clone(), view, color: world.color, isWorld: !!world.world });
   (world.places || []).forEach((place) => {
     places.push({
       key: place.key,
       name: place.name,
       parent: world.key,
+      isWorld: !!world.world,
       target: new THREE.Vector3(layout.center.x + place.at[0], 0, layout.center.z + place.at[1]),
       view: new THREE.Vector3(0, 45, 70),
       color: world.color
@@ -156,7 +158,13 @@ function renderWorldList() {
     if (district) population[district.world.key] = (population[district.world.key] || 0) + 1;
   });
   ui.worldsList.innerHTML = '';
-  places.forEach((place) => {
+  const addHeader = (text) => {
+    const header = document.createElement('li');
+    header.className = 'list-header';
+    header.textContent = text;
+    ui.worldsList.appendChild(header);
+  };
+  const addPlace = (place) => {
     const item = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
@@ -170,7 +178,12 @@ function renderWorldList() {
     button.addEventListener('click', () => teleportToPlace(place));
     item.appendChild(button);
     ui.worldsList.appendChild(item);
-  });
+  };
+  // Genesis City: the plaza and its small scenes. Worlds: the big maps, reached by teleport only
+  addHeader('Genesis City');
+  places.filter((place) => !place.isWorld).forEach(addPlace);
+  addHeader('Worlds');
+  places.filter((place) => place.isWorld).forEach(addPlace);
 }
 
 // ============================================================================
@@ -648,7 +661,7 @@ function updateHud() {
   const position = localCursor.target;
   const district = City.districtAt(position.x, position.z);
   ui.district.textContent = district ? zoneName(district, position) : 'Genesis City';
-  ui.parcel.textContent = `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
+  ui.parcel.textContent = district && district.world.world ? 'World' : `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
   ui.clock.textContent = `${ticksToClock(currentTicks())} · ${worldClock.weather}`;
   if (hudFrame % 60 === 1) renderWorldList();
   drawMinimap();
@@ -836,11 +849,11 @@ function interpretChatCommand(inputBuffer) {
       teleportToPlace(places[0]);
       break;
     case 'sethome':
-      try { localStorage.setItem('gitverse-home', JSON.stringify(localCursor.target.toArray())); appendSystemMessage('Home set at your cursor. Use /home to come back.'); } catch (error) { appendSystemMessage('Could not save your home in this browser.'); }
+      try { localStorage.setItem('github-multiverse-home', JSON.stringify(localCursor.target.toArray())); appendSystemMessage('Home set at your cursor. Use /home to come back.'); } catch (error) { appendSystemMessage('Could not save your home in this browser.'); }
       break;
     case 'home': {
       let home = null;
-      try { home = JSON.parse(localStorage.getItem('gitverse-home')); } catch (error) { home = null; }
+      try { home = JSON.parse(localStorage.getItem('github-multiverse-home')); } catch (error) { home = null; }
       if (!Array.isArray(home)) { appendSystemMessage('No home set. Point at a spot and type /sethome.'); break; }
       flyTo(new THREE.Vector3(...home), new THREE.Vector3(0, 26, 36), 'Welcome home.');
       break;
@@ -1085,9 +1098,9 @@ function setupNetwork(session) {
 // ============================================================================
 function animate() {
   requestAnimationFrame(animate);
-  const deltaSeconds = Math.min(clock.getDelta(), 0.1);
+  const deltaSeconds = Math.min(clock.getDelta(), 0.15); // keeps walking speed steady even at low frame rates
   const elapsed = clock.elapsedTime;
-  const smoothing = 1 - Math.exp(-deltaSeconds * 12);
+  const smoothing = 1 - Math.exp(-deltaSeconds * 18);
 
   if (viewMode === 'explore') updateAvatar(deltaSeconds); else walkCamera(deltaSeconds);
   controls.update();
@@ -1110,7 +1123,7 @@ function animate() {
   });
 
   [localCursor, ...Object.values(remoteMeshPointers)].forEach((record, index) => {
-    record.mesh.position.lerp(record.target, record.target.distanceTo(record.mesh.position) > 60 ? 1 : smoothing);
+    record.mesh.position.lerp(record.target, record.isLocal || record.target.distanceTo(record.mesh.position) > 60 ? 1 : smoothing);
     record.mesh.rotation.y = Math.atan2(camera.position.x - record.mesh.position.x, camera.position.z - record.mesh.position.z);
     record.mesh.userData.arrowPivot.position.y = 1.9 + Math.sin(elapsed * 3 + index) * 0.08;
     projectToScreen(record);

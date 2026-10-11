@@ -495,5 +495,5 @@ function getRandomPastelColor() {
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log(`[ENGINE ACTIVE] GitVerse cluster rendering successfully deployed on: http://localhost:${PORT}`);
+  console.log(`[ENGINE ACTIVE] GitHub Multiverse cluster rendering successfully deployed on: http://localhost:${PORT}`);
 });

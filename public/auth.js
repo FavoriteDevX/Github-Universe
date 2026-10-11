@@ -5,8 +5,8 @@
 // session tokens). On static hosts without a server (solo mode), the account
 // is kept only in this browser, and the screen says so.
 const Auth = (() => {
-  const TOKEN_KEY = 'gitverse-session';
-  const LOCAL_ACCOUNTS_KEY = 'gitverse-local-accounts';
+  const TOKEN_KEY = 'github-multiverse-session';
+  const LOCAL_ACCOUNTS_KEY = 'github-multiverse-local-accounts';
   const hasServer = typeof io === 'function';
   const screen = document.getElementById('auth-screen');
   const form = document.getElementById('auth-form');

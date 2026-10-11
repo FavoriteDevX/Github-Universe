@@ -606,7 +606,7 @@ const GameSystems = (() => {
       ctx.fillStyle = '#161b22'; ctx.fillRect(0, 0, w, 50);
       ctx.fillStyle = '#c9d1d9'; ctx.font = 'bold 26px Segoe UI, Arial'; ctx.fillText(`mural-${mural.index}.js  —  /mural ${mural.index} <code>`, 18, 34);
       ctx.font = '22px Consolas, monospace';
-      const shown = lines.length ? lines.slice(-14) : [{ devTag: 'GitVerse', text: '// Post your code snippet here!' }];
+      const shown = lines.length ? lines.slice(-14) : [{ devTag: 'GitHub Multiverse', text: '// Post your code snippet here!' }];
       shown.forEach((entry, index) => {
         ctx.fillStyle = '#6e7681'; ctx.fillText(String(index + 1).padStart(2, ' '), 14, 84 + index * 30);
         ctx.fillStyle = '#7ee787'; ctx.fillText(entry.text.slice(0, 48), 60, 84 + index * 30);

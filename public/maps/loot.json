@@ -236,6 +236,11 @@
    "area": "Genesis City"
   },
   {
+   "x": -90.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
    "x": -26.0,
    "z": -154.0,
    "area": "Genesis City"
@@ -277,6 +282,11 @@
   },
   {
    "x": 102.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
    "z": -26.0,
    "area": "Genesis City"
   },
@@ -317,6 +327,11 @@
   },
   {
    "x": 230.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
    "z": 102.0,
    "area": "Genesis City"
   },
@@ -326,94 +341,144 @@
    "area": "Genesis City"
   },
   {
-   "x": -32,
-   "z": 367,
+   "x": 13968,
+   "z": -245,
    "area": "Silicon Valley - San Francisco"
   },
   {
-   "x": 53,
-   "z": 384,
+   "x": 14053,
+   "z": -228,
    "area": "Silicon Valley - Anthropic"
   },
   {
-   "x": -77,
-   "z": 384,
+   "x": 13923,
+   "z": -228,
    "area": "Silicon Valley - OpenAI"
   },
   {
-   "x": -122,
-   "z": 384,
+   "x": 13878,
+   "z": -228,
    "area": "Silicon Valley - GitHub HQ"
   },
   {
-   "x": -192,
-   "z": 322,
+   "x": 13808,
+   "z": -290,
    "area": "Silicon Valley - Golden Gate Bridge"
   },
   {
-   "x": 108,
-   "z": 452,
+   "x": 14108,
+   "z": -160,
    "area": "Silicon Valley - Oracle"
   },
   {
-   "x": -77,
-   "z": 462,
+   "x": 13923,
+   "z": -150,
    "area": "Silicon Valley - Electronic Arts"
   },
   {
-   "x": 103,
-   "z": 527,
+   "x": 14103,
+   "z": -85,
    "area": "Silicon Valley - Meta"
   },
   {
-   "x": -122,
-   "z": 634,
+   "x": 13878,
+   "z": 22,
    "area": "Silicon Valley - Stanford"
   },
   {
-   "x": 98,
-   "z": 630,
+   "x": 14098,
+   "z": 18,
    "area": "Silicon Valley - Tesla HQ"
   },
   {
-   "x": 103,
-   "z": 707,
+   "x": 14103,
+   "z": 95,
    "area": "Silicon Valley - Googleplex"
   },
   {
-   "x": -67,
-   "z": 692,
+   "x": 13933,
+   "z": 80,
    "area": "Silicon Valley - Computer History Museum"
   },
   {
-   "x": 103,
-   "z": 772,
+   "x": 14103,
+   "z": 160,
    "area": "Silicon Valley - NASA Hangar One"
   },
   {
-   "x": -173,
-   "z": 844,
+   "x": 13827,
+   "z": 232,
    "area": "Silicon Valley - Apple Park"
   },
   {
-   "x": 86,
-   "z": 817,
+   "x": 14086,
+   "z": 205,
    "area": "Silicon Valley - NVIDIA"
   },
   {
-   "x": 186,
-   "z": 822,
+   "x": 14186,
+   "z": 210,
    "area": "Silicon Valley - Levi's Stadium"
   },
   {
-   "x": 8,
-   "z": 912,
+   "x": 14008,
+   "z": 300,
    "area": "Silicon Valley - San Jose"
   },
   {
-   "x": 256,
-   "z": 602,
+   "x": 14256,
+   "z": -10,
    "area": "Silicon Valley - Tesla Fremont Factory"
+  },
+  {
+   "x": 2955,
+   "z": 48,
+   "area": "Museum of Forgotten Tech"
+  },
+  {
+   "x": 3045,
+   "z": -40,
+   "area": "Museum of Forgotten Tech"
+  },
+  {
+   "x": 4955,
+   "z": 48,
+   "area": "Debug Dungeon"
+  },
+  {
+   "x": 5045,
+   "z": -40,
+   "area": "Debug Dungeon"
+  },
+  {
+   "x": 6955,
+   "z": 48,
+   "area": "Open Source HQ"
+  },
+  {
+   "x": 7045,
+   "z": -40,
+   "area": "Open Source HQ"
+  },
+  {
+   "x": 8955,
+   "z": 48,
+   "area": "Keynote Amphitheater"
+  },
+  {
+   "x": 9045,
+   "z": -40,
+   "area": "Keynote Amphitheater"
+  },
+  {
+   "x": 10955,
+   "z": 48,
+   "area": "Green-Tech Sandbox"
+  },
+  {
+   "x": 11045,
+   "z": -40,
+   "area": "Green-Tech Sandbox"
   }
  ]
 }
