@@ -241,3 +241,4 @@ Company names appear as plain text wordmarks in brand colors to identify the lan
 
 ## LICENSES
 
+Check the LICENSE.md file on the tree of the repository to more info about the licenses of this repo.
