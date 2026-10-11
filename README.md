@@ -126,6 +126,14 @@ http://localhost:3000
 Contributions are welcome on this repo! Please fork, share the web link to your Discord servers, star this repo and make this get popular.
 Obs.: Read the contributing.txt file before for more info :)
 
+## 🤝 Contributors & Partners
+
+This project is proudly supported and built in collaboration with:
+
+- Apple Official
+- Decentraland.org
+
+---
 
 ## ⚖️ Disclaimer
 Company names and structures are stylized wordmark recreations for identification purposes. Keynotes are streamed directly from official Apple/Google YouTube embeds. All trademarks belong to their respective owners.
