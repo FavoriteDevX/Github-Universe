@@ -19,5 +19,17 @@ Execution of either license track does not grant any explicit or implicit intell
 
 *   **Liability and Usage Limitations:** Refer to [`NOTICE.md`](./NOTICE.md)
 
+## 4. Visual 3D Assets and Graphical Props
+All 3D low-poly models, environments, scene configurations, and creative materials are legally separated from the functional source code. Their redistribution and usage bounds are protected via a Creative Commons framework.
+*   **Complete Art Text:** Refer to [`src/licensing/assets-art.txt`](./src/licensing/assets-art.txt)
+
+## 5. Map Datasets and Spatial Coordinates
+The regional JSON structures, coordinates, and boundaries of Genesis City and Silicon Valley are licensed as a spatial database under an open data protocol.
+*   **Complete Database Text:** Refer to [`src/licensing/map-data.txt`](./src/licensing/map-data.txt)
+
+## 6. Contribution and Pull Request Sign-off
+Every corporate or independent developer contributing code to this multiplayer engine must certify their compliance with our contribution validation protocol.
+*   **Complete Sign-off Text:** Refer to [`src/licensing/contributor.txt`](./src/licensing/contributor.txt)
+
 ---
 *Disclaimer: Cloning, copying, modifying, or distributing any software architecture contained in this repository constitutes binding legal acceptance of the terms outlined in the respective text files located in the `src/licensing/` directory.*
