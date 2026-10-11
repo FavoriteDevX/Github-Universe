@@ -1,4 +1,6 @@
-<img width="1370" height="768" alt="image" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
+# 🌐 GitVerse — GitHub Multiverse
+
+<img width="1370" height="768" alt="GitVerse screenshot" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
 
 A clean, Decentraland-like fully functional 3D collaborative metaverse workspace tailored specifically for developers. Instead of clunky 3D character avatars, users interact with their peers in real-time using custom **three-dimensional mouse pointers** across beautifully structured, low-poly workspace environments.
 
@@ -42,7 +44,7 @@ gitverse/
 Follow these quick sequential steps to fire up your GitVerse engine local deployment:
 
 ### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org) (v16 or higher recommended) installed on your laptop or computer.
+Ensure you have [Node.js](https://nodejs.org) (v18 or higher recommended) installed on your laptop or computer.
 
 ### 2. Installation
 Clone your repository or download the project files into your chosen directory, then navigate into the directory and install all required modules:
@@ -50,13 +52,13 @@ Clone your repository or download the project files into your chosen directory, 
 npm install
 ```
 
-## 3. Execution
+### 3. Execution
 Launch the Node server environment using the standardized run script:
 ```bash
 npm start
 ```
 
-## 4. Open Interface
+### 4. Open Interface
 Once launched, open up any modern web browser and point your URL navigation directly to:
 ```text
 http://localhost:3000
@@ -83,6 +85,29 @@ http://localhost:3000
 | `/who` | List the devs in your current world |
 | `/clear` | Clear the chat log |
 | `/help` | Show the commands |
+
+### Available worlds
+
+| Key (`/world <key>`) | World | Description |
+| --- | --- | --- |
+| `plaza` | Genesis Plaza | Default spawn at parcel (0,0), Decentraland style |
+| `districts` | Distritos | Vegas, Fashion, Aetheria and private lots |
+| `lobby` | HQ Lobby | Social room around the central desk |
+| `pavilion` | Repository Pavilion | Exhibition of green and blue blocks |
+| `agile` | Scrum & Agile | Kanban whiteboards and sticky notes |
+| `sandbox` | Sandbox Voxels | Voxel cluster |
+| `social` | Horizon & Somnium | Social hub |
+| `gallery` | Upland Gallery | Real estate and art gallery |
+| `mall` | GamiMall | Wearables mall |
+| `apple` | House of MAC | Aluminum plaza |
+| `zen` | Zen Temple | Private floating island |
+| `cyberpunk` | Cyberpunk Repo | Neon pillars |
+| `retro` | Retro Contributions | 3D contribution graph |
+| `beach` | Tropical Beach | Beach island |
+| `house` | Hacker House | Two-story house |
+| `arcade` | Arcade Room | Arcade cabinets and pool table |
+
+The first world in `worlds.json` (`plaza`) is where everyone spawns.
 
 ### Adding a world
 Create `public/maps/map_<name>.json` with `themeName`, `backgroundColor` and a `blocks` array (`type`, `position: [x, y, z]`, `scale: [x, y, z]`, `color`, optional `label`), then register it in `public/maps/worlds.json`.
