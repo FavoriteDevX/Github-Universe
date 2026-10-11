@@ -3,9 +3,9 @@
   "backgroundColor": "#000000",
   "blocks": [
     { "type": "aluminum_floor", "position": [0, -0.2, 0], "scale": [28, 0.4, 28], "color": "#f5f5f7", "label": "Apple Plaza Ground" },
-    { "type": "macos_interactive_terminal", "position": [0, 1, -8], "scale":, "color": "#1d1d1f", "label": "Software Integration Node (Xcode Mini-Game)" },
-    { "type": "pocket_show_stage", "position": [0, 1.5, 8], "scale": [12, 0.6, 6], "color": "#ff3b30", "label": "Live Music Virtual Stage" },
-    { "type": "glass_facade_pillar_left", "position": [-13, 6, 0], "scale":, "color": "#a2aaad" },
-    { "type": "glass_facade_pillar_right", "position":, "scale":, "color": "#a2aaad" }
+    { "type": "macos_interactive_terminal", "position": [0, 1, -8], "scale": [6, 2, 1], "color": "#1d1d1f", "label": "Software Integration Node (Xcode Mini-Game)" },
+    { "type": "pocket_show_stage", "position": [0, 0.3, 8], "scale": [12, 0.6, 6], "color": "#ff3b30", "label": "Live Music Virtual Stage" },
+    { "type": "glass_facade_pillar_left", "position": [-13, 6, 0], "scale": [1, 12, 10], "color": "#a2aaad" },
+    { "type": "glass_facade_pillar_right", "position": [13, 6, 0], "scale": [1, 12, 10], "color": "#a2aaad" }
   ]
 }

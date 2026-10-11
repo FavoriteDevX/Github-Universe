@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitVerse - Active Workspace</title>
+  <style>
+    :root {
+      --panel-bg: rgba(17, 15, 26, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --text: #f0f0f5;
+      --muted: #a3a1b5;
+      --accent: #ff2d7a;
+      --accent-2: #39d353;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Courier New", monospace;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #110f1a;
+      font-family: var(--font);
+      color: var(--text);
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      inset: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      cursor: none;
+    }
+    #ui-overlay-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      overflow: hidden;
+    }
+    .panel {
+      position: absolute;
+      z-index: 20;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    /* ---------- Top-left status HUD ---------- */
+    #hud {
+      top: 16px;
+      left: 16px;
+      padding: 12px 16px;
+      min-width: 220px;
+    }
+    #hud h1 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
+    #hud h1 span { color: var(--accent); }
+    .hud-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .hud-row b { color: var(--text); font-weight: 600; font-family: var(--mono); }
+    #connection-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f1c40f;
+      margin-right: 6px;
+    }
+    #connection-dot.online { background: var(--accent-2); }
+    #connection-dot.offline { background: #e74c3c; }
+
+    /* ---------- World list (Decentraland "places") ---------- */
+    #worlds-panel {
+      top: 150px;
+      left: 16px;
+      width: 240px;
+      max-height: calc(100vh - 470px);
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+    }
+    #worlds-panel header {
+      padding: 10px 14px 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    #worlds-list {
+      list-style: none;
+      margin: 0;
+      padding: 0 6px 8px;
+      overflow-y: auto;
+    }
+    #worlds-list button {
+      all: unset;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #worlds-list button:hover { background: rgba(255, 255, 255, 0.07); }
+    #worlds-list button.active { background: rgba(255, 45, 122, 0.22); }
+    #worlds-list small { color: var(--muted); font-family: var(--mono); }
+    #worlds-list button:focus-visible { outline: 2px solid var(--accent); }
+
+    /* ---------- Chat ---------- */
+    #chat-panel {
+      left: 16px;
+      bottom: 16px;
+      width: 360px;
+      display: flex;
+      flex-direction: column;
+    }
+    #chat-log {
+      list-style: none;
+      margin: 0;
+      padding: 10px 12px 4px;
+      height: 200px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    #chat-log li { margin-bottom: 3px; overflow-wrap: anywhere; }
+    #chat-log .author { font-weight: 700; font-family: var(--mono); }
+    #chat-log .system { color: var(--muted); font-style: italic; }
+    #chat-form { display: flex; border-top: 1px solid var(--panel-border); }
+    #chat-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 11px 12px;
+      font-size: 13px;
+      font-family: var(--font);
+      outline: none;
+    }
+    #chat-input::placeholder { color: var(--muted); }
+    #chat-form button {
+      border: none;
+      background: var(--accent);
+      color: white;
+      padding: 0 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom-right-radius: 11px;
+    }
+
+    /* ---------- Controls help ---------- */
+    #help-panel {
+      top: 16px;
+      right: 16px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    #help-panel kbd {
+      font-family: var(--mono);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      padding: 0 5px;
+      color: var(--text);
+    }
+
+    /* ---------- In-world overlays ---------- */
+    .dev-floating-tag {
+      position: absolute;
+      padding: 3px 8px;
+      background: rgba(20, 20, 25, 0.85);
+      color: #ffffff;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 3px;
+      white-space: nowrap;
+      transform: translate(-50%, -100%);
+    }
+    .chat-bubble {
+      position: absolute;
+      max-width: 220px;
+      padding: 7px 11px;
+      background: #ffffff;
+      color: #1d1b26;
+      font-size: 13px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translate(-50%, calc(-100% - 28px));
+      overflow-wrap: anywhere;
+      transition: opacity 0.4s;
+    }
+    .chat-bubble::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -6px;
+      margin-left: -6px;
+      border: 6px solid transparent;
+      border-bottom: 0;
+      border-top-color: #ffffff;
+    }
+    #hover-tooltip {
+      position: absolute;
+      display: none;
+      padding: 5px 9px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      font-size: 12px;
+      border-radius: 6px;
+      transform: translate(14px, 14px);
+      white-space: nowrap;
+    }
+    #info-card {
+      display: none;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(340px, calc(100vw - 32px));
+      padding: 20px;
+      z-index: 30;
+    }
+    #info-card h3 { margin: 0 0 6px; font-size: 16px; }
+    #info-card p { margin: 0 0 14px; color: var(--muted); font-size: 13px; font-family: var(--mono); }
+    #info-card button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 720px) {
+      #help-panel, #worlds-panel { display: none; }
+      #hud { left: 16px; right: 16px; min-width: 0; }
+      #chat-panel { left: 16px; right: 16px; width: auto; }
+      #chat-log { height: 110px; }
+    }
+  </style>
+  <!-- Three.js r128 vendored locally so the world renders without depending on an external CDN -->
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <!-- Socket.io client served by server.js; missing on static hosts, where the world runs in solo mode -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="ui-overlay-container">
+    <div id="hover-tooltip"></div>
+  </div>
+
+  <section id="hud" class="panel" aria-label="Status">
+    <h1>Git<span>Verse</span></h1>
+    <div class="hud-row"><span>World</span><b id="hud-world">Loading...</b></div>
+    <div class="hud-row"><span>Parcel</span><b id="hud-parcel">0,0</b></div>
+    <div class="hud-row"><span>You</span><b id="hud-devtag">-</b></div>
+    <div class="hud-row"><span><i id="connection-dot"></i><span id="hud-connection">Connecting...</span></span><b id="hud-online">1 here</b></div>
+  </section>
+
+  <nav id="worlds-panel" class="panel" aria-label="Worlds">
+    <header>Jump in</header>
+    <ul id="worlds-list"></ul>
+  </nav>
+
+  <section id="help-panel" class="panel" aria-label="Controls">
+    <div><kbd>Mouse</kbd> move your 3D cursor</div>
+    <div><kbd>Drag</kbd> orbit &middot; <kbd>Wheel</kbd> zoom</div>
+    <div><kbd>W A S D</kbd> walk the camera</div>
+    <div><kbd>Click</kbd> inspect objects</div>
+    <div><kbd>Enter</kbd> chat &middot; <kbd>/help</kbd> commands</div>
+  </section>
+
+  <section id="chat-panel" class="panel" aria-label="Chat">
+    <ul id="chat-log" aria-live="polite"></ul>
+    <form id="chat-form" autocomplete="off">
+      <input id="chat-input" maxlength="200" placeholder="Say something or type /world plaza">
+      <button type="submit">Send</button>
+    </form>
+  </section>
+
+  <div id="info-card" class="panel" role="dialog" aria-modal="false">
+    <h3 id="info-title"></h3>
+    <p id="info-type"></p>
+    <button id="info-close" type="button">Close</button>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

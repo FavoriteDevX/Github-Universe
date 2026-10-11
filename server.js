@@ -98,4 +98,50 @@ io.on('connection', (socket) => {
       text,
       timestamp: Date.now()
     });
+  });
 
+  // Clean-up memory garbage collection sequence triggers when a laptop connection drops down
+  socket.on('disconnect', () => {
+    const developer = activeDevelopers[socket.id];
+    if (developer) {
+      console.log(`[NETWORK] Developer disconnected: ${developer.devTag}`);
+      delete activeDevelopers[socket.id];
+      io.to(worldRoom(developer.activeWorld)).emit('developer_left_network', socket.id);
+      io.emit('world_population', getWorldPopulation());
+    }
+  });
+});
+
+function joinWorld(socket, worldKey) {
+  const developer = activeDevelopers[socket.id];
+  developer.activeWorld = worldKey;
+  developer.position = { x: 0, y: 1, z: 0 };
+  socket.join(worldRoom(worldKey));
+
+  // Synchronizes the peers already inside this world into the joining client pipeline
+  const peersInWorld = Object.values(activeDevelopers).filter((peer) => peer.activeWorld === worldKey);
+  socket.emit('sync_entire_developer_pool', { world: worldKey, developers: peersInWorld });
+
+  // Announces to everyone in the world that a new cursor entered the rendering plane view
+  socket.to(worldRoom(worldKey)).emit('new_developer_joined', developer);
+  io.emit('world_population', getWorldPopulation());
+}
+
+function getWorldPopulation() {
+  const population = {};
+  Object.values(activeDevelopers).forEach((developer) => {
+    population[developer.activeWorld] = (population[developer.activeWorld] || 0) + 1;
+  });
+  return population;
+}
+
+// Utility function creating visual styling standards for distinct arrow meshes profiles
+function getRandomPastelColor() {
+  const pastelColors = ['#ffb7b2', '#ffdac1', '#e2f0cb', '#b5ead7', '#c7ceea', '#ff9aa2', '#a8e6cf'];
+  return pastelColors[Math.floor(Math.random() * pastelColors.length)];
+}
+
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => {
+  console.log(`[ENGINE ACTIVE] GitVerse cluster rendering successfully deployed on: http://localhost:${PORT}`);
+});
