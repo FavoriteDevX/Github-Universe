@@ -121,5 +121,11 @@ http://localhost:3000
 
 ---
 
+## Can I Contribute?
+
+Contributions are welcome on this repo! Please fork, share the web link to your Discord servers, star this repo and make this get popular.
+Obs.: Read the contributing.txt file before for more info :)
+
+
 ## ⚖️ Disclaimer
 Company names and structures are stylized wordmark recreations for identification purposes. Keynotes are streamed directly from official Apple/Google YouTube embeds. All trademarks belong to their respective owners.
