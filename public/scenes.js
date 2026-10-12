@@ -195,7 +195,7 @@
         break;
       case 'mouse':
         item.add(box(0.5, 0.25, 0.75, material('#d7ccc8'), 0, 0.12, 0));
-        item.add(cylinder(0.02, 0.02, 0.9, dark, 0, 0.1, -0.7, 4)).rotation.x = Math.PI / 2;
+        { const added = cylinder(0.02, 0.02, 0.9, dark, 0, 0.1, -0.7, 4); added.rotation.x = Math.PI / 2; item.add(added); }
         break;
       case 'phone':
         item.add(box(0.35, 1, 0.2, material('#37474f'), 0, 0.5, 0));
@@ -296,8 +296,72 @@
   });
 
   // Apple-logo textures through BrandLogos (Simple Icons) on product boards
+  // Ad banners dropped by the owner in public/assets/ads/ (listed in ads.json)
+  const adCache = new Map();
+  function loadAd(file, onLoad) {
+    if (!adCache.has(file)) {
+      adCache.set(file, new Promise((resolve, reject) => new THREE.TextureLoader().load(`assets/ads/${encodeURIComponent(file)}`, (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = 4;
+        resolve(texture);
+      }, undefined, reject)));
+    }
+    adCache.get(file).then(onLoad).catch(() => { /* banner not added yet: keep the generated board */ });
+  }
+
+  function loadStoreImage(file, onLoad) {
+    new THREE.TextureLoader().load(`assets/store/${file}`, (texture) => {
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = 4;
+      onLoad(texture);
+    }, undefined, () => { /* not added yet: keep the fallback */ });
+  }
+
+  // Fallback Genius Bar sign: three orbits around a nucleus with the name
+  function geniusBarTexture() {
+    return canvasTexture('geniusBar', 640, 500, (ctx, cw, ch) => {
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.strokeStyle = '#6e6e73';
+      ctx.fillStyle = '#6e6e73';
+      ctx.lineWidth = 12;
+      [0, Math.PI / 3, -Math.PI / 3].forEach((angle, index) => {
+        ctx.save();
+        ctx.translate(cw / 2, ch / 2);
+        ctx.rotate(angle + Math.PI / 2);
+        ctx.beginPath(); ctx.ellipse(0, 0, 220, 80, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(index === 1 ? -150 : 150, index ? 58 : -58, 26, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      });
+      ctx.fillStyle = '#f5f5f7';
+      ctx.fillRect(40, ch / 2 - 38, cw - 80, 76);
+      ctx.fillStyle = '#1d1d1f';
+      ctx.font = '300 64px Helvetica, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('G E N I U S   B A R', cw / 2, ch / 2 + 2);
+    });
+  }
+
+  const GENIUS_TIPS = [
+    'Mac running slow? Open Activity Monitor (Cmd+Space, "Activity Monitor") and sort by % CPU to find the app eating your processor.',
+    'Xcode taking all your disk? Delete ~/Library/Developer/Xcode/DerivedData and unused simulators with "xcrun simctl delete unavailable".',
+    'Homebrew acting weird? Run "brew doctor" and follow its advice, then "brew update && brew upgrade".',
+    'Lost a file? Time Machine: enter it from the menu bar and scroll back in time to the folder where it lived.',
+    'Need a screenshot of a window? Cmd+Shift+4, then Space, then click the window.',
+    'Spotlight is your launcher: Cmd+Space and type any app, file, calculation or unit conversion.',
+    'Git says "xcrun: error: invalid active developer path"? Run "xcode-select --install" after a macOS update.',
+    'Battery draining fast? System Settings > Battery shows which apps used the most energy in the last 24 hours.',
+    'Wi-Fi flaky? Hold Option and click the Wi-Fi icon in the menu bar for detailed diagnostics.',
+    'Port already in use while coding? "lsof -i :3000" finds the process, "kill <PID>" frees the port.'
+  ];
+
+  function adList() {
+    return fetch('assets/ads/ads.json').then((response) => (response.ok ? response.json() : [])).catch(() => []);
+  }
+
   function productBoard(name, tagline, background, foreground) {
-    return BrandLogos.billboardTexture(name, { tagline, background, foreground, logoSlug: 'apple' });
+    // Each ad shows the product's own official logo (Simple Icons), the Apple logo otherwise
+    return BrandLogos.billboardTexture(name, { tagline, background, foreground, logoSlug: BrandLogos.slugFor(name) || 'apple' });
   }
 
   Object.assign(builders, {
@@ -325,9 +389,42 @@
       for (let x = -w / 2; x <= w / 2 + 0.01; x += w / 6) group.add(box(0.12, h, 0.12, steel, x, h / 2, d / 2));
       group.add(box(w + 0.4, 0.5, d + 0.4, material('#f5f5f7'), 0, h + 0.25, 0));
       for (let i = 0; i < 4; i++) group.add(box(w * 0.8, 0.05, 1.2, glow('#ffffff', 0.9), 0, h - 0.05, -d / 2 + (i + 0.5) * (d / 4)));
-      // The real Apple logo floating on the front glass
-      const logo = box(3.4, 3.4, 0.05, new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture('Apple', { tagline: '', background: '#f5f5f7', foreground: '#1d1d1f', width: 512, height: 512, layout: 'logo' }), transparent: true }), 0, h - 2.6, d / 2 + 0.1);
-      group.add(logo);
+      // Official ads: Apple's own YouTube channel uploads playing on a screen behind the Genius Bar
+      const adScreen = box(w * 0.32, w * 0.18, 0.1, material('#000000'), w * 0.3, h * 0.55, -d / 2 + 0.4);
+      group.add(adScreen);
+      VideoScreens.register(adScreen, w * 0.32, w * 0.18, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
+      // Ad carousel on the right wall: cycles through every banner in assets/ads/ads.json
+      const carouselFace = new THREE.MeshBasicMaterial({ map: productBoard('Mac', 'Add your banners to assets/ads', '#000000', '#ffffff') });
+      const carousel = box(0.15, w * 0.22, d * 0.6, [material('#1d1d1f'), carouselFace, material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f')], w / 2 - 0.4, h * 0.5, 0);
+      carouselFace.map.wrapS = THREE.ClampToEdgeWrapping;
+      group.add(carousel);
+      adList().then((ads) => {
+        const files = ads.map((ad) => ad.file).filter(Boolean);
+        if (!files.length) return;
+        let index = 0;
+        const show = () => loadAd(files[index++ % files.length], (texture) => {
+          carouselFace.map = texture;
+          carouselFace.needsUpdate = true;
+          const aspect = texture.image.width / texture.image.height;
+          carousel.scale.y = Math.min(1, (d * 0.6) / aspect / (w * 0.22));
+        });
+        show();
+        setInterval(show, 6000);
+      });
+      // App wall: the official icons of Apple's apps and developer tools
+      const APPLE_APPS = [['xcode', '#1575F9'], ['swift', '#F05138'], ['appstore', '#0D96F6'], ['safari', '#006CFF'], ['macos', '#1d1d1f'], ['icloud', '#3693F3'], ['applemusic', '#FA243C'], ['appletv', '#1d1d1f'], ['applearcade', '#E01E5A'], ['applepay', '#1d1d1f'], ['imessage', '#34C759'], ['applepodcasts', '#9933CC'], ['applenews', '#FD415E'], ['ios', '#1d1d1f'], ['apple', '#86868b']];
+      APPLE_APPS.forEach(([slug, color], index) => {
+        const icon = box(1.5, 1.5, 0.08, new THREE.MeshBasicMaterial({ map: BrandLogos.appIconTexture(slug, color), transparent: true }), -w / 2 + 2.2 + (index % 5) * 1.9, h * 0.75 - Math.floor(index / 5) * 1.9, -d / 2 + 0.3);
+        group.add(icon);
+      });
+      // Mac Finder logo above the glass entrance: the owner's file
+      // (assets/store/finder.png), or the macOS logo until it is added
+      const finderSign = new THREE.MeshBasicMaterial({ map: BrandLogos.appIconTexture('macos', '#1877f2'), transparent: true });
+      group.add(box(3.4, 3.4, 0.05, finderSign, 0, h - 2.6, d / 2 + 0.12));
+      loadStoreImage('finder.png', (texture) => { finderSign.map = texture; finderSign.needsUpdate = true; });
+      // The real Apple logo on the front glass, both sides of the entrance
+      const appleLogo = new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture('Apple', { tagline: '', background: '#f5f5f7', foreground: '#1d1d1f', width: 512, height: 512, layout: 'logo' }), transparent: true });
+      [-1, 1].forEach((side) => group.add(box(2.6, 2.6, 0.05, appleLogo, side * w * 0.3, h - 2.6, d / 2 + 0.1)));
       // Avenue tables (light wood) with devices on display
       const tableWood = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.plankTexture('#d4b48c'), 4, 1), roughness: 0.6 });
       [[-w * 0.22, 0], [w * 0.22, 0], [-w * 0.22, -d * 0.28], [w * 0.22, -d * 0.28]].forEach(([x, z]) => {
@@ -351,7 +448,24 @@
       // Genius Bar along the back wall
       group.add(box(w * 0.5, 1.1, 1, material('#f5f5f7'), 0, 0.55, -d / 2 + 2));
       group.add(box(w * 0.5, 0.06, 1.1, tableWood, 0, 1.13, -d / 2 + 2));
-      group.add(facedBox(w * 0.3, 1.2, 0.1, material('#f5f5f7'), new THREE.MeshBasicMaterial({ map: labelTexture('Genius Bar', { bg: '#f5f5f7', fg: '#1d1d1f', font: '600 60px Helvetica, Arial, sans-serif' }) }), 0, h * 0.62, -d / 2 + 0.2));
+      // Genius Bar sign on the wall behind the counter: the owner's logo file
+      // (assets/store/genius-bar.png) or a drawn atom sign until it is added
+      const geniusSign = new THREE.MeshBasicMaterial({ map: geniusBarTexture(), transparent: true });
+      group.add(box(4.6, 3.6, 0.05, geniusSign, 0, h * 0.58, -d / 2 + 0.2));
+      loadStoreImage('genius-bar.png', (texture) => { geniusSign.map = texture; geniusSign.needsUpdate = true; });
+      // Talk to a Genius: an iPad on the counter answers with Mac/dev support tips
+      const genius = new THREE.Group();
+      genius.add(box(0.9, 0.65, 0.05, material('#1d1d1f'), 0, 0, 0));
+      genius.add(box(0.82, 0.57, 0.02, glow('#4dabf7', 0.8), 0, 0, 0.03));
+      genius.add(box(0.06, 0.4, 0.06, steel, 0, -0.4, -0.05));
+      genius.position.set(0, 1.62, -d / 2 + 2.2);
+      genius.rotation.x = -0.25;
+      Object.defineProperty(genius.userData, 'info', { get: () => GENIUS_TIPS[Math.floor(Math.random() * GENIUS_TIPS.length)] });
+      genius.userData.label = 'Genius Bar · tech support';
+      group.add(interactive(genius, 'inspect', 'Ask a Genius'));
+      const askSign = textSprite('Genius Bar · Ask a Genius (E)', { width: 6, background: 'rgba(29, 29, 31, 0.9)' });
+      askSign.position.set(0, 3, -d / 2 + 2.2);
+      group.add(askSign);
       for (let i = 0; i < 5; i++) {
         const stool = new THREE.Group();
         stool.add(cylinder(0.3, 0.3, 0.08, tableWood, 0, 0.9, 0, 16));
@@ -363,6 +477,7 @@
       const wall = box(w * 0.45, h * 0.45, 0.2, new THREE.MeshBasicMaterial({ map: productBoard('Today at Apple', 'Click to watch the WWDC keynotes', '#1d1d1f', '#ffffff') }), -w / 2 + 0.3, h * 0.42, d * 0.15);
       wall.rotation.y = Math.PI / 2;
       wall.userData.isKeynoteScreen = true;
+      VideoScreens.register(wall, w * 0.45, h * 0.45, VideoScreens.youtubeEmbed(['0_DjDdfqtUE', 'RXeOiIDNNek', 'GYkq9Rgoj8E', 'q5D55G7Ejs8', '0TD96VTf0Xs', 'GEZhD3J89ZE']));
       wall.userData.label = 'Today at Apple - click to watch';
       group.add(wall);
       for (let i = 0; i < 3; i++) group.add(box(6, 0.4 + i * 0.4, 1.4, tableWood, -w / 2 + 4, 0.2 + i * 0.2, d * 0.15 - 2 + i * 1.4));
@@ -374,7 +489,23 @@
       });
     },
 
-    // Freestanding ad boards for Mac and macOS (Apple logo + product names)
+    // Giant outdoor screen playing Apple's official YouTube channel (ads, product films)
+    appleVideoBillboard(group, { w, h, block }) {
+      const facing = Math.atan2(-block.position[0], -block.position[2]);
+      const inner = new THREE.Group();
+      inner.rotation.y = facing;
+      const steel = material('#adb5bd', { metalness: 0.8, roughness: 0.3 });
+      [-1, 1].forEach((side) => inner.add(box(0.5, h * 0.45, 0.5, steel, side * w * 0.3, -h * 0.28, 0)));
+      inner.add(box(w + 0.4, h * 0.55 + 0.4, 0.5, material('#1d1d1f'), 0, h * 0.22, -0.1));
+      const screen = box(w, h * 0.55, 0.05, material('#000000'), 0, h * 0.22, 0.2);
+      inner.add(screen);
+      group.add(inner);
+      VideoScreens.register(screen, w, h * 0.55, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
+    },
+
+    // Freestanding ad boards (official product logo + name). When the ad banner
+    // image exists in public/assets/ads/ (block "image"), the board shows it,
+    // resized to the banner's aspect ratio.
     appleBillboard(group, { w, h, label, data }) {
       const [title, tagline] = (label || 'Mac|').split('|');
       const dark = (data && data.dark) !== false;
@@ -383,6 +514,182 @@
       const board = mesh(new THREE.BoxGeometry(w, h * 0.6, 0.3), [material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f'), face, face]);
       board.position.y = h * 0.2;
       group.add(board);
+      if (data && data.image) {
+        loadAd(data.image, (texture) => {
+          face.map = texture;
+          face.needsUpdate = true;
+          const height = w / (texture.image.width / texture.image.height);
+          board.scale.y = height / (h * 0.6);
+          board.position.y = -h * 0.1 + height / 2;
+        });
+      }
+    }
+  });
+
+  Object.assign(builders, {
+    // Gravity Flip tower: a translucent skyscraper climbed with trampolines that
+    // launch you through each floor; some floors have low gravity; a floating
+    // lounge on top rewards the climb with a rare wearable
+    gravityTower(group, { w, h, color }) {
+      const floors = 6;
+      const floorHeight = h / floors;
+      const half = w / 2;
+      const glass = material(color || '#9775fa', { transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide });
+      const slabMaterial = material('#e5dbff', { transparent: true, opacity: 0.85, roughness: 0.2 });
+      const hole = 3.4;
+      for (let level = 0; level < floors; level++) {
+        const y = level * floorHeight;
+        // Slab with a square opening, alternating corners so the climb zigzags
+        const hx = (level % 2 ? 1 : -1) * (half - hole);
+        const parts = [
+          [w, (w - hole) / 2 - hx * 0, 0, -(hole + (w - hole) / 2) / 2],
+        ];
+        const slab = new THREE.Group();
+        // Four pieces around the hole at (hx, 0)
+        const left = hx - hole / 2 + half;
+        const right = half - (hx + hole / 2);
+        if (left > 0.1) slab.add(box(left, 0.4, w, slabMaterial, -half + left / 2, 0, 0));
+        if (right > 0.1) slab.add(box(right, 0.4, w, slabMaterial, half - right / 2, 0, 0));
+        slab.add(box(hole, 0.4, half - hole / 2, slabMaterial, hx, 0, -(hole / 2 + (half - hole / 2) / 2)));
+        slab.add(box(hole, 0.4, half - hole / 2, slabMaterial, hx, 0, hole / 2 + (half - hole / 2) / 2));
+        slab.position.y = y + 0.2;
+        if (level > 0) group.add(slab);
+        else group.add(box(w, 0.4, w, slabMaterial, 0, 0.2, 0));
+        // Trampoline under the next hole
+        const nextX = ((level + 1) % 2 ? 1 : -1) * (half - hole);
+        if (level < floors - 1) {
+          const pad = cylinder(1.3, 1.3, 0.3, glow(level % 2 ? '#ff6b6b' : '#40c057', 1.2), nextX, y + 0.55, 0, 20);
+          group.add(pad);
+          window.jumpPads = window.jumpPads || [];
+          window.jumpPads.push(pad);
+          animate(pad, (time) => { pad.scale.y = 1 + Math.abs(Math.sin(time * 6 + level)) * 0.4; });
+        }
+        // Every other floor has low gravity: you float like on the Moon
+        if (level % 2 === 1) {
+          window.lowGravityZones = window.lowGravityZones || [];
+          window.lowGravityZones.push({ group, half, minY: y, maxY: y + floorHeight });
+          const label = textSprite('LOW GRAVITY', { width: 5, background: 'rgba(151, 117, 250, 0.9)' });
+          label.position.set(0, y + floorHeight - 1.5, 0);
+          group.add(label);
+        }
+        // Neon floor numbers
+        const number = textSprite(`${level + 1}F`, { width: 2.4, background: 'rgba(0, 0, 0, 0.6)' });
+        number.position.set(-half + 1.5, y + 2.5, -half + 0.8);
+        group.add(number);
+      }
+      // Translucent walls with neon edges and an entrance
+      [[0, -half, w, 0.2], [half, 0, 0.2, w], [-half, 0, 0.2, w]].forEach(([x, z, ww, dd]) => {
+        const wall = box(ww, h, dd, glass, x, h / 2, z);
+        wall.castShadow = false;
+        group.add(wall);
+      });
+      [-1, 1].forEach((side) => {
+        const front = box(half - 2, h, 0.2, glass, side * (half / 2 + 1), h / 2, half);
+        front.castShadow = false;
+        group.add(front);
+      });
+      group.add(box(4, h - 4, 0.2, glass, 0, 4 + (h - 4) / 2, half));
+      [[-half, -half], [half, -half], [-half, half], [half, half]].forEach(([x, z]) => group.add(box(0.3, h, 0.3, glow(color || '#9775fa', 1.5), x, h / 2, z)));
+      // Floating lounge on top with the reward pedestal
+      const lounge = new THREE.Group();
+      lounge.add(cylinder(half + 2, half, 0.6, material('#f3f0ff'), 0, 0, 0, 32));
+      { const added = mesh(new THREE.TorusGeometry(half + 2, 0.15, 6, 48), glow('#da77f2', 1.6), 0, 0.35, 0); added.rotation.x = Math.PI / 2; lounge.add(added); }
+      const pedestal = new THREE.Group();
+      pedestal.add(cylinder(0.8, 1, 1.2, material('#212529'), 0, 0.9, 0, 16));
+      const trophy = mesh(new THREE.OctahedronGeometry(0.6, 0), glow('#ffd43b', 1.2), 0, 2.2, 0);
+      pedestal.add(trophy);
+      animate(trophy, (time) => { trophy.rotation.y = time * 2; });
+      lounge.add(PropKit.kit.interactive(pedestal, 'reward', 'Gravity Flip reward'));
+      [-1, 1].forEach((side) => lounge.add(box(3, 0.6, 1.2, material('#7048e8'), side * (half - 2), 0.6, 0)));
+      lounge.position.y = h + 0.5;
+      group.add(lounge);
+      animate(lounge, (time) => { lounge.position.y = h + 0.5 + Math.sin(time) * 0.15; });
+      const sign = textSprite('GRAVITY FLIP · climb with the trampolines', { width: 16, background: 'rgba(119, 76, 255, 0.9)' });
+      sign.position.y = h + 6;
+      group.add(sign);
+    }
+  });
+
+  Object.assign(builders, {
+    // Aero-Glass villa: smart glass + floating white concrete over a water
+    // mirror, held up by neon light beams; wall panels cycle the glass mode;
+    // the infinity pool has low gravity so you can float up to the sunroom
+    glassVilla(group, { w, h, d, color, label }) {
+      const lift = 3;
+      const concrete = material('#f8f9fa', { roughness: 0.35 });
+      const modes = [
+        { name: 'transparent', color: '#d0ebff', opacity: 0.22, metalness: 0.2, emissive: 0 },
+        { name: 'mirrored', color: '#adb5bd', opacity: 0.9, metalness: 1, emissive: 0 },
+        { name: 'frosted glow', color: '#91a7ff', opacity: 0.65, metalness: 0.1, emissive: 0.6 }
+      ];
+      const glass = new THREE.MeshStandardMaterial({ color: modes[0].color, transparent: true, opacity: modes[0].opacity, roughness: 0.05, metalness: modes[0].metalness, side: THREE.DoubleSide, emissive: '#748ffc', emissiveIntensity: 0 });
+      let mode = 0;
+      // Neon light beams holding the house above the water
+      [[-w / 2 + 1, -d / 2 + 1], [w / 2 - 1, -d / 2 + 1], [-w / 2 + 1, d / 2 - 1], [w / 2 - 1, d / 2 - 1]].forEach(([x, z]) => {
+        const beam = cylinder(0.25, 0.25, lift, glow('#4dabf7', 1.8, { transparent: true, opacity: 0.8 }), x, lift / 2, z, 10);
+        beam.castShadow = false;
+        group.add(beam);
+      });
+      // Ground floor slab, walls of glass, second floor (sunroom) and flat roofs
+      group.add(box(w, 0.5, d, concrete, 0, lift, 0));
+      const floorHeight = h / 2;
+      [[0, -d / 2, w, 0.12], [-w / 2, 0, 0.12, d], [w / 2, 0, 0.12, d]].forEach(([x, z, gw, gd]) => {
+        const pane = box(gw, floorHeight, gd, glass, x, lift + 0.25 + floorHeight / 2, z);
+        pane.castShadow = false;
+        group.add(pane);
+      });
+      [-1, 1].forEach((side) => {
+        const pane = box(w / 2 - 1.6, floorHeight, 0.12, glass, side * (w / 4 + 0.8), lift + 0.25 + floorHeight / 2, d / 2);
+        pane.castShadow = false;
+        group.add(pane);
+      });
+      group.add(box(w + 1, 0.5, d + 1, concrete, 0, lift + floorHeight + 0.5, 0));
+      // Sunroom on the second floor, set back like modern villas
+      const sunW = w * 0.55;
+      const sunD = d * 0.6;
+      [[0, -sunD / 2, sunW, 0.12], [-sunW / 2, 0, 0.12, sunD], [sunW / 2, 0, 0.12, sunD]].forEach(([x, z, gw, gd]) => {
+        const pane = box(gw, floorHeight * 0.9, gd, glass, x - w * 0.18, lift + floorHeight + 0.75 + floorHeight * 0.45, z - d * 0.15);
+        pane.castShadow = false;
+        group.add(pane);
+      });
+      group.add(box(sunW + 0.8, 0.4, sunD + 0.8, concrete, -w * 0.18, lift + floorHeight * 1.9 + 0.8, -d * 0.15));
+      // Interior: sofa, dining table with laptops, plant
+      group.add(box(4, 0.6, 1.4, material(color || '#1c7ed6', { roughness: 1 }), -w * 0.2, lift + 0.55, d * 0.15));
+      group.add(box(3, 0.1, 1.4, material('#f1f3f5'), w * 0.2, lift + 1.1, -d * 0.1));
+      group.add(PropKit.kit.laptop(w * 0.2 - 0.6, lift + 1.16, -d * 0.1, 0));
+      group.add(PropKit.kit.laptop(w * 0.2 + 0.6, lift + 1.16, -d * 0.1, Math.PI));
+      // Smart-glass control panel: cycles transparent / mirrored / frosted glow
+      const panel = box(0.6, 0.9, 0.08, glow('#4dabf7', 1), -w / 2 + 0.2, lift + 1.6, d * 0.3);
+      panel.userData.cycle = () => {
+        mode = (mode + 1) % modes.length;
+        const next = modes[mode];
+        glass.color.set(next.color);
+        glass.opacity = next.opacity;
+        glass.metalness = next.metalness;
+        glass.emissiveIntensity = next.emissive;
+        return next.name;
+      };
+      group.add(interactive(panel, 'glass', 'Smart glass panel'));
+      // Infinity pool: overflowing edge and low gravity up to the sunroom
+      const poolX = w / 2 + 3;
+      const pool = box(5, 0.8, d * 0.8, material('#3bc9db', { transparent: true, opacity: 0.75, roughness: 0.05, emissive: '#1098ad', emissiveIntensity: 0.3 }), poolX, lift + 0.1, 0);
+      group.add(pool);
+      group.add(box(5.4, 0.5, d * 0.8 + 0.4, concrete, poolX, lift - 0.45, 0));
+      const spill = box(0.1, lift, d * 0.8, material('#99e9f2', { transparent: true, opacity: 0.5, emissive: '#99e9f2', emissiveIntensity: 0.4 }), poolX + 2.6, lift / 2, 0);
+      spill.raycast = () => {};
+      group.add(spill);
+      window.lowGravityZones = window.lowGravityZones || [];
+      window.lowGravityZones.push({ group, half: Math.max(3, d * 0.4), offset: new THREE.Vector3(poolX, 0, 0), minY: lift - 1, maxY: lift + h + 2 });
+      const caption = textSprite(label || 'Glass Villa', { width: 8, background: 'rgba(77, 171, 247, 0.85)' });
+      caption.position.y = lift + h + 3;
+      group.add(caption);
+    },
+
+    // Mirror-water ground for the villas
+    waterMirror(group, { w, h, d }) {
+      const water = box(w, h, d, material('#74c0fc', { roughness: 0.02, metalness: 0.9 }));
+      water.receiveShadow = true;
+      group.add(water);
     }
   });
 
@@ -390,7 +697,7 @@
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
     [/purple_rocks/, 'purpleRocks'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
-    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/apple_billboard/, 'appleBillboard']
+    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();

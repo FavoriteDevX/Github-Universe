@@ -39,6 +39,8 @@ const lastEmittedPosition = new THREE.Vector3(Infinity, Infinity, Infinity);
 const avatar = { position: new THREE.Vector3(0, 0, 0), velocityY: 0, grounded: true };
 let viewMode = 'explore'; // 'explore' (third person) or 'map' (aerial overview)
 let flying = false; // Minecraft creative-style flight: double-tap Space
+let tunnelFall = null; // the 5-second fall down the underground water tunnel
+const TUNNEL_FALL_SECONDS = 5;
 let lastSpaceTap = 0;
 let localCommits = 0;
 let lastDayPhase = null;
@@ -99,7 +101,12 @@ function initEngine() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Filmic tone mapping + an image-based environment give every material soft,
+  // realistic reflections (glass, metal, polished floors) instead of flat colors
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.72;
   document.body.prepend(renderer.domElement);
+  VideoScreens.init(document.body);
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -114,6 +121,8 @@ function initEngine() {
   controls.addEventListener('change', () => { pointerDirty = true; });
 
   City.init(scene);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
   localCursor = createCursorRecord('Dev_....', '#c7ceea', true);
   bindInputEvents();
   animate();
@@ -252,9 +261,10 @@ function placeLanding(place) {
 // Highest walkable surface under (x, z), searching downward from fromY
 function groundHeightAt(x, z, fromY) {
   downRay.set(new THREE.Vector3(x, fromY, z), new THREE.Vector3(0, -1, 0));
-  downRay.far = fromY + 50;
+  downRay.far = fromY - City.GROUND_LEVEL + 120; // reaches the underground level (about -60)
   const hit = downRay.intersectObjects(City.collidablesAt(x, z), true).find(isSolidHit);
-  return hit ? hit.point.y : City.GROUND_LEVEL;
+  if (hit) return hit.point.y;
+  return fromY < City.GROUND_LEVEL - 2 ? -Infinity : City.GROUND_LEVEL; // underground with nothing below: keep falling
 }
 
 function isSolidHit(hit) {
@@ -265,8 +275,55 @@ function isSolidHit(hit) {
 }
 
 // Walking physics: WASD relative to the camera, gravity, jumping, stairs and walls
+function gravityScale() {
+  const zones = window.lowGravityZones || [];
+  const position = new THREE.Vector3();
+  for (const zone of zones) {
+    zone.group.getWorldPosition(position);
+    if (zone.offset) position.add(zone.offset);
+    if (Math.abs(avatar.position.x - position.x) < zone.half && Math.abs(avatar.position.z - position.z) < zone.half &&
+        avatar.position.y > position.y + zone.minY && avatar.position.y < position.y + zone.maxY) return 0.3;
+  }
+  return 1;
+}
+
+// Square pool entrances: once a cursor drops into the open pool it falls down the
+// water tunnel for five seconds, then lands in the underground hall
+function updateTunnelFall() {
+  if (tunnelFall) {
+    const progress = Math.min(1, (performance.now() - tunnelFall.start) / (TUNNEL_FALL_SECONDS * 1000));
+    avatar.position.set(tunnelFall.x, tunnelFall.fromY + (tunnelFall.toY - tunnelFall.fromY) * progress, tunnelFall.z);
+    avatar.velocityY = 0;
+    camera.position.set(tunnelFall.x + 0.5, avatar.position.y + 3.5, tunnelFall.z + 2.8);
+    controls.target.copy(avatar.position).add(new THREE.Vector3(0, -1, 0));
+    localCursor.target.copy(avatar.position);
+    if (progress >= 1) {
+      tunnelFall = null;
+      camera.position.set(avatar.position.x, avatar.position.y + 4, avatar.position.z + 9);
+      appendSystemMessage('💧 Welcome to the Genesis Plaza Underground! Take the elevator (E) to go back up.');
+    }
+    return true;
+  }
+  const center = new THREE.Vector3();
+  for (const entrance of window.undergroundEntrances || []) {
+    entrance.group.getWorldPosition(center);
+    const half = entrance.size / 2;
+    // Anywhere inside the tunnel (even after a big frame skip) the fall takes over
+    const inside = Math.abs(avatar.position.x - center.x) < half + 1 && Math.abs(avatar.position.z - center.z) < half + 1;
+    const depth = center.y - avatar.position.y;
+    if (inside && ((entrance.group.userData.doorsOpen && depth > 0.2) || depth > 2) && depth < entrance.depth) {
+      tunnelFall = { start: performance.now(), x: center.x, z: center.z, fromY: avatar.position.y, toY: center.y - 59.7 };
+      flying = false;
+      appendSystemMessage('🌊 Falling down the water tunnel...');
+      return true;
+    }
+  }
+  return false;
+}
+
 function updateAvatar(deltaSeconds) {
   if (viewMode !== 'explore') return;
+  if (updateTunnelFall()) return;
   const busy = Interactions.isBusy();
   const forwardInput = busy ? 0 : (keysPressed.has('w') || keysPressed.has('arrowup') ? 1 : 0) - (keysPressed.has('s') || keysPressed.has('arrowdown') ? 1 : 0);
   const strafeInput = busy ? 0 : (keysPressed.has('d') || keysPressed.has('arrowright') ? 1 : 0) - (keysPressed.has('a') || keysPressed.has('arrowleft') ? 1 : 0);
@@ -279,7 +336,8 @@ function updateAvatar(deltaSeconds) {
     forward.y = 0;
     forward.normalize();
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-    const speed = flying ? FLY_SPEED : keysPressed.has('shift') ? RUN_SPEED : WALK_SPEED;
+    const vehicleSpeed = Vehicles.speedFor();
+    const speed = vehicleSpeed ? vehicleSpeed * (keysPressed.has('shift') ? 1.6 : 1) : flying ? FLY_SPEED : keysPressed.has('shift') ? RUN_SPEED : WALK_SPEED;
     const move = forward.multiplyScalar(forwardInput).add(right.multiplyScalar(strafeInput)).normalize().multiplyScalar(speed * LootSystem.modifiers().speed * deltaSeconds);
     // Try the full move, then slide along each axis when a wall blocks it
     [move, new THREE.Vector3(move.x, 0, 0), new THREE.Vector3(0, 0, move.z)].some((attempt) => {
@@ -310,7 +368,7 @@ function updateAvatar(deltaSeconds) {
     avatar.grounded = false;
   }
   if (!flying) {
-    avatar.velocityY -= GRAVITY * deltaSeconds;
+    avatar.velocityY -= GRAVITY * gravityScale() * deltaSeconds;
     avatar.position.y += avatar.velocityY * deltaSeconds;
     const ground = groundHeightAt(avatar.position.x, avatar.position.z, Math.max(previous.y, avatar.position.y) + STEP_HEIGHT);
     if (avatar.position.y <= ground) {
@@ -321,7 +379,7 @@ function updateAvatar(deltaSeconds) {
       avatar.grounded = avatar.position.y - ground < 0.05;
     }
   }
-  if (avatar.position.y < City.GROUND_LEVEL - 20) flyTo(places[0].target, null, 'You fell out of the world. Back to spawn!');
+  if (avatar.position.y < City.GROUND_LEVEL - 100) flyTo(places[0].target, null, 'You fell out of the world. Back to spawn!');
 
   // The camera follows the avatar in third person
   const delta = avatar.position.clone().sub(previous);
@@ -557,8 +615,13 @@ function bindInputEvents() {
       return;
     }
     if (Interactions.isBusy()) { Interactions.handleKey(event); return; }
+    // Shift+U: hide every overlay and keep only the scenery (screenshot mode)
+    if (event.key === 'U') { document.body.classList.toggle('hide-ui'); return; }
     if (event.key === 'Escape') { closeInfoCard(); closeStream(); }
     if (event.key.toLowerCase() === 'm') { setViewMode(viewMode === 'map' ? 'explore' : 'map'); return; }
+    if (event.key.toLowerCase() === 'n') { if (Metro.isOpen()) Metro.close(); else Metro.open(); return; }
+    if (event.key === 'Escape' && Metro.isOpen()) { Metro.close(); return; }
+    if (event.key.toLowerCase() === 'e' && Vehicles.isMounted()) { Vehicles.dismount(); appendSystemMessage('🚶 You got off the vehicle.'); return; }
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && LootSystem.tryOpen()) return;
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && Interactions.handleKey(event)) return;
     if (event.key === ' ' && !event.repeat) {
@@ -705,7 +768,7 @@ function updateHud() {
   if (hudFrame++ % 10) return;
   const position = localCursor.target;
   const district = City.districtAt(position.x, position.z);
-  ui.district.textContent = district ? zoneName(district, position) : 'Genesis City';
+  ui.district.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : 'Genesis City';
   ui.parcel.textContent = district && district.world.world ? 'World' : `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
   // Minecraft-length day: 10 min of day, then night (20 min full cycle)
   const ticks = currentTicks();
@@ -731,20 +794,30 @@ function drawMinimap() {
   const current = City.districtAt(focus.x, focus.z);
   ctx.fillStyle = '#6fbf73';
   ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = '#5f6673';
-  const extent = (City.CITY_RADIUS + 0.5) * City.CELL_SIZE;
-  for (let line = -City.CITY_RADIUS - 1; line <= City.CITY_RADIUS; line++) {
-    const offset = (line + 0.5) * City.CELL_SIZE;
-    const [ax, ay] = toMap(offset - 4, -extent);
-    ctx.fillRect(ax, ay, 8 * scale, extent * 2 * scale);
-    const [bx, by] = toMap(-extent, offset - 4);
-    ctx.fillRect(bx, by, extent * 2 * scale, 8 * scale);
-  }
+  // Winding paths (no street grid)
+  ctx.strokeStyle = '#e0b07c';
+  ctx.lineWidth = Math.max(2, 5 * scale);
+  ctx.lineJoin = 'round';
+  City.paths.forEach((path) => {
+    ctx.beginPath();
+    path.forEach(([px, pz], index) => { const [mx, my] = toMap(px, pz); if (index) ctx.lineTo(mx, my); else ctx.moveTo(mx, my); });
+    ctx.stroke();
+  });
   City.districts.forEach((district) => {
     const { center, size: districtSize } = district.layout;
     const [x, y] = toMap(center.x - districtSize[0] / 2, center.z - districtSize[1] / 2);
     ctx.fillStyle = district === current ? '#3b5bdb' : '#8fd18f';
-    ctx.fillRect(x, y, districtSize[0] * scale, districtSize[1] * scale);
+    if (district.world.key === 'plaza') {
+      const [cx, cy] = toMap(center.x, center.z);
+      ctx.beginPath(); ctx.arc(cx, cy, (districtSize[0] / 2) * scale, 0, Math.PI * 2); ctx.fill();
+    } else {
+      const radius = Math.min(districtSize[0], districtSize[1]) * scale * 0.2;
+      const width = districtSize[0] * scale;
+      const height = districtSize[1] * scale;
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y); ctx.arcTo(x + width, y, x + width, y + height, radius); ctx.arcTo(x + width, y + height, x, y + height, radius);
+      ctx.arcTo(x, y + height, x, y, radius); ctx.arcTo(x, y, x + width, y, radius); ctx.fill();
+    }
   });
   // Devs in the same district (real time)
   Object.values(remoteMeshPointers).forEach((record) => {
@@ -829,7 +902,8 @@ const HELP_PAGES = [
   ['Places', '/world <place> (alias /warp /goto) | /worlds | /spawn | /sethome | /home'],
   ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder>'],
   ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear | /invite'],
-  ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or double-tap Space) | E near laptops, seats, coffee, arcades, fishing spots | /commits'],
+  ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or double-tap Space) | E near laptops, seats, coffee, arcades, fishing spots, art, elevators | /commits'],
+  ['Metro', 'N or /metro opens the transit map | /metro <place> rides the train there | walk through portals in Genesis Plaza'],
   ['Dungeon', '/bugs | /script <gc|try-catch|break|mutex|unit-test|reboot> | click bugs with the Git Commit Hammer'],
   ['Open Source HQ', '/mural <1-4> <code> | /pr <slot 1-8> <tree|lamp|banner|fountain|duck|flag|neon|bench> [hex] | /prs | /approve <n> | /merge <n> | /close <n>'],
   ['Loot', 'E open chests & supply drops | 1-5 use hotbar items | I or /inv inventory | /use <n> | /drop <n> | /loot (nearest chest)'],
@@ -1003,6 +1077,11 @@ function interpretChatCommand(inputBuffer) {
     case 'fly':
       toggleFlight();
       break;
+    case 'metro':
+    case 'train':
+      if (args[0] && findPlace(args.join(' '))) Metro.startRide(findPlace(args.join(' ')).key);
+      else Metro.open();
+      break;
     case 'commits':
       appendSystemMessage(`You shipped ${localCommits} commits. Sit at any laptop (E) to write more.`);
       break;
@@ -1095,6 +1174,10 @@ function setLocalWearable(item) {
 }
 
 function setupNetwork(session) {
+  // Show the username chosen at sign-in above the cursor right away, without
+  // waiting for the server (it confirms the same name from the account)
+  ui.devTag.textContent = session.username;
+  restyleLocalCursor(session.username, '#c7ceea');
   GameSystems.init({
     socket,
     scene,
@@ -1121,7 +1204,8 @@ function setupNetwork(session) {
 
   socket.on('local_registration_success', (assignedIdentity) => {
     clearRemotePeers();
-    registerLocalDeveloper(assignedIdentity);
+    // An outdated server.js would assign a random "Dev_" name: keep the account name
+    registerLocalDeveloper({ ...assignedIdentity, devTag: /^Dev_/.test(assignedIdentity.devTag || '') || !assignedIdentity.devTag ? session.username : assignedIdentity.devTag });
     lastEmittedPosition.set(Infinity, Infinity, Infinity);
     emitCursor(true);
     if (localWearable) socket.emit('set_wearable', localWearable);
@@ -1157,6 +1241,7 @@ function setupNetwork(session) {
       peer.domElement.textContent = update.devTag;
     }
     if ('wearable' in update) setCursorWearable(peer, update.wearable);
+    if ('vehicle' in update) Vehicles.setRemote(update.id, peer, update.vehicle);
   });
   socket.on('chat_message', displayChatMessage);
   socket.on('peer_emote', ({ id, emote }) => applyEmote(remoteMeshPointers[id], emote));
@@ -1194,7 +1279,10 @@ function animate() {
   const elapsed = clock.elapsedTime;
   const smoothing = 1 - Math.exp(-deltaSeconds * 18);
 
-  if (viewMode === 'explore') updateAvatar(deltaSeconds); else walkCamera(deltaSeconds);
+  if (Metro.isRiding()) Metro.update(camera, controls);
+  else if (viewMode === 'explore') updateAvatar(deltaSeconds); else walkCamera(deltaSeconds);
+  TechSquare.update(elapsed, deltaSeconds);
+  Vehicles.update(deltaSeconds);
   controls.update();
   updateLocalCursorFromPointer();
   emitCursor(false);
@@ -1248,6 +1336,7 @@ function animate() {
     }
   }
   renderer.render(scene, camera);
+  VideoScreens.update(camera, avatar.position, () => City.collidablesAt(avatar.position.x, avatar.position.z));
   if (restoreCamera) camera.position.copy(restoreCamera);
 }
 
@@ -1304,6 +1393,12 @@ function interactionHooks() {
     inspect: (title, info) => { ui.infoTitle.textContent = title; ui.infoType.textContent = info; ui.infoCard.style.display = 'block'; },
     jumpTo: (key) => { const place = findPlace(key); if (place) teleportToPlace(place); },
     commitCount: () => localCommits,
+    launch: (velocity) => { avatar.velocityY = velocity; avatar.grounded = false; flying = false; },
+    openMetro: () => Metro.open(),
+    claimReward: () => {
+      if (socket && socket.connected) socket.emit('tower_reward');
+      else appendSystemMessage('🏆 You conquered the Gravity Flip tower! (Rewards are saved on the multiplayer server.)');
+    },
     commit: (lines) => {
       localCommits++;
       if (socket && socket.connected) socket.emit('commit', { lines });
@@ -1379,6 +1474,21 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   setupNetwork(session);
   LootSystem.init(lootHooks());
   Interactions.init(interactionHooks());
+  TechSquare.init(socket, scene, appendSystemMessage);
+  Vehicles.init({
+    scene,
+    system: appendSystemMessage,
+    avatarPosition: () => avatar.position,
+    setVehicle: (key) => { if (socket && socket.connected) socket.emit('set_vehicle', key); }
+  });
+  Metro.init({
+    scene,
+    system: appendSystemMessage,
+    findPlace,
+    placeLanding,
+    avatarPosition: () => avatar.position,
+    arrive: (place) => flyTo(placeLanding(place), null, `🚇 Arrived at ${place.name}.`)
+  });
   document.getElementById('invite-button').addEventListener('click', copyInviteLink);
   document.getElementById('lobby-button').addEventListener('click', createPrivateLobby);
   if (lobbyId) {
