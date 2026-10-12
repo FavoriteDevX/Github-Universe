@@ -490,6 +490,13 @@
       to { transform: translate(var(--drift), 105vh) rotate(720deg); }
     }
 
+    /* Shift+U: scenery only */
+    body.hide-ui .panel, body.hide-ui #ui-overlay-container, body.hide-ui #top-bar, body.hide-ui #hotbar,
+    body.hide-ui #buff-bar, body.hide-ui #loot-prompt, body.hide-ui #interact-prompt, body.hide-ui #parkour-timer {
+      display: none !important;
+    }
+    #video-layer iframe { display: block; }
+
     @media (max-width: 720px) {
       #help-panel, #worlds-panel { display: none; }
       #minimap-panel { top: 200px; width: 132px; }
@@ -506,6 +513,8 @@
   <!-- Three.js r128 vendored locally so the world renders without depending on an external CDN -->
   <script src="vendor/three.min.js"></script>
   <script src="vendor/OrbitControls.js"></script>
+  <script src="vendor/CSS3DRenderer.js"></script>
+  <script src="vendor/RoomEnvironment.js"></script>
   <!-- Socket.io client served by server.js; missing on static hosts, where the world runs in solo mode -->
   <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -537,6 +546,7 @@
     <div><kbd>E</kbd> interact &amp; loot &middot; <kbd>1-5</kbd> items &middot; <kbd>I</kbd> inventory</div>
     <div><kbd>/e wave</kbd> emotes &middot; laptops: <kbd>E</kbd> to work</div>
     <div><kbd>Enter</kbd> / <kbd>T</kbd> chat &middot; <kbd>/help</kbd> commands</div>
+    <div><kbd>N</kbd> metro map &middot; <kbd>Shift</kbd>+<kbd>U</kbd> hide / show the interface</div>
   </section>
 
   <section id="minimap-panel" class="panel" aria-label="Minimap">
@@ -559,6 +569,13 @@
       <pre id="work-code"></pre>
       <p id="work-stats"></p>
       <button id="work-commit" type="button">git commit &amp;&amp; git push</button>
+    </div>
+  </div>
+
+  <div id="metro-overlay" class="modal-overlay" role="dialog" aria-label="Metro map">
+    <div class="modal-box panel" style="width: min(1000px, 100%)">
+      <header><b>🚇 Multiverse Metro</b><button id="metro-close" type="button" aria-label="Close">&times;</button></header>
+      <canvas id="metro-canvas" width="960" height="560" style="display:block;width:100%;height:auto;border-radius:8px;cursor:pointer"></canvas>
     </div>
   </div>
 
@@ -624,6 +641,7 @@
 
   <script src="props.js"></script>
   <script src="brands.js"></script>
+  <script src="video.js"></script>
   <script src="landmarks.js"></script>
   <script src="museum.js"></script>
   <script src="plaza.js"></script>
@@ -632,6 +650,10 @@
   <script src="city.js"></script>
   <script src="loot.js"></script>
   <script src="interactions.js"></script>
+  <script src="techsquare.js"></script>
+  <script src="vehicles.js"></script>
+  <script src="equalizer.js"></script>
+  <script src="metro.js"></script>
   <script src="auth.js"></script>
   <script src="main.js"></script>
 </body>

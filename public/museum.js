@@ -256,6 +256,250 @@
     }
   };
 
+  // Illustrated recreations of early internet & software screens (not real screenshots)
+  function historyTexture(kind) {
+    return canvasTexture(`history|${kind}`, 512, 384, (ctx, w, h) => {
+      const mono = '20px Consolas, Courier New, monospace';
+      if (kind === 'arpanet') {
+        ctx.fillStyle = '#f4ecd8'; ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#3b3b3b'; ctx.lineWidth = 3;
+        const nodes = [[90, 120, 'UCLA'], [90, 280, 'SRI'], [300, 90, 'UCSB'], [400, 260, 'UTAH']];
+        [[0, 1], [0, 2], [1, 2], [1, 3]].forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(nodes[a][0], nodes[a][1]); ctx.lineTo(nodes[b][0], nodes[b][1]); ctx.stroke(); });
+        nodes.forEach(([x, y, name]) => { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, 34, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#222'; ctx.font = 'bold 18px Georgia'; ctx.fillText(name, x - 24, y + 6); });
+        ctx.font = 'bold 26px Georgia'; ctx.fillText('ARPANET · 4 nodes · Dec 1969', 60, 40);
+      } else if (kind === 'firstsite') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#000'; ctx.font = 'bold 30px Times New Roman'; ctx.fillText('World Wide Web', 20, 50);
+        ctx.font = '19px Times New Roman';
+        ['The WorldWideWeb (W3) is a wide-area hypermedia', 'information retrieval initiative aiming to give', 'universal access to a large universe of documents.', '', 'Everything there is online about W3 is linked'].forEach((line, index) => ctx.fillText(line, 20, 95 + index * 28));
+        ctx.fillStyle = '#0000ee'; ['What\'s out there?', 'Help', 'Software Products', 'Technical'].forEach((link, index) => { ctx.fillText(link, 30, 260 + index * 28); ctx.fillRect(30, 263 + index * 28, ctx.measureText(link).width, 1); });
+      } else if (kind === 'bbs') {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+        ctx.font = mono;
+        [['#ff5555', '╔══════════════════════════════════╗'], ['#55ffff', '║   WELCOME TO THE MIDNIGHT BBS    ║'], ['#ff5555', '╚══════════════════════════════════╝'], ['#ffff55', ' [M] Message Boards   [F] Files'], ['#ffff55', ' [D] Door Games       [C] Chat SysOp'], ['#55ff55', ' Connected at 2400 baud. Node 1 of 2'], ['#aaaaaa', ' Command >_']].forEach(([color, line], index) => { ctx.fillStyle = color; ctx.fillText(line, 20, 50 + index * 40); });
+      } else if (kind === 'irc') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#000080'; ctx.fillRect(0, 0, w, 28);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Arial'; ctx.fillText('#programming', 10, 19);
+        ctx.font = '17px Consolas, monospace';
+        [['#008000', '* Now talking in #programming'], ['#000', '<neo> anyone know how to exit vim?'], ['#000', '<ada> :q!'], ['#000', '<neo> thanks!!'], ['#800080', '* linus has joined #programming'], ['#000', '<turing> it compiles, ship it'], ['#000', '<grace> found a moth in the relay']].forEach(([color, line], index) => { ctx.fillStyle = color; ctx.fillText(line, 12, 60 + index * 40); });
+      } else if (kind === 'usenet') {
+        ctx.fillStyle = '#e8e8e8'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#000'; ctx.font = '17px Courier New, monospace';
+        ['From: a student in Helsinki', 'Newsgroups: comp.os.minix', 'Subject: What would you like to see most', '         in minix?', 'Date: 25 Aug 91', '', "I'm doing a (free) operating system (just", 'a hobby, won\'t be big and professional)...'].forEach((line, index) => ctx.fillText(line, 16, 40 + index * 38));
+      } else if (kind === 'homepage') {
+        ctx.fillStyle = '#000040'; ctx.fillRect(0, 0, w, h);
+        for (let i = 0; i < 60; i++) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i * 83) % w, (i * 47) % h, 2, 2); }
+        ctx.fillStyle = '#ffff00'; ctx.font = 'bold 34px Comic Sans MS, cursive'; ctx.fillText('~*~ My Cool Homepage ~*~', 40, 60);
+        ctx.fillStyle = '#00ff00'; ctx.font = '22px Times New Roman'; ctx.fillText('You are visitor #0001337', 120, 120);
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(120, 160, 270, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 22px Arial'; ctx.fillText('🚧 UNDER CONSTRUCTION 🚧', 128, 193);
+        ctx.fillStyle = '#ff00ff'; ctx.font = '22px Times New Roman'; ctx.fillText('Sign my guestbook! · My webring ->', 70, 270);
+        ctx.fillStyle = '#00ffff'; ctx.fillText('Best viewed at 800x600', 140, 330);
+      } else if (kind === 'browser') {
+        ctx.fillStyle = '#c0c0c0'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#000080'; ctx.fillRect(0, 0, w, 26);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Arial'; ctx.fillText('Early graphical web browser (1993)', 8, 18);
+        ctx.fillStyle = '#fff'; ctx.fillRect(8, 36, w - 16, 26); ctx.fillStyle = '#000'; ctx.font = '15px Arial'; ctx.fillText('URL: http://www.example.edu/home.html', 14, 54);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(8, 72, w - 16, h - 110);
+        ctx.fillStyle = '#000'; ctx.font = 'bold 26px Times New Roman'; ctx.fillText('Welcome to the Web!', 30, 115);
+        ctx.fillStyle = '#9e9e9e'; ctx.fillRect(30, 140, 180, 120);
+        ctx.fillStyle = '#0000ee'; ctx.font = '18px Times New Roman'; ctx.fillText('Images inline with text!', 230, 190);
+        ctx.fillStyle = '#000'; ctx.fillRect(8, h - 30, (w - 16) * 0.6, 14); ctx.font = '13px Arial'; ctx.fillText('Transferring data... 60%', 10, h - 4);
+      } else if (kind === 'email') {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#33ff33'; ctx.font = mono;
+        ['$ mail', 'Mail version 1.0. Type ? for help.', '> N 1 tomlinson  QWERTYUIOP', '', '& 1', 'Message 1:', 'From: tomlinson@bbn-tenexa', 'QWERTYUIOP', '&_'].forEach((line, index) => ctx.fillText(line, 20, 40 + index * 36));
+      } else if (kind === 'search') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#333'; ctx.font = 'bold 40px Georgia'; ctx.fillText('WebSearch 98', 120, 110);
+        ctx.strokeStyle = '#888'; ctx.strokeRect(80, 150, 350, 34);
+        ctx.fillStyle = '#000'; ctx.font = '18px Arial'; ctx.fillText('how to make a website', 90, 173);
+        ctx.fillStyle = '#ddd'; ctx.fillRect(160, 210, 190, 34); ctx.fillStyle = '#000'; ctx.fillText('Search the Web', 192, 233);
+        ctx.fillStyle = '#0000ee'; ctx.font = '16px Arial'; ['Directory: Arts · Business · Computers', 'Internet · Science · Recreation'].forEach((line, index) => ctx.fillText(line, 110, 300 + index * 28));
+      } else {
+        retroScreenTexture(kind);
+        const image = textureSource(kind);
+        if (image) ctx.drawImage(image, 0, 0, w, h);
+      }
+    });
+  }
+
+  function textureSource(kind) {
+    const texture = retroScreenTexture(kind);
+    return texture && texture.image;
+  }
+
+  const HISTORY = [
+    ['arpanet', 'ARPANET (1969)', 'The first packet-switched network connected UCLA, SRI, UCSB and the University of Utah. Its first message, "LO", crashed while typing "LOGIN".'],
+    ['email', 'First network email (1971)', 'Ray Tomlinson sent the first email between two computers and chose the @ sign to separate user and host.'],
+    ['basic', 'Home computers & BASIC (1977-1985)', 'Computers booted straight into BASIC: millions of people wrote their first program at a blinking READY prompt.'],
+    ['bbs', 'Bulletin Board Systems (1978-1995)', 'Dial-up BBSes with ANSI art hosted message boards, file libraries and door games, one caller at a time.'],
+    ['dos', 'The command line era (1981)', 'DOS prompts, AUTOEXEC.BAT and CONFIG.SYS: tuning memory to run one more program.'],
+    ['usenet', 'Usenet & the birth of Linux (1991)', 'On comp.os.minix a student announced "just a hobby" operating system. It became Linux.'],
+    ['firstsite', 'The first website (1991)', 'At CERN, Tim Berners-Lee published the first web page, explaining what the World Wide Web was.'],
+    ['browser', 'Graphical browsers (1993)', 'Browsers that showed images inline with text made the web accessible to everyone.'],
+    ['irc', 'IRC chat rooms (1988-2000s)', 'Internet Relay Chat channels were where developers met, helped each other and shipped open source.'],
+    ['homepage', 'Personal homepages (1995-2000)', 'Starry backgrounds, visitor counters, guestbooks, webrings and "under construction" banners.'],
+    ['search', 'Web directories & search (1994-1998)', 'Before ranking algorithms, hand-curated directories and early engines helped people find pages.'],
+    ['desktop', 'The desktop GUI (1990s)', 'Start menus, title bars and error dialogs: the windows-and-mouse era went mainstream.']
+  ];
+
+  Object.assign(builders, {
+    // Long, wide museum corridor: red carpet, lit frames with the early internet & software
+    historyCorridor(group, { w, h, d, label }) {
+      const length = w;
+      const width = d;
+      const wall = material('#f1e6d2', { roughness: 0.8 });
+      const wood = material('#5d3a1a', { roughness: 0.6 });
+      group.add(box(length, 0.3, width, material('#3a2416'), 0, 0.15, 0));
+      group.add(box(length, 0.05, width * 0.55, material('#b3001b', { roughness: 1 }), 0, 0.32, 0));
+      [-1, 1].forEach((side) => group.add(box(length, 0.06, 0.18, material('#d4a017', { metalness: 0.8, roughness: 0.3 }), 0, 0.34, side * width * 0.28)));
+      [-1, 1].forEach((side) => {
+        group.add(box(length, h, 0.4, wall, 0, h / 2, side * (width / 2)));
+        group.add(box(length, 0.5, 0.5, wood, 0, 0.25, side * (width / 2 - 0.3)));
+      });
+      // End wall with a doorway into the art gallery
+      const door = 4.4;
+      [-1, 1].forEach((side) => group.add(box(0.4, h, (width - door) / 2, wall, length / 2, h / 2, side * (width + door) / 4)));
+      group.add(box(0.4, h - 4.6, door, wall, length / 2, 4.6 + (h - 4.6) / 2, 0));
+      group.add(box(length, 0.3, width, material('#2b1d14'), 0, h + 0.15, 0));
+      // Ceiling light strip
+      group.add(box(length * 0.95, 0.08, 0.6, glow('#fff3c4', 1.2), 0, h - 0.05, 0));
+      const perSide = Math.ceil(HISTORY.length / 2);
+      const spacing = (length - 8) / perSide;
+      HISTORY.forEach(([kind, title, info], index) => {
+        const side = index % 2 ? 1 : -1;
+        const x = -length / 2 + 6 + Math.floor(index / 2) * spacing;
+        const z = side * (width / 2 - 0.25);
+        const frame = new THREE.Group();
+        frame.add(box(4.6, 3.6, 0.2, material('#d4a017', { metalness: 0.7, roughness: 0.3 }), 0, 0, 0));
+        frame.add(box(4.2, 3.2, 0.05, new THREE.MeshBasicMaterial({ map: historyTexture(kind) }), 0, 0, 0.12));
+        frame.add(facedBox(3.4, 0.7, 0.05, material('#2b1d14'), new THREE.MeshBasicMaterial({ map: labelTexture(title, { bg: '#2b1d14', fg: '#ffe8a3', width: 512, height: 100, font: 'bold 34px Georgia, serif' }) }), 0, -2.4, 0.1));
+        // Picture light above each frame
+        frame.add(box(2.4, 0.12, 0.4, material('#1b1b1b', { metalness: 0.6 }), 0, 2.2, 0.35));
+        frame.add(box(2.2, 0.04, 0.3, glow('#fff3c4', 2), 0, 2.13, 0.4));
+        frame.position.set(x, h * 0.48, z);
+        frame.rotation.y = side > 0 ? Math.PI : 0;
+        frame.userData = { label: title, info };
+        group.add(PropKit.kit.interactive(frame, 'inspect', title));
+        // Velvet rope stanchions in front of every frame
+        [-1.6, 1.6].forEach((dx) => group.add(cylinder(0.08, 0.12, 1, material('#d4a017', { metalness: 0.8 }), x + dx, 0.8, z - side * 1.4, 8)));
+        const rope = cylinder(0.05, 0.05, 3.2, material('#8b0000'), x, 1.15, z - side * 1.4, 6);
+        rope.rotation.z = Math.PI / 2;
+        group.add(rope);
+      });
+      const title = textSprite(label || 'Hall of Internet History', { width: 10, background: 'rgba(179, 0, 27, 0.9)' });
+      title.position.set(-length / 2 + 3, h - 1, 0);
+      group.add(title);
+    }
+  });
+
+  // Generative digital artworks for the minimalist gallery (drawn in code, no external images)
+  const ARTWORKS = [
+    ['flow', 'Flow Field #01', 'Thousands of particles following a noise field. Generative art, 2021.'],
+    ['circles', 'Concentric Signal', 'Rings of color pulsing out from a single point, like a ping in the network.'],
+    ['grid', 'Brutal Grid', 'A study of concrete, weight and negative space inspired by brutalist architecture.'],
+    ['waves', 'Parametric Waves', 'Sine waves stacked with shifting phase: parametric design in two dimensions.'],
+    ['voxels', 'Voxel Sunset', 'A low-resolution sunset made of floating cubes, a tribute to early 3D worlds.'],
+    ['lines', 'Commit Lines', 'Each line is one commit of a fictional repository, colored by author.']
+  ];
+
+  function artworkTexture(kind) {
+    return canvasTexture(`gallery|${kind}`, 512, 640, (ctx, w, h) => {
+      let seed = kind.length * 977;
+      const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      ctx.fillStyle = kind === 'grid' ? '#e9e5dc' : '#0b0d17';
+      ctx.fillRect(0, 0, w, h);
+      if (kind === 'flow') {
+        for (let i = 0; i < 700; i++) {
+          let x = random() * w; let y = random() * h;
+          ctx.strokeStyle = `hsla(${190 + random() * 80}, 90%, 60%, 0.5)`;
+          ctx.beginPath(); ctx.moveTo(x, y);
+          for (let step = 0; step < 30; step++) { const angle = Math.sin(x * 0.01) * 2 + Math.cos(y * 0.012) * 2; x += Math.cos(angle) * 4; y += Math.sin(angle) * 4; ctx.lineTo(x, y); }
+          ctx.stroke();
+        }
+      } else if (kind === 'circles') {
+        for (let r = 300; r > 0; r -= 14) { ctx.strokeStyle = `hsl(${(r * 1.4) % 360}, 85%, 60%)`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2); ctx.stroke(); }
+      } else if (kind === 'grid') {
+        for (let i = 0; i < 18; i++) { ctx.fillStyle = ['#1c1c1c', '#8a8a8a', '#c0392b', '#d6d2c4'][Math.floor(random() * 4)]; ctx.fillRect(Math.floor(random() * 6) * 85, Math.floor(random() * 8) * 80, 85 * (1 + Math.floor(random() * 2)), 80 * (1 + Math.floor(random() * 3))); }
+      } else if (kind === 'waves') {
+        for (let row = 0; row < 40; row++) { ctx.strokeStyle = `hsl(${280 + row * 2}, 80%, ${40 + row}%)`; ctx.lineWidth = 2; ctx.beginPath(); for (let x = 0; x <= w; x += 6) { const y = 40 + row * 15 + Math.sin(x * 0.02 + row * 0.3) * 30; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+      } else if (kind === 'voxels') {
+        const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, '#2b1055'); sky.addColorStop(1, '#ff7e5f'); ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#ffd166'; for (let x = 0; x < 8; x++) for (let y = 0; y < 8; y++) if (Math.hypot(x - 3.5, y - 3.5) < 4) ctx.fillRect(160 + x * 24, 200 + y * 24, 22, 22);
+        for (let i = 0; i < 60; i++) { ctx.fillStyle = `hsl(${260 + random() * 40}, 50%, ${10 + random() * 20}%)`; const s = 20 + random() * 40; ctx.fillRect(random() * w, h * 0.6 + random() * h * 0.4, s, s); }
+      } else {
+        const colors = ['#ff6b6b', '#ffd43b', '#69db7c', '#4dabf7', '#da77f2'];
+        for (let i = 0; i < 90; i++) { ctx.strokeStyle = colors[Math.floor(random() * colors.length)]; ctx.lineWidth = 3; const y = 20 + i * 6.8; ctx.beginPath(); ctx.moveTo(30 + random() * 60, y); ctx.lineTo(200 + random() * 280, y); ctx.stroke(); }
+      }
+    });
+  }
+
+  Object.assign(builders, {
+    // Minimalist digital art gallery: white exposed concrete, very high ceiling,
+    // floating glass walkways over a water mirror, black frames that show a
+    // floating "View Details" button when you walk up to them
+    minimalGallery(group, { w, h, d, label }) {
+      const concrete = new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.stuccoTexture('#e8e6e1'), 6, 3), roughness: 0.95, side: THREE.DoubleSide });
+      // Water mirror floor (slightly below the walkways)
+      const water = box(w, 0.1, d, material('#0e1a24', { metalness: 0.9, roughness: 0.05 }), 0, -0.6, 0);
+      water.castShadow = false;
+      group.add(water);
+      group.add(box(w, 0.2, d, material('#2a2a2a'), 0, -0.75, 0));
+      // Walls (entrance in the -x wall), very high ceiling with a light slot
+      [-1, 1].forEach((side) => group.add(box(w, h, 0.6, concrete, 0, h / 2, side * d / 2)));
+      group.add(box(0.6, h, d, concrete, w / 2, h / 2, 0));
+      [-1, 1].forEach((side) => group.add(box(0.6, h, (d - 4.4) / 2, concrete, -w / 2, h / 2, side * (d + 4.4) / 4)));
+      group.add(box(0.6, h - 4.6, 4.4, concrete, -w / 2, 4.6 + (h - 4.6) / 2, 0));
+      group.add(box(w, 0.6, d, concrete, 0, h, 0));
+      const slot = box(w * 0.8, 0.1, 1.2, glow('#ffffff', 1.4), 0, h - 0.35, 0);
+      slot.raycast = () => {};
+      group.add(slot);
+      // Glass walkways: a central spine plus side walks along the walls
+      const glass = material('#cfe8ff', { transparent: true, opacity: 0.35, roughness: 0.05, metalness: 0.2 });
+      const walk = (x, z, ww, dd, y = 0) => { const slab = box(ww, 0.15, dd, glass, x, y, z); slab.castShadow = false; group.add(slab); group.add(box(ww, 0.04, 0.08, glow('#bfe3ff', 1), x, y + 0.1, z - dd / 2)); group.add(box(ww, 0.04, 0.08, glow('#bfe3ff', 1), x, y + 0.1, z + dd / 2)); };
+      walk(0, 0, w, 3.4);
+      [-1, 1].forEach((side) => walk(0, side * (d / 2 - 2.2), w - 2, 2.6));
+      [-w / 4, w / 4].forEach((x) => [-1, 1].forEach((side) => walk(x, side * (d / 4 + 0.2), 2.4, d / 2 - 4.2)));
+      // Upper floating walkway (mezzanine bridge) with a ramp
+      walk(w / 2 - 4, 0, 5, d - 2, 6);
+      const ramp = box(14, 0.15, 2.6, glass, w / 2 - 13.5, 3, -d / 2 + 2.2);
+      ramp.rotation.z = -Math.atan2(6, 14);
+      group.add(ramp);
+      // Black frames on the long walls
+      ARTWORKS.forEach(([kind, title, info], index) => {
+        const side = index % 2 ? 1 : -1;
+        const x = -w / 2 + w / 6 + Math.floor(index / 2) * (w / 3);
+        const z = side * (d / 2 - 0.4);
+        const frame = new THREE.Group();
+        frame.add(box(3.8, 4.6, 0.25, material('#111111', { roughness: 0.4 }), 0, 0, 0));
+        frame.add(box(3.2, 4, 0.05, new THREE.MeshBasicMaterial({ map: artworkTexture(kind) }), 0, 0, 0.14));
+        frame.position.set(x, 3.4, z);
+        frame.rotation.y = side > 0 ? Math.PI : 0;
+        frame.userData = { label: title, info: `${info} (In-game artwork, not for sale.)` };
+        group.add(PropKit.kit.interactive(frame, 'inspect', title));
+        // Floating "View Details" button that appears when you walk up
+        const button = textSprite('View Details  ·  E', { width: 3.6, background: 'rgba(17, 17, 17, 0.92)' });
+        button.position.set(x, 0.9, z - side * 1.6);
+        button.visible = false;
+        group.add(button);
+        animate(button, (time) => {
+          const position = typeof avatar !== 'undefined' ? avatar.position : null;
+          const world = button.getWorldPosition(new THREE.Vector3());
+          button.visible = !!position && position.distanceTo(world) < 5;
+          button.position.y = 0.9 + Math.sin(time * 2 + index) * 0.08;
+        });
+      });
+      // Minimal sculpture: a floating white sphere above the water
+      const orb = sphere(1.4, material('#f8f9fa', { roughness: 0.2 }), w / 4, 3, 0, 32);
+      group.add(orb);
+      animate(orb, (time) => { orb.position.y = 3 + Math.sin(time) * 0.4; });
+      const title = textSprite(label || 'Minimal Art Gallery', { width: 8, background: 'rgba(17, 17, 17, 0.9)' });
+      title.position.set(-w / 2 + 3, 6, 0);
+      group.add(title);
+    }
+  });
+
   const rules = [
     [/giant_floppy/, 'giantFloppy'],
     [/giant_cpu/, 'giantCpu'],
@@ -267,7 +511,9 @@
     [/punch_cards/, 'punchCards'],
     [/software_wall/, 'softwareWall'],
     [/ball_mouse/, 'ballMouse'],
-    [/museum_entrance/, 'museumHall']
+    [/museum_entrance/, 'museumHall'],
+    [/history_corridor/, 'historyCorridor'],
+    [/minimal_gallery/, 'minimalGallery']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();

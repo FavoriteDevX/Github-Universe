@@ -102,9 +102,16 @@
   }
 
   function officeBlock(group, w, h, d, x, y, z, wallColor, glassColor) {
-    const side = new THREE.MeshStandardMaterial({ map: repeated(windowsTexture(wallColor, glassColor), Math.max(1, Math.round(w / 5)), Math.max(1, Math.round(h / 5))), roughness: 0.5, metalness: 0.2 });
-    const roof = material(shade(wallColor, -0.1));
-    group.add(mesh(new THREE.BoxGeometry(w, h, d), [side, side, roof, roof, side, side], x, y + h / 2, z));
+    const side = new THREE.MeshStandardMaterial({ map: repeated(windowsTexture(wallColor, glassColor), Math.max(1, Math.round((w + d) / 5)), Math.max(1, Math.round(h / 4))), roughness: 0.25, metalness: 0.45 });
+    const body = PropKit.kit.roundedSlab(w, h, d, Math.min(w, d) * 0.12, side);
+    body.position.set(x, y, z);
+    group.add(body);
+    const cornice = PropKit.kit.roundedSlab(w + 0.6, 0.5, d + 0.6, Math.min(w, d) * 0.14, material(shade(wallColor, -0.12), { roughness: 0.4, metalness: 0.3 }));
+    cornice.position.set(x, y + h, z);
+    group.add(cornice);
+    const lobby = PropKit.kit.roundedSlab(w + 0.1, 3, d + 0.1, Math.min(w, d) * 0.12, material('#9fc3e6', { roughness: 0.05, metalness: 0.6, emissive: '#ffe9a8', emissiveIntensity: 0.12 }));
+    lobby.position.set(x, y, z);
+    group.add(lobby);
   }
 
   const builders = {

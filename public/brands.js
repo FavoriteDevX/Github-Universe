@@ -1,11 +1,12 @@
 // ============================================================================
 // BRAND LOGOS: REAL LOGOS FROM SIMPLE ICONS (CC0), LOADED AT RUNTIME FROM A CDN
 // ============================================================================
-// Like the WWDC keynotes (played from Apple's YouTube channel), logos are not
-// stored in this repository: the browser loads them from the Simple Icons CDN.
+// The SVGs used by the Multiverse are vendored in public/vendor/simple-icons
+// (CC0, works offline); any other slug falls back to the Simple Icons CDN.
 // Brands that asked Simple Icons to remove their logo (e.g. OpenAI, AWS,
 // Microsoft, LinkedIn, Oracle, Adobe, Salesforce) keep a text wordmark.
 const BrandLogos = (() => {
+  const SIMPLE_ICONS_LOCAL = 'vendor/simple-icons';
   const SIMPLE_ICONS_CDN = 'https://cdn.jsdelivr.net/npm/simple-icons@16.33.0/icons';
   // Brand name -> Simple Icons slug (only brands available in the library)
   const SLUGS = {
@@ -15,7 +16,8 @@ const BrandLogos = (() => {
     'Google Cloud': 'googlecloud', Google: 'google', Apple: 'apple', Meta: 'meta', Vercel: 'vercel',
     Figma: 'figma', Postman: 'postman', Uber: 'uber', Tesla: 'tesla', HP: 'hp', Intel: 'intel',
     Cisco: 'cisco', Netflix: 'netflix', eBay: 'ebay', EA: 'ea', 'Electronic Arts': 'ea', Googleplex: 'google',
-    macOS: 'macos', 'App Store': 'appstore', Safari: 'safari', Xcode: 'xcode', Swift: 'swift', iCloud: 'icloud', iOS: 'ios'
+    macOS: 'macos', 'App Store': 'appstore', Safari: 'safari', Xcode: 'xcode', Swift: 'swift', iCloud: 'icloud', iOS: 'ios',
+    'Apple Music': 'applemusic', 'Apple TV': 'appletv', 'Apple Arcade': 'applearcade', 'Apple Pay': 'applepay', iMessage: 'imessage', 'Apple News': 'applenews', 'Apple Podcasts': 'applepodcasts'
   };
   const svgCache = new Map();
 
@@ -27,8 +29,8 @@ const BrandLogos = (() => {
   function loadLogoImage(slug, color) {
     const key = `${slug}|${color}`;
     if (!svgCache.has(key)) {
-      svgCache.set(key, fetch(`${SIMPLE_ICONS_CDN}/${slug}.svg`)
-        .then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.status))))
+      const get = (base) => fetch(`${base}/${slug}.svg`).then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.status))));
+      svgCache.set(key, get(SIMPLE_ICONS_LOCAL).catch(() => get(SIMPLE_ICONS_CDN))
         .then((svg) => new Promise((resolve, reject) => {
           const colored = svg.replace('<svg ', `<svg fill="${color}" width="512" height="512" `);
           const image = new Image();
@@ -90,5 +92,36 @@ const BrandLogos = (() => {
     return texture;
   }
 
-  return { billboardTexture, slugFor };
+  // iOS-style app icon: rounded square in the brand color with the white glyph
+  const iconCache = new Map();
+  function appIconTexture(slug, background, { glyph = '#ffffff', letter = '?' } = {}) {
+    const key = `${slug}|${background}|${glyph}`;
+    if (iconCache.has(key)) return iconCache.get(key);
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const texture = new THREE.CanvasTexture(canvas);
+    const draw = (logo) => {
+      ctx.clearRect(0, 0, size, size);
+      const r = size * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.arcTo(size, 0, size, size, r); ctx.arcTo(size, size, 0, size, r); ctx.arcTo(0, size, 0, 0, r); ctx.arcTo(0, 0, size, 0, r);
+      const gradient = ctx.createLinearGradient(0, 0, 0, size);
+      gradient.addColorStop(0, new THREE.Color(background).offsetHSL(0, 0, 0.08).getStyle());
+      gradient.addColorStop(1, background);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      if (logo) ctx.drawImage(logo, size * 0.2, size * 0.2, size * 0.6, size * 0.6);
+      else { ctx.fillStyle = glyph; ctx.font = `bold ${size * 0.5}px Helvetica, Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(letter, size / 2, size / 2 + 6); }
+      texture.needsUpdate = true;
+    };
+    draw(null);
+    loadLogoImage(slug, glyph).then(draw).catch(() => { /* offline: keep the letter */ });
+    iconCache.set(key, texture);
+    return texture;
+  }
+
+  return { billboardTexture, slugFor, appIconTexture };
 })();

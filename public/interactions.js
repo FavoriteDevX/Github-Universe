@@ -37,6 +37,7 @@ function fixBug(bug) {
   let workSession = null;
   let parkour = { running: false, start: 0, coins: new Set() };
   let arcadeGame = null;
+  let portalCooldown = 0;
   const ui = {
     prompt: document.getElementById('interact-prompt'),
     work: document.getElementById('work-overlay'),
@@ -76,7 +77,14 @@ function fixBug(bug) {
     arcade: 'Press E to play',
     fish: 'Press E to fish',
     inspect: 'Press E to inspect',
-    jump: 'Press E to JUMP IN'
+    jump: 'Press E to JUMP IN',
+    link: 'Press E to open the community link',
+    warp: 'Press E to take the elevator',
+    metro: 'Press E to open the Metro map',
+    reward: 'Press E to claim your Gravity Flip reward',
+    glass: 'Press E to change the smart glass',
+    vehicle: 'Press E to ride',
+    jukebox: 'Press E to start / stop the music'
   };
 
   // --------------------------------------------------------------------------
@@ -96,6 +104,22 @@ function fixBug(bug) {
       case 'fish': startFishing(); break;
       case 'inspect': hooks.inspect(object.userData.label || label, object.userData.info || ''); break;
       case 'jump': hooks.jumpTo(label); break;
+      case 'metro': hooks.openMetro(); break;
+      case 'reward': hooks.claimReward(); break;
+      case 'glass': hooks.system(`🪟 Smart glass: ${object.userData.cycle()}`); break;
+      case 'vehicle': Vehicles.mount(object.userData.vehicleKey); break;
+      case 'jukebox': hooks.system(object.userData.onInteract()); break;
+      case 'link': {
+        const url = object.userData.url;
+        if (url && /^https:\/\//.test(url)) { window.open(url, '_blank', 'noopener'); hooks.system(`↗ Opened ${label} in a new tab.`); }
+        break;
+      }
+      case 'warp': {
+        const destination = object.parent.localToWorld(object.userData.destination.clone());
+        hooks.setAvatarPosition(destination);
+        hooks.system(`🛗 ${label}`);
+        break;
+      }
       default: break;
     }
   }
@@ -254,6 +278,23 @@ function fixBug(bug) {
     } else {
       ui.prompt.style.display = 'none';
     }
+
+    // Teleport portals: walking through the arch jumps into a World
+    if (performance.now() > portalCooldown) {
+      (window.teleportPortals || []).forEach((portal) => {
+        portal.group.getWorldPosition(worldPosition);
+        if (Math.hypot(worldPosition.x - avatar.x, worldPosition.z - avatar.z) < 1.6 && avatar.y < worldPosition.y + 4) {
+          portalCooldown = performance.now() + 4000;
+          hooks.system('🌀 Through the portal...');
+          hooks.jumpTo(portal.target);
+        }
+      });
+    }
+    // Jump pads in the Mini-Game Arena launch you into the air
+    (window.jumpPads || []).forEach((pad) => {
+      pad.getWorldPosition(worldPosition);
+      if (Math.hypot(worldPosition.x - avatar.x, worldPosition.z - avatar.z) < 1.4 && Math.abs(avatar.y - worldPosition.y) < 0.8) hooks.launch(22);
+    });
 
     // Parkour Park: start/finish pads and coins
     (window.parkourPads || []).forEach((pad) => {

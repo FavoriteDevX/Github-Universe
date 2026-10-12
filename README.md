@@ -2,25 +2,35 @@
 
 <img width="1370" height="768" alt="GitHub Multiverse banner" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
 
-A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**. Everyone starts in **Genesis City**, a single space around Genesis Plaza made of small themed scenes, and can jump into bigger **Worlds**: interactive mini-games and a stylized recreation of Silicon Valley.
+A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**. Everyone starts in **Genesis City**, one continuous, organic space around Genesis Plaza (no street grid, no square blocks) made of small themed scenes, with an **underground level** below the plaza, a **metro** to every district, and bigger **Worlds**: interactive mini-games and a Silicon Valley tech campus.
 
 ---
 
 ## 🚀 Features
 
 - **Real-Time Multiplayer Sync**: Powered by Socket.io. Every developer's movement, chat, name and wearables are replicated instantly to all connected clients.
-- **3D Cursor Avatars**: Everyone is a clean, pastel-colored 3D arrow with a developer tag (`Dev_XXXX`, or your own name with `/nick`). You walk, run and jump in third person, like in Decentraland.
+- **3D Cursor Avatars**: Everyone is a clean, pastel-colored 3D arrow with a name tag showing the **username you chose at sign-in**. You walk, run and jump in third person, like in Decentraland.
 - **Chat Bubbles**: Messages float as bubbles above the sender's cursor and appear in the chat log, tagged with the district where they were said.
 - **Minecraft-Style Chat Commands**: Teleports, a shared day/night cycle, weather, warps, homes, whispers and more (see [Chat commands](#-chat-commands)).
-- **Genesis City + Worlds (like Decentraland)**: new developers spawn at **Genesis Plaza**. The small maps are scenes of one walkable city on a 16m × 16m parcel grid, connected by roads and generated parcels (gardens, houses, art sculptures, kiosks, "parcel for sale" lots, street banners). The big maps (Silicon Valley, Museum, Debug Dungeon, Open Source HQ, Keynote Amphitheater, Green-Tech Sandbox) are separate **Worlds** you enter only through the side menu or chat commands (`/world valley`).
+- **Genesis City + Worlds (like Decentraland)**: new developers spawn at **Genesis Plaza**. The small maps are scenes scattered organically around the plaza, linked by a ring promenade and winding cobblestone paths with lamps and banners; between them you find gardens, cottages, sculptures, kiosks, campfires with benches, picnic tables, digital art frames that open community links and "for sale" signs. The big maps (Silicon Valley, Museum, Debug Dungeon, Open Source HQ, Keynote Amphitheater, Green-Tech Sandbox) are separate **Worlds** you enter through the side menu, the metro or chat commands (`/world valley`).
+- **Underground Genesis Plaza**: step into the **square pool** in the plaza: the submerged doors slide open, you fall 5 seconds down a square water tunnel lit from above, and land in a rock cave with a Welcome Hall, the **Underground Cafe** (bar, stools, espresso), the **Hall of Internet History** (a long red-carpet corridor with lit frames: ARPANET, the first website, BBS, IRC, Usenet, 90s homepages, early browsers...) and, at its end, the **Minimal Art Gallery** (white exposed concrete, very high ceiling, glass walkways over a water mirror, black frames with a floating *View Details* button). An elevator takes you back up.
+- **Plaza social spots**: a Decentraland-style **Theatre** whose stage screen plays the WWDC keynotes, a **Firepit** with concentric benches, a **Mini-Game Arena** with jump pads, **Teleport Portals** to the Worlds, a **Panorama Deck** (elevator up to the Hall of Fame and the Newsroom), a **Metro station** and the **Cyber Garage** car showroom.
+- **Multiverse Metro**: press **N** (or `/metro`, or E at a station) for a London Underground-style map with four lines (Genesis, Arcade, Leisure, Worlds Express); click a station and ride a train over the landscape.
+- **Cyber Garage (in-game vehicles)**: floating hypercars inspired by Italian supercars and electric sports cars (no brand names), hovering over magnetic light strips with color-shifting paint, plus Tron-style light cycles that leave a fading neon trail. E to ride, E again to get off. In-game items only: no NFTs, no blockchain.
+- **Tech Square** (far district): Times Square-style LED screens with live data: a GitHub mural of recent commits and Pull Requests (fireworks when a big PR merges), a Big Tech stock scoreboard and dev trending topics (Hacker News, Stack Overflow, Reddit), fetched by the server.
+- **Gamer District** (far district): the **Gravity Flip** tower, a translucent skyscraper climbed with trampolines through floor openings, with low-gravity floors and a floating lounge on top that rewards the climb with a rare hoodie.
+- **Aero-Glass Oasis** (far district): floating glass villas over a water mirror on neon light beams; smart-glass walls switch between clear, mirrored and frosted (E), and low-gravity infinity pools let you float up to the sunroom.
+- **Graphic Equalizer · The Tower of Icons**: an abstract tower with no walls, whose facade is made of real app icons (WhatsApp, Spotify, Instagram, YouTube, Discord, Telegram, Netflix...). Press E at the jukebox: the music starts and the icon columns pulse like the bars of a giant equalizer. Climb the spiral of floating icons: each one you step on plays its own effect (WhatsApp dials, Messenger and Discord pop chat bubbles, Spotify throws music notes, Instagram flashes...).
 - **Skyline of Tech**: a ring of skyscrapers around the city carries giant LED billboards with the **real logos** of big tech companies and developer tools (loaded at runtime from [Simple Icons](https://simpleicons.org), CC0), and blimps with banners circle the sky. Red mesas with autumn trees, a sweeping arch and puffy clouds fill the horizon.
 - **A Decentraland-style Genesis Plaza**: at human scale, with warm cobblestone, a round **Welcome Hall** (wooden floor, glass waterfall tube, mezzanine, espresso bar, crystals, cafe tables with laptops), the **GitHub Multiverse Theatre** with its bulb marquee, an **Events Wall** whose cards jump into each World, a **Cozy Pond** with lily pads, a bridge and fishing spots, event posters, shops with awnings, a neon tower, a casino, an arch gate, hot-air balloons and **showcase shelves** of rare hardware, web legends and dev tools.
-- **Enterable Headquarters**: every Silicon Valley HQ has a real door, a lobby with the company logo, stairs to every floor and the rooftop, open-plan offices with laptops, a glass meeting room and a coffee corner. The **House of MAC** is an Apple Store with Avenue tables, MacBooks, iPhones and iPads to try, a Genius Bar, a Today at Apple video wall and Mac/macOS/Xcode/Swift boards.
+- **Enterable Headquarters**: every Silicon Valley HQ has a real door, a lobby with the company logo, stairs to every floor and the rooftop, open-plan offices with laptops, a glass meeting room and a coffee corner. The **House of MAC** is an Apple Store with the Mac Finder logo over the glass entrance, Avenue tables with MacBooks, iPhones and iPads to try, a working **Genius Bar** (ask a Genius for Mac and developer tips), a wall of official Apple app icons, an ad carousel, a Today at Apple video wall, a screen playing Apple's own YouTube uploads and outdoor ad billboards (see [House of MAC banners](#-house-of-mac-banners-and-logos)).
 - **Roblox-style Actions**: press **E** near objects to work on a laptop (type anything and real-looking code appears, then commit to the Commit Leaderboard), sit on chairs, sofas, stools and lily pads, grab a coffee (speed boost), play **Pac-Git Snake** on arcade cabinets, fish at the pond, inspect showcase items or jump into Worlds. Emotes: `/e wave`, `dance`, `cheer`, `clap`, `sit`, `think`, `ship`, `coffee`.
 - **Creative Flight**: double-tap **Space** to fly like Minecraft's creative mode (Space up, Shift down, double-tap again to land).
 - **Invite Peers & Private Lobbies**: buttons at the top copy an invite link to your current spot or open a **new private lobby** (`?lobby=<id>`): only devs with that link see and chat with you there.
 - **Interactive Districts**: a co-op dungeon crawler against famous bugs, an Open Source HQ where Pull Requests change the map, a keynote amphitheater showing Apple's WWDC keynotes, a museum of forgotten tech and a Green-Tech sandbox.
-- **Silicon Valley**: a stylized recreation of the valley, from the Golden Gate Bridge to San Jose, with Apple Park, Googleplex, Anthropic, Tesla, EA, Meta, NVIDIA, Oracle, Stanford and more.
+- **Silicon Valley**: one tech campus where the headquarters stand side by side along boulevards around a central plaza: Apple Park, Googleplex, Meta, Anthropic, OpenAI, GitHub, Tesla, Microsoft, Intel, NVIDIA, HP, LinkedIn, Uber, Netflix, Cisco, Oracle, EA, Adobe and eBay.
+- **Autoplay video screens**: the keynote screens, the Theatre and the Apple Store play muted automatically when you walk close (browsers only allow muted autoplay; click a screen for sound).
+- **Screenshot mode**: **Shift+U** hides the whole interface and leaves only the scenery.
 - **Living World**: a Minecraft-length day (10 minutes of day, 10 of night, 20 in total) with a live countdown in the HUD; at night the sky turns deep navy-violet with stars and a moon while windows, lamps and billboards light up. Rain, snow, thunderstorms, traffic on US-101 and a Caltrain.
 - **Immersive Lighting & Shadows**: PCF soft shadow maps give the whole world an organic architectural-maquette look.
 - **Welcome Screen & Accounts**: a sign-up / log-in screen over the README banner. Accounts live on the server with scrypt-hashed passwords and session tokens; your inventory is saved with your account. Already signed in? You go straight in.
@@ -46,7 +56,10 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 | `I` | Open the inventory |
 | Minimap click | Jump to that spot |
 | `Enter`, `T` or `/` | Open the chat |
-| `Esc` | Close the chat, info cards and the video player |
+| `Esc` | Close the chat, info cards, the metro map and the video player |
+| `N` | Open / close the Multiverse Metro map |
+| `E` (while riding) | Get off a vehicle |
+| `Shift` + `U` | Hide / show the whole interface (scenery only) |
 
 ---
 
@@ -66,6 +79,7 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/worlds` (also `/warps`) | List every place |
 | `/spawn` | Back to Genesis Plaza |
 | `/sethome` / `/home` | Save your current spot and come back to it later (stored in your browser) |
+| `/metro [place]` (also `/train`) | Open the metro map, or ride the train straight to a place |
 
 > Moving **another** player always requires their consent (`/tpahere` + `/tpaccept`). There is no server operator, so nobody can drag other players around.
 
@@ -83,7 +97,7 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/nick <name>` | Rename yourself (3-16 letters, numbers or `_`) |
 | `/msg <player> <text>` (also `/tell`, `/w`) | Private message |
 | `/r <text>` | Reply to the last private message |
-| `/me <action>` | Action message (`* Dev_1234 waves`) |
+| `/me <action>` | Action message (`* carlos_dev waves`) |
 | `/list` (also `/who`) | Who is online and in which district |
 | `/coords` | Your position and parcel |
 | `/e <wave\|dance\|cheer\|clap\|sit\|think\|ship\|coffee>` | Play an emote on your cursor |
@@ -155,7 +169,11 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 ### Genesis City (walkable scenes around the spawn)
 | `/world` key | District | What you'll find |
 | --- | --- | --- |
-| `plaza` | **Genesis Plaza** | The 3×3-block heart of the city where everyone spawns: Welcome Hall, Theatre, Events Wall, Cozy Pond, showcase shelves (Classics, Web Legends, Dev Tools), shops, hologram pillar, fountain, Aetheria tower, Vegas casino and the arch gate |
+| `plaza` | **Genesis Plaza** | The round heart of the city where everyone spawns: Welcome Hall, Theatre, Events Wall, Cozy Pond, showcase shelves (Classics, Web Legends, Dev Tools), Firepit, Mini-Game Arena, Teleport Portals, Panorama Deck, Metro station, Cyber Garage, shops, fountain, Aetheria tower and the arch gate. **Underground** (enter through the square pool): Underground Cafe, Hall of Internet History and the Minimal Art Gallery |
+| `techsquare` | **Tech Square** | Far from the center: LED screens with live GitHub commits and PRs, Big Tech stocks and dev trending topics, fireworks |
+| `gamer` | **Gamer District** | Far from the center: the Gravity Flip tower, arcade cabinets, neon pillars, a mini-game arena and LAN-party desks |
+| `villas` | **Aero-Glass Oasis** | Far from the center: floating glass villas with smart glass and low-gravity infinity pools |
+| `equalizer` | **Graphic Equalizer** | The Tower of Icons: real app icons that pulse with the music, and a spiral of icon platforms with a sound/effect on every step |
 | `workspace` | **Holo Workspace** | A futuristic glass office on a pastel gradient floor: acrylic tables and chairs with laptops, a round lounge sofa and the live Commit Leaderboard |
 | `parkour` | **Parkour Park** | Toki Land-style red platforms climbing to a finish flag, spinning coins, a timer and Crystal Falls |
 | `districts` | **Genesis Districts** | Roads, the Vegas casino (blinking marquee), Fashion Street, Aetheria cyber tower and private lots (GitHub Enterprise HQ, Vercel Deploy Zone, StackOverflow Lab) |
@@ -165,7 +183,7 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `social` | **Horizon & Somnium** | Keynote podium, avatar lounge ring and an AI companion |
 | `gallery` | **Upland Gallery** | Minted and locked NFT houses and a voxel art wall |
 | `mall` | **GamiMall** | Wearables stores with storefronts, an upper terrace and an escalator |
-| `apple` | **House of MAC** | An Apple Store: glass box with the Apple logo, Avenue tables with MacBooks, iPhones and iPads, Genius Bar, Today at Apple wall (plays the WWDC keynotes), Mac/macOS/Xcode/Swift boards, terminal and music stage |
+| `apple` | **House of MAC** | An Apple Store: glass box with the Finder logo over the entrance and Apple logos on the glass, Avenue tables with MacBooks, iPhones and iPads, a working Genius Bar, a wall of official Apple app icons, an ad carousel, a Today at Apple wall (plays the WWDC keynotes), a screen with Apple's YouTube uploads, ad billboards (MacBook Air, MacBook Neo, M1, macOS, Mac apps, Xcode, Swift, App Store, Safari, Apple Arcade, iCloud), terminal and music stage |
 | `cyberpunk` | **Cyberpunk Repo** | Pulsing neon pillars and server racks with blinking LEDs |
 | `arcade` | **Arcade Room** | Arcade cabinets, a pool table and a battlestation |
 | `house` | **Hacker House** | A two-story house with stairs, a sofa and a kitchen |
@@ -180,25 +198,23 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `museum` | **Museum of Forgotten Hardware & Software** | Walk inside a giant 3.5" floppy disk, climb the stairs onto a Pentium-era processor and its circuits, parkour up a giant CRT monitor, and browse a clicky keyboard, a cassette, a spinning CD-ROM, a vacuum-tube wall, punch cards, a ball mouse and the Hall of Forgotten Software (DOS, BASIC, early desktops, 90s homepages) |
 | `dungeon` | **Debug Dungeon (Labyrinth of Bugs)** | A co-op dungeon crawler. Grab the **Git Commit Hammer** at the entrance and click bugs to hit them, or cast `/script`s. Monsters: Memory Leak, NullPointerException, Infinite Loop, Race Condition, Off-By-One Error and the **Blue Screen of Death** boss. Health is owned by the server, so everyone fights the same bugs; defeated bugs respawn after 30 s, and kills go to the **Bug Bounty Leaderboard** |
 | `opensource` | **Open Source HQ** | A 3D home for repositories: code murals anyone can post to, floating meeting rooms and 8 decoration slots. Changing a decoration takes a real review flow: `/pr`, then another dev runs `/approve`, then `/merge`. The Pull Request board shows what is open |
-| `keynote` | **Keynote Amphitheater** | A permanent arena inspired by WWDC and Google I/O stages. The big screen rotates through Apple's official WWDC keynotes (2023, 2024 and 2025, played through YouTube's embedded player from Apple's own channel); click a screen or `/watch` to play. `/stream` puts any YouTube or Twitch live event on the screen for everyone. The wearables booths dress your cursor with a hoodie or an endless coffee mug |
+| `keynote` | **Keynote Amphitheater** | A permanent arena inspired by WWDC and Google I/O stages. The big screen autoplays Apple's official WWDC keynotes (2020 to 2025, played through YouTube's embedded player from Apple's own channel); click a screen or `/watch` to play. `/stream` puts any YouTube or Twitch live event on the screen for everyone. The wearables booths dress your cursor with a hoodie or an endless coffee mug |
 | `greentech` | **Green-Tech Sandbox** | Green IT: a solar farm, spinning wind turbines, a liquid-cooled data center with a living roof, a vertical farm, EV chargers, battery storage and a Code Efficiency Lab comparing the energy cost of algorithms. Plant trees with `/plant` to raise the district's renewable energy meter |
 
 ### Silicon Valley (`/world valley`)
-A separate World. Distances are compressed, but the geography keeps the real north-to-south order: San Francisco → Redwood City → Menlo Park → Palo Alto → Mountain View → Sunnyvale → Cupertino / Santa Clara → San Jose, with Fremont across the bay. It includes US-101 with moving traffic, I-280, El Camino Real, Sand Hill Road, a running Caltrain, the Dumbarton Bridge and billboards along the freeway.
+A separate World built as **one tech campus**: no cities, just the headquarters side by side along tree-lined boulevards around a central plaza with a fountain and an arch gate. Each HQ is enterable (door, lobby with logo, stairs, offices, meeting room, rooftop). Type `/world <key>` to land at the front of one:
 
-| `/world` key | Landmark |
+| `/world` key | Headquarters |
 | --- | --- |
-| `goldengate` | Golden Gate Bridge (Art Deco towers, catenary cables, suspender ropes) |
-| `sf`, `anthropic`, `openai`, `github` | San Francisco: Salesforce Tower, Transamerica Pyramid, Anthropic, OpenAI, GitHub and Uber |
-| `oracle`, `ea` | Redwood Shores: Oracle's cylindrical glass towers around the lagoon, Electronic Arts |
-| `meta` | Menlo Park: Meta's MPK 20 with its rooftop park and the 1 Hacker Way sign; the Sand Hill Road VC row |
-| `stanford`, `tesla` | Palo Alto: Stanford (Main Quad, Memorial Church, Hoover Tower), the HP Garage, HP, Tesla's Global Engineering HQ with Superchargers |
-| `google`, `chm` | Mountain View: Googleplex with Bay View's dragonscale canopies and campus bikes, Computer History Museum, Microsoft |
-| `nasa` | Sunnyvale: NASA Ames Hangar One, LinkedIn |
-| `applepark` | Cupertino: Apple Park's ring with its solar roof and inner park, Steve Jobs Theater and the Visitor Center |
-| `nvidia`, `levis` | Santa Clara: NVIDIA's triangular Endeavor and Voyager buildings, Intel, Levi's Stadium |
-| `sanjose` | San Jose: Adobe towers, SAP Center, downtown skyline, Cisco, eBay, Netflix (Los Gatos) |
-| `fremont` | Tesla Fremont Factory with its parking lots |
+| `applepark` | Apple Park (ring building with a solar roof and inner park) |
+| `google` | Googleplex |
+| `meta`, `anthropic`, `openai`, `github` | Meta, Anthropic, OpenAI, GitHub |
+| `tesla`, `nvidia`, `intel`, `microsoft` | Tesla, NVIDIA, Intel, Microsoft |
+| `netflix`, `oracle`, `ea`, `adobe` | Netflix, Oracle, Electronic Arts, Adobe |
+
+HP, LinkedIn, Uber, Cisco and eBay are on the campus too (walk or fly to them).
+
+(Type `/worlds` in game for the exact list of keys.)
 
 ---
 
@@ -208,6 +224,7 @@ A separate World. Distances are compressed, but the geography keeps the real nor
 github-multiverse/
 ├── package.json         # Node.js dependencies and run scripts
 ├── server.js            # Express + Socket.io: accounts, cursors, chat, world clock & weather, teleports, loot, game state
+├── feeds.js             # Live data for Tech Square: GitHub, stocks (Finnhub), Hacker News, Stack Overflow, Reddit
 ├── data/                # Created at runtime: accounts, sessions and inventories (git-ignored)
 └── public/
     ├── index.html       # Welcome screen, HUD, chat, minimap, hotbar, video player overlay
@@ -216,16 +233,21 @@ github-multiverse/
     ├── city.js          # Genesis City: parcel grid, roads, generated parcels, sky, day/night, weather
     ├── props.js         # Turns every map block "type" into a low-poly object; textures, laptops, interactables
     ├── brands.js        # Real brand logos from Simple Icons (loaded at runtime) for billboards and HQ signs
-    ├── plaza.js         # Genesis Plaza: Welcome Hall, Theatre, Events Wall, pond, shops, posters...
-    ├── scenes.js        # Holo Workspace, Parkour Park, showcase shelves, Apple Store
+    ├── plaza.js         # Genesis Plaza: Welcome Hall, Theatre, pool & underground, firepit, arena, portals, panorama deck...
+    ├── scenes.js        # Holo Workspace, Parkour Park, showcase shelves, Apple Store, Gravity Flip tower, glass villas
+    ├── equalizer.js     # Graphic Equalizer: the Tower of Icons (app icons, music, step effects)
+    ├── video.js         # Autoplay video screens (YouTube embeds placed in 3D)
+    ├── techsquare.js    # Tech Square LED screens, stock bars, fireworks, Hall of Fame & Newsroom boards
+    ├── metro.js         # Multiverse Metro map and train rides
+    ├── vehicles.js      # Cyber Garage: hover cars and light cycles, riding and neon trails
     ├── interactions.js  # E-actions: laptops, seats, coffee, arcade, fishing, parkour, emotes
     ├── landmarks.js     # Silicon Valley headquarters, highways, traffic, Caltrain, billboards
-    ├── museum.js        # Museum of Forgotten Hardware & Software exhibits
+    ├── museum.js        # Museum exhibits, Hall of Internet History, Minimal Art Gallery
     ├── games.js         # Debug Dungeon, Open Source HQ, Keynote Amphitheater, Green-Tech Sandbox
     ├── loot.js          # Chests, supply drops, hotbar, inventory and item effects
     ├── maps/            # One JSON per map, worlds.json (city layout + Worlds) and loot.json
-    ├── assets/          # logo.png (HUD and welcome screen), icon.png (browser tab)
-    └── vendor/          # Three.js r128 + OrbitControls, served locally (MIT)
+    ├── assets/          # logo.png, icon.png, ads/ (House of MAC banners), store/ (Finder & Genius Bar logos)
+    └── vendor/          # Three.js r128 + OrbitControls (MIT) and the Simple Icons logos used in the world (CC0)
 ```
 
 - **Frontend Core**: [Three.js](https://threejs.org) r128 (vendored in `public/vendor`, no CDN needed)
@@ -293,13 +315,33 @@ Multiplayer needs the Node server running on a host that keeps a Node process al
 
 Accounts and inventories are saved in `data/users.json`; give the host a persistent disk (or volume) so they survive redeploys. The rest of the game state (leaderboard, murals, Pull Requests, planted trees, live stream, chests) lives in the server's memory and resets when the server restarts.
 
-Optional environment variables: `PORT` (default 3000) and `SUPPLY_DROP_EVERY_MS` (default 180000, 3 minutes).
+Optional environment variables:
+
+| Variable | What it does |
+| --- | --- |
+| `PORT` | Server port (default 3000) |
+| `SUPPLY_DROP_EVERY_MS` | Time between supply drops (default 180000, 3 minutes) |
+| `GITHUB_TOKEN` | GitHub token for the Tech Square commits/PRs mural (works without it, with GitHub's lower rate limit) |
+| `FINNHUB_API_KEY` | Free [Finnhub](https://finnhub.io) key for the stock scoreboard. Without it the scoreboard says it is not configured: prices are never invented |
+| `DISABLE_FEEDS=1` | Turn off all live feeds (offline / tests) |
+
+## 🍎 House of MAC banners and logos
+
+The store is ready to show your own images; nothing has to be changed in the code:
+
+| Put this file | In | Shows |
+| --- | --- | --- |
+| `finder.png` | `public/assets/store/` | Mac Finder logo above the glass entrance |
+| `genius-bar.png` | `public/assets/store/` | Logo on the wall behind the Genius Bar counter |
+| `macbook-air.jpg`, `macbook-neo.jpg`, `m1.jpg`, `macos.jpg`, `mac-apps.jpg` | `public/assets/ads/` | Outdoor ad billboards and the in-store ad carousel |
+
+Billboards resize to each banner's aspect ratio. Add more banners to the carousel by listing them in `public/assets/ads/ads.json`. Until a file exists, the store shows the official Simple Icons logos and generated boards. Apple ads and logos are copyrighted / trademarks of Apple Inc.: only publish them if you have the right to.
 
 ---
 
 ## ⚖️ Trademarks & media
 
-Brand logos on billboards, HQ signs and the Apple Store come from [Simple Icons](https://simpleicons.org) (the icon artwork is released as CC0) and are loaded by the browser at runtime from the jsDelivr CDN, the same way the WWDC keynotes are streamed from Apple's own YouTube channel; nothing is stored in this repository. Brands that are not in Simple Icons (for example OpenAI, AWS, Microsoft, Oracle or Adobe) appear as plain text wordmarks. Logos are trademarks of their owners and are used only to identify the companies; billboards show the logo, the name and a factual description, never real ad campaigns. Company names elsewhere appear as plain text wordmarks in brand colors to identify the landmarks they represent; the buildings are stylized recreations, not copies of real architecture plans or photos. The WWDC keynotes are not stored in this repository: they are played through YouTube's official embedded player from Apple's own YouTube channel, and the screen shows YouTube's thumbnails. The GitHub Multiverse logo is based on GitHub's Octocat mark. All trademarks, including GitHub and the Octocat, belong to their respective owners; this is a fan project, not affiliated with or endorsed by any of these companies.
+Brand logos on billboards, HQ signs and the Apple Store come from [Simple Icons](https://simpleicons.org) (the icon artwork is released as CC0) and the ones used in the world are bundled in `public/vendor/simple-icons` so they work offline (any other icon is loaded from the jsDelivr CDN). Brands that are not in Simple Icons (for example OpenAI, AWS, Microsoft, Oracle or Adobe) appear as plain text wordmarks. Logos are trademarks of their owners and are used only to identify the companies; billboards show the logo, the name and a factual description, never real ad campaigns. Company names elsewhere appear as plain text wordmarks in brand colors to identify the landmarks they represent; the buildings are stylized recreations, not copies of real architecture plans or photos. The WWDC keynotes are not stored in this repository: they are played through YouTube's official embedded player from Apple's own YouTube channel, and the screen shows YouTube's thumbnails. The vehicles are original designs only *inspired by* real cars, with no brand names or logos, and are in-game items (no NFTs). The Hall of Internet History shows illustrated recreations, not screenshots. The Tower of Icons music is generated live in the browser (Web Audio), not recorded songs. The GitHub Multiverse logo is based on GitHub's Octocat mark. All trademarks, including GitHub and the Octocat, belong to their respective owners; this is a fan project, not affiliated with or endorsed by any of these companies.
 
 ---
 

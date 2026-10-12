@@ -12,8 +12,12 @@ const GameSystems = (() => {
   const KEYNOTE_PLAYLIST = [
     { videoId: '0_DjDdfqtUE', title: 'WWDC 2025 Keynote', subtitle: 'Apple - June 9, 2025' },
     { videoId: 'RXeOiIDNNek', title: 'WWDC 2024 Keynote', subtitle: 'Apple - June 10, 2024' },
-    { videoId: 'GYkq9Rgoj8E', title: 'WWDC 2023 Keynote', subtitle: 'Apple - June 5, 2023' }
+    { videoId: 'GYkq9Rgoj8E', title: 'WWDC 2023 Keynote', subtitle: 'Apple - June 5, 2023' },
+    { videoId: 'q5D55G7Ejs8', title: 'WWDC 2022 Keynote', subtitle: 'Apple - June 6, 2022' },
+    { videoId: '0TD96VTf0Xs', title: 'WWDC 2021 Keynote', subtitle: 'Apple - June 7, 2021' },
+    { videoId: 'GEZhD3J89ZE', title: 'WWDC 2020 Keynote', subtitle: 'Apple - June 22, 2020' }
   ];
+  let keynoteVideo = null;
   const thumbnails = {};
   let playlistIndex = 0;
   const SCRIPT_DAMAGE = { weak: 40, normal: 15 };
@@ -322,7 +326,10 @@ const GameSystems = (() => {
     keynoteScreen(group, { w, h, d }) {
       const screen = dynamicCanvas(1024, 440);
       group.add(box(w + 1, h + 1, d, material('#0b0b12', { metalness: 0.6 })));
-      group.add(box(w, h, 0.05, new THREE.MeshBasicMaterial({ map: screen.texture }), 0, 0, d / 2 + 0.03));
+      const screenMesh = box(w, h, 0.05, new THREE.MeshBasicMaterial({ map: screen.texture }), 0, 0, d / 2 + 0.03);
+      group.add(screenMesh);
+      // The keynotes autoplay (muted) right on the big screen when you are close
+      keynoteVideo = VideoScreens.register(screenMesh, w, h, VideoScreens.youtubeEmbed(KEYNOTE_PLAYLIST.map((entry) => entry.videoId)));
       [-1, 1].forEach((side) => group.add(box(1.2, h + 4, 1.2, material('#2b2d42'), side * (w / 2 + 1), -2, 0)));
       keynoteScreen = { screen, group };
       group.userData.isKeynoteScreen = true;
@@ -833,6 +840,10 @@ const GameSystems = (() => {
     stream(stream) {
       state.stream = stream;
       drawKeynoteScreen();
+      if (keynoteVideo) {
+        const live = stream && stream.embedUrl ? `${stream.embedUrl}${stream.embedUrl.includes('?') ? '&' : '?'}autoplay=1&mute=1` : null;
+        keynoteVideo.setSource(live || VideoScreens.youtubeEmbed(KEYNOTE_PLAYLIST.map((entry) => entry.videoId)));
+      }
       if (stream) hooks.system(`Live stream set on the Keynote screen: ${stream.title}. Type /watch.`);
     },
     trees(trees) { state.trees = trees; renderPlantedTrees(); }

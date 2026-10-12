@@ -1,0 +1,242 @@
+{
+ "themeName": "Tech Square - Live Data Billboards",
+ "backgroundColor": "#1b1f2a",
+ "blocks": [
+  {
+   "type": "square_floor",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    116,
+    0.4,
+    116
+   ],
+   "color": "#2b2f3a",
+   "label": "Tech Square"
+  },
+  {
+   "type": "neon_arch",
+   "position": [
+    0,
+    0,
+    50
+   ],
+   "scale": [
+    24,
+    12,
+    1
+   ],
+   "color": "#1877f2",
+   "label": "TECH SQUARE"
+  },
+  {
+   "type": "led_tower",
+   "position": [
+    0,
+    22,
+    -44
+   ],
+   "scale": [
+    30,
+    44,
+    14
+   ],
+   "color": "#2ea043",
+   "label": "GitHub Mural",
+   "screen": "mural"
+  },
+  {
+   "type": "led_tower",
+   "position": [
+    -42,
+    20,
+    -10
+   ],
+   "scale": [
+    14,
+    40,
+    26
+   ],
+   "color": "#1877f2",
+   "label": "Big Tech Scoreboard",
+   "screen": "scoreboard"
+  },
+  {
+   "type": "led_tower",
+   "position": [
+    42,
+    20,
+    -10
+   ],
+   "scale": [
+    14,
+    40,
+    26
+   ],
+   "color": "#ff6600",
+   "label": "Dev Trending Topics",
+   "screen": "trends"
+  },
+  {
+   "type": "ticker_tower",
+   "position": [
+    -40,
+    17,
+    34
+   ],
+   "scale": [
+    12,
+    34,
+    12
+   ],
+   "color": "#ffd43b",
+   "label": "Live Ticker"
+  },
+  {
+   "type": "ticker_tower",
+   "position": [
+    40,
+    17,
+    34
+   ],
+   "scale": [
+    12,
+    34,
+    12
+   ],
+   "color": "#ffd43b",
+   "label": "Live Ticker"
+  },
+  {
+   "type": "stock_podium",
+   "position": [
+    -22,
+    0,
+    -4
+   ],
+   "scale": [
+    14,
+    0.6,
+    4
+   ],
+   "color": "#161b22",
+   "label": "Stock bars"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -14,
+    3,
+    18
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    14,
+    3,
+    18
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -14,
+    3,
+    36
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    14,
+    3,
+    36
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "bench",
+   "position": [
+    -24,
+    0,
+    10
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    24,
+    0,
+    10
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "bench",
+   "position": [
+    0,
+    0,
+    22
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#a8743f"
+  },
+  {
+   "type": "announcement_kiosk",
+   "position": [
+    12,
+    3,
+    6
+   ],
+   "scale": [
+    4,
+    6,
+    0.6
+   ],
+   "color": "#3a3f4b",
+   "label": "LIVE DATA|GitHub \u00b7 Nasdaq \u00b7 Dev trends|refreshed by the server"
+  }
+ ]
+}

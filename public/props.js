@@ -361,6 +361,36 @@ const PropKit = (() => {
     return mesh(geometry, slabMaterial);
   }
 
+  // Unit-size rounded box (1 x 1 x 1, base at y=0) for instanced buildings.
+  // UVs wrap around the perimeter so window textures tile cleanly on every wall.
+  let roundedUnitGeometry = null;
+  function roundedUnitBox() {
+    if (roundedUnitGeometry) return roundedUnitGeometry;
+    const r = 0.12;
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.5 + r, -0.5);
+    shape.lineTo(0.5 - r, -0.5);
+    shape.quadraticCurveTo(0.5, -0.5, 0.5, -0.5 + r);
+    shape.lineTo(0.5, 0.5 - r);
+    shape.quadraticCurveTo(0.5, 0.5, 0.5 - r, 0.5);
+    shape.lineTo(-0.5 + r, 0.5);
+    shape.quadraticCurveTo(-0.5, 0.5, -0.5, 0.5 - r);
+    shape.lineTo(-0.5, -0.5 + r);
+    shape.quadraticCurveTo(-0.5, -0.5, -0.5 + r, -0.5);
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: 1, bevelEnabled: false, curveSegments: 4 });
+    geometry.rotateX(Math.PI / 2);
+    geometry.translate(0, 1, 0);
+    const position = geometry.attributes.position;
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < position.count; i++) {
+      const angle = Math.atan2(position.getZ(i), position.getX(i));
+      uv.setXY(i, (angle / (Math.PI * 2) + 0.5) * 4, position.getY(i));
+    }
+    geometry.computeVertexNormals();
+    roundedUnitGeometry = geometry;
+    return geometry;
+  }
+
   // Merges every mesh of a group into one mesh per material (fewer draw calls for big interiors)
   function mergeByMaterial(source) {
     source.updateMatrixWorld(true);
@@ -484,8 +514,8 @@ const PropKit = (() => {
     road(group, { w, h, d, color, type }) {
       const alongX = w > d;
       const length = alongX ? w : d;
-      const texture = repeated(roadTexture(color), 1, length / 8);
-      if (alongX) texture.rotation = Math.PI / 2;
+      // Warm paved promenades (Decentraland style) instead of asphalt with lane markings
+      const texture = repeated(cobbleTexture('#d9a877'), alongX ? length / 6 : w / 6, alongX ? d / 6 : length / 6);
       const roadMaterial = /walkway/.test(type)
         ? material(color, { roughness: 0.8 })
         : new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 });
@@ -743,7 +773,7 @@ const PropKit = (() => {
       inner.add(box(o.w * 0.9, 0.12, 0.04, glow('#39d353', 1), 0, h * 0.15, o.d * 0.45 + 0.02));
       [-0.25, 0.25].forEach((offset) => {
         inner.add(box(0.9, 0.55, 0.06, material('#111'), o.w * offset, h / 2 + 0.4, -o.d * 0.15));
-        inner.add(box(0.84, 0.48, 0.02, new THREE.MeshBasicMaterial({ map: codeScreenTexture(label || 'Desk') }), o.w * offset, h / 2 + 0.4, -o.d * 0.15 - 0.04)).rotation.y = Math.PI;
+        { const added = box(0.84, 0.48, 0.02, new THREE.MeshBasicMaterial({ map: codeScreenTexture(label || 'Desk') }), o.w * offset, h / 2 + 0.4, -o.d * 0.15 - 0.04); added.rotation.y = Math.PI; inner.add(added); }
         inner.add(box(0.08, 0.2, 0.08, material('#111'), o.w * offset, h / 2 + 0.1, -o.d * 0.15));
       });
       inner.add(laptop(o.w * 0.35, h / 2 + 0.04, o.d * 0.05, Math.PI));
@@ -1301,7 +1331,7 @@ const PropKit = (() => {
   const kit = {
     material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite,
     labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture,
-    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, mergeByMaterial, laptop, interactive
+    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive
   };
 
   return { buildBlock, registerBuilder, kit, textSprite, material, glow, animatedObjects, interactables };

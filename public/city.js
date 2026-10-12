@@ -50,8 +50,11 @@ const City = (() => {
     }
     const [cellX, cellZ] = world.cell;
     const [spanX, spanZ] = world.span || [1, 1];
+    // Scenes are nudged off the grid so Genesis City feels like one organic place
+    const jitter = world.key === 'plaza' ? [0, 0] : (() => { const random = seededRandom(world.key.split('').reduce((sum, c) => sum * 31 + c.charCodeAt(0), 7)); return [(random() - 0.5) * 18, (random() - 0.5) * 18]; })();
+    const spread = 1.25; // extra room between scenes for paths and gardens
     return {
-      center: new THREE.Vector3((cellX + (spanX - 1) / 2) * CELL_SIZE, world.elevation || 0, (cellZ + (spanZ - 1) / 2) * CELL_SIZE),
+      center: new THREE.Vector3((cellX + (spanX - 1) / 2) * CELL_SIZE * (world.key === 'plaza' ? 1 : spread) + jitter[0], world.elevation || 0, (cellZ + (spanZ - 1) / 2) * CELL_SIZE * (world.key === 'plaza' ? 1 : spread) + jitter[1]),
       size: [spanX * CELL_SIZE - ROAD_WIDTH, spanZ * CELL_SIZE - ROAD_WIDTH],
       cells: { minX: cellX, maxX: cellX + spanX - 1, minZ: cellZ, maxZ: cellZ + spanZ - 1 }
     };
@@ -77,13 +80,6 @@ const City = (() => {
     const root = new THREE.Group();
     root.position.copy(layout.center);
     root.userData.districtKey = world.key;
-
-    if (!world.region) {
-      const lot = new THREE.Mesh(new THREE.BoxGeometry(layout.size[0], 0.2, layout.size[1]), material(mapData.backgroundColor, { roughness: 1 }));
-      lot.position.y = -0.2;
-      lot.receiveShadow = true;
-      if (!layout.center.y) root.add(lot);
-    }
 
     // Separate Worlds (big maps) float on their own island of land, far from Genesis City
     if (world.world) root.add(buildWorldIsland(layout.size, world.key));
@@ -144,6 +140,21 @@ const City = (() => {
   // --------------------------------------------------------------------------
   // Ground, roads, street lamps and generated neighborhoods
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // Ground (with holes for underground entrances), winding paths and organic
+  // scattered points of interest: no street grid, no square blocks
+  // --------------------------------------------------------------------------
+  const paths = []; // polylines [[x, z], ...] used by the minimap
+  const PATH_WIDTH = 5;
+
+  function undergroundHoles() {
+    const holes = [];
+    districts.forEach((district) => district.mapData.blocks.filter((block) => block.type === 'square_pool').forEach((block) => {
+      holes.push({ x: district.layout.center.x + block.position[0], z: district.layout.center.z + block.position[2], size: block.scale[0] });
+    }));
+    return holes;
+  }
+
   function buildGround() {
     const grassTexture = PropKit.kit.canvasTexture('grass', 128, 128, (ctx, w, h) => {
       ctx.fillStyle = '#7cb342';
@@ -153,128 +164,188 @@ const City = (() => {
         ctx.fillRect((i * 37) % w, (i * 91) % h, 3, 3);
       }
     });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshStandardMaterial({ map: repeated(grassTexture, 600, 600), roughness: 1 }));
+    const shape = new THREE.Shape();
+    shape.moveTo(-2000, -2000);
+    shape.lineTo(2000, -2000);
+    shape.lineTo(2000, 2000);
+    shape.lineTo(-2000, 2000);
+    shape.closePath();
+    // Square holes where an underground entrance (square pool) opens
+    undergroundHoles().forEach(({ x, z, size }) => {
+      const half = size / 2;
+      const hole = new THREE.Path();
+      hole.moveTo(x - half, -(z - half));
+      hole.lineTo(x - half, -(z + half));
+      hole.lineTo(x + half, -(z + half));
+      hole.lineTo(x + half, -(z - half));
+      hole.closePath();
+      shape.holes.push(hole);
+    });
+    const texture = repeated(grassTexture, 1, 1);
+    texture.repeat.set(1 / 6.5, 1 / 6.5);
+    const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = GROUND_LEVEL;
     ground.receiveShadow = true;
     scene.add(ground);
     pickables.push(ground);
     sharedCollidables.push(ground);
-
   }
 
-  function buildRoads() {
-    const extent = (CITY_RADIUS + 0.5) * CELL_SIZE;
-    const asphalt = roadTexture('#3d4247');
-    const roads = new THREE.Group();
+  // A flat ribbon following a curve: warm paved walkway like Decentraland's paths
+  function ribbon(points, width, ribbonMaterial, y) {
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    let distance = 0;
+    points.forEach((point, index) => {
+      const next = points[Math.min(index + 1, points.length - 1)];
+      const previous = points[Math.max(index - 1, 0)];
+      const dx = next.x - previous.x;
+      const dz = next.z - previous.z;
+      const length = Math.hypot(dx, dz) || 1;
+      const nx = -dz / length * width / 2;
+      const nz = dx / length * width / 2;
+      if (index > 0) distance += Math.hypot(point.x - points[index - 1].x, point.z - points[index - 1].z);
+      positions.push(point.x + nx, y, point.z + nz, point.x - nx, y, point.z - nz);
+      uvs.push(0, distance / width, 1, distance / width);
+      if (index > 0) {
+        const base = index * 2;
+        indices.push(base - 2, base, base - 1, base - 1, base, base + 1);
+      }
+    });
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    const result = new THREE.Mesh(geometry, ribbonMaterial);
+    result.receiveShadow = true;
+    return result;
+  }
+
+  function buildPaths() {
+    const random = seededRandom(31337);
+    const paverTexture = repeated(PropKit.kit.cobbleTexture('#d9a877'), 1, 1);
+    const paver = new THREE.MeshStandardMaterial({ map: paverTexture, roughness: 0.9 });
     const lampPositions = [];
+    const group = new THREE.Group();
+    const plaza = districts.find((district) => district.world.key === 'plaza');
+    const plazaRadius = plaza ? Math.min(plaza.layout.size[0], plaza.layout.size[1]) / 2 : 40;
 
-    // Road segments run along cell edges; edges inside a multi-cell district are skipped
-    for (let line = -CITY_RADIUS - 1; line <= CITY_RADIUS; line++) {
-      const offset = (line + 0.5) * CELL_SIZE;
-      for (let cell = -CITY_RADIUS; cell <= CITY_RADIUS; cell++) {
-        const along = cell * CELL_SIZE;
-        const westDistrict = districtOwningCell(line, cell);
-        const eastDistrict = districtOwningCell(line + 1, cell);
-        if (!(westDistrict && westDistrict === eastDistrict)) {
-          const texture = repeated(asphalt, 1, (CELL_SIZE - ROAD_WIDTH) / 8);
-          const segment = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, 0.1, CELL_SIZE - ROAD_WIDTH), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 }));
-          segment.position.set(offset, GROUND_LEVEL + 0.1, along);
-          segment.receiveShadow = true;
-          roads.add(segment);
-          lampPositions.push([offset + ROAD_WIDTH / 2 + 0.6, along - 12], [offset - ROAD_WIDTH / 2 - 0.6, along + 12]);
-        }
-        const northDistrict = districtOwningCell(cell, line);
-        const southDistrict = districtOwningCell(cell, line + 1);
-        if (!(northDistrict && northDistrict === southDistrict)) {
-          const texture = repeated(asphalt, 1, (CELL_SIZE - ROAD_WIDTH) / 8);
-          texture.rotation = Math.PI / 2;
-          const segment = new THREE.Mesh(new THREE.BoxGeometry(CELL_SIZE - ROAD_WIDTH, 0.1, ROAD_WIDTH), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 }));
-          segment.position.set(along, GROUND_LEVEL + 0.1, offset);
-          segment.receiveShadow = true;
-          roads.add(segment);
-        }
-      }
-      // Intersections
-      for (let other = -CITY_RADIUS - 1; other <= CITY_RADIUS; other++) {
-        const intersection = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, 0.1, ROAD_WIDTH), material('#3d4247', { roughness: 0.9 }));
-        intersection.position.set(offset, GROUND_LEVEL + 0.1, (other + 0.5) * CELL_SIZE);
-        roads.add(intersection);
-      }
+    // Ring promenade around the plaza
+    const ring = [];
+    for (let i = 0; i <= 96; i++) {
+      const angle = (i / 96) * Math.PI * 2;
+      const radius = plazaRadius + 14 + Math.sin(angle * 5) * 3;
+      ring.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
     }
-    scene.add(roads);
-    pickables.push(roads);
-    sharedCollidables.push(roads);
+    group.add(ribbon(ring, PATH_WIDTH + 1, paver, GROUND_LEVEL + 0.05));
+    paths.push(ring.map((point) => [point.x, point.z]));
+    ring.forEach((point, index) => { if (index % 6 === 0) lampPositions.push([point.x * 1.04, point.z * 1.04]); });
 
-    // Street lamps (instanced posts + glowing heads that light up at night)
-    const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.14, 5, 6).translate(0, 2.5, 0), material('#37474f', { metalness: 0.6 }), lampPositions.length);
-    streetLampHeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: '#ffd27a', emissiveIntensity: 0.2 }), lampPositions.length);
+    // Winding paths from the promenade to every scene of Genesis City
+    districts.filter((district) => !district.world.world && district !== plaza).forEach((district) => {
+      const center = district.layout.center;
+      const direction = new THREE.Vector3(center.x, 0, center.z).normalize();
+      const start = direction.clone().multiplyScalar(plazaRadius + 14);
+      const end = new THREE.Vector3(center.x, 0, center.z).sub(direction.clone().multiplyScalar(Math.min(district.layout.size[0], district.layout.size[1]) / 2 - 2));
+      const side = new THREE.Vector3(-direction.z, 0, direction.x);
+      const wiggle = (random() - 0.5) * 24;
+      const curve = new THREE.CatmullRomCurve3([
+        start,
+        start.clone().lerp(end, 0.33).add(side.clone().multiplyScalar(wiggle)),
+        start.clone().lerp(end, 0.66).add(side.clone().multiplyScalar(-wiggle * 0.7)),
+        end
+      ]);
+      const points = curve.getPoints(Math.max(8, Math.round(start.distanceTo(end) / 3)));
+      group.add(ribbon(points, PATH_WIDTH, paver, GROUND_LEVEL + 0.04));
+      paths.push(points.map((point) => [point.x, point.z]));
+      points.forEach((point, index) => {
+        if (index % 5 !== 2) return;
+        const next = points[Math.min(index + 1, points.length - 1)];
+        const tangent = new THREE.Vector3(next.x - point.x, 0, next.z - point.z).normalize();
+        const offset = (index % 10 < 5 ? 1 : -1) * (PATH_WIDTH / 2 + 0.8);
+        lampPositions.push([point.x - tangent.z * offset, point.z + tangent.x * offset]);
+      });
+    });
+    scene.add(group);
+    pickables.push(group);
+
+    // Classic lamp posts with colored banners along the paths
     const matrix = new THREE.Matrix4();
+    const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.14, 5, 6).translate(0, 2.5, 0), material('#263238', { metalness: 0.6 }), lampPositions.length);
+    streetLampHeads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.38, 10, 8), new THREE.MeshStandardMaterial({ color: '#fff3c4', emissive: '#ffd27a', emissiveIntensity: 0.2 }), lampPositions.length);
+    const bannerColors = ['#1877f2', '#2da44e', '#4dabf7', '#ffbe0b', '#0b4fa8', '#fb5607'];
+    const banners = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.1, 2.2), new THREE.MeshStandardMaterial({ color: '#ffffff', side: THREE.DoubleSide, roughness: 0.8 }), lampPositions.length);
+    const bannerColor = new THREE.Color();
     lampPositions.forEach(([x, z], index) => {
       matrix.makeTranslation(x, GROUND_LEVEL, z);
       posts.setMatrixAt(index, matrix);
       matrix.makeTranslation(x, GROUND_LEVEL + 5.1, z);
       streetLampHeads.setMatrixAt(index, matrix);
-    });
-    scene.add(posts, streetLampHeads);
-
-    // Colorful street banners hanging from every lamp post
-    const bannerColors = ['#1877f2', '#2da44e', '#4dabf7', '#ffbe0b', '#0b4fa8', '#fb5607'];
-    const banners = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.1, 2.2), new THREE.MeshStandardMaterial({ color: '#ffffff', side: THREE.DoubleSide, roughness: 0.8 }), lampPositions.length);
-    const bannerColor = new THREE.Color();
-    lampPositions.forEach(([x, z], index) => {
-      matrix.makeRotationY(Math.PI / 2);
-      matrix.setPosition(x, GROUND_LEVEL + 3.4, z + 0.62);
+      matrix.makeRotationY(Math.atan2(x, z));
+      matrix.setPosition(x, GROUND_LEVEL + 3.4, z);
       banners.setMatrixAt(index, matrix);
       banners.setColorAt(index, bannerColor.set(bannerColors[index % bannerColors.length]));
     });
     banners.raycast = () => {};
-    scene.add(banners);
+    scene.add(posts, streetLampHeads, banners);
   }
 
-  // Deterministic Decentraland-style parcels for every cell without a district:
-  // mostly grass and trees, plus small houses, art sculptures, kiosks, a few
-  // mid-rise scenes and empty "for sale" parcels (no endless city-builder grid)
+  // Community links shown on digital art frames (press E to open)
+  const COMMUNITY_LINKS = [
+    ['GitHub Community', 'https://github.com/orgs/community/discussions'],
+    ['Stack Overflow', 'https://stackoverflow.com'],
+    ['MDN Web Docs', 'https://developer.mozilla.org'],
+    ['freeCodeCamp', 'https://www.freecodecamp.org'],
+    ['DEV Community', 'https://dev.to'],
+    ['The Odin Project', 'https://www.theodinproject.com'],
+    ['Hacker News', 'https://news.ycombinator.com'],
+    ['GitHub Explore', 'https://github.com/explore']
+  ];
+
+  function nearPath(x, z, margin) {
+    return paths.some((path) => path.some(([px, pz]) => Math.abs(px - x) < margin && Math.abs(pz - z) < margin && Math.hypot(px - x, pz - z) < margin));
+  }
+
+  function insideDistrict(x, z, margin) {
+    return districts.some((district) => {
+      if (district.world.world) return false;
+      const { center, size } = district.layout;
+      return Math.abs(x - center.x) < size[0] / 2 + margin && Math.abs(z - center.z) < size[1] / 2 + margin;
+    });
+  }
+
+  // Organic scatter of points of interest around the scenes
   function buildNeighborhoods() {
-    const buildings = [];
-    const houses = [];
+    const { box, cylinder, sphere, mesh, glow: glowMaterial, interactive, labelTexture } = PropKit.kit;
+    const random = seededRandom(2024);
     const trees = [];
-    const tiles = [];
+    const houses = [];
     const sculptures = [];
     const kiosks = [];
-    const signs = [];
-    for (let cellX = -CITY_RADIUS; cellX <= CITY_RADIUS; cellX++) {
-      for (let cellZ = -CITY_RADIUS; cellZ <= CITY_RADIUS; cellZ++) {
-        if (districtOwningCell(cellX, cellZ)) continue;
-        const random = seededRandom((cellX + 50) * 1000 + (cellZ + 50));
-        const plot = (CELL_SIZE - ROAD_WIDTH) / 3;
-        for (let px = 0; px < 3; px++) {
-          for (let pz = 0; pz < 3; pz++) {
-            const x = cellX * CELL_SIZE - plot + px * plot;
-            const z = cellZ * CELL_SIZE - plot + pz * plot;
-            const roll = random();
-            if (roll < 0.36) {
-              const count = 3 + Math.floor(random() * 5);
-              for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * (plot - 3), z: z + (random() - 0.5) * (plot - 3), size: 0.8 + random() * 0.8, shade: random() });
-            } else if (roll < 0.56) {
-              houses.push({ x, z, width: 6 + random() * 3, depth: 6 + random() * 3, height: 3.5 + random() * 2, hue: random(), roof: random() });
-              tiles.push({ x, z: z + plot / 2 - 2.5, w: 2, d: 5, color: '#d7ccc8' });
-              trees.push({ x: x + plot / 2 - 2.5, z: z - plot / 2 + 2.5, size: 1, shade: random() });
-            } else if (roll < 0.68) {
-              tiles.push({ x, z, w: 8, d: 8, color: '#e0e0e0' });
-              sculptures.push({ x, z, hue: random(), kind: Math.floor(random() * 3), size: 1.5 + random() * 1.5 });
-            } else if (roll < 0.78) {
-              kiosks.push({ x, z, hue: random() });
-              tiles.push({ x, z, w: 10, d: 8, color: '#cfd8dc' });
-            } else if (roll < 0.88) {
-              tiles.push({ x, z, w: plot - 3, d: plot - 3, color: '#a1887f' });
-              signs.push({ x: x - plot / 2 + 3, z: z + plot / 2 - 3 });
-            } else {
-              buildings.push({ x, z, width: 8 + random() * 5, depth: 8 + random() * 5, height: 7 + random() * 9, hue: random() });
-              tiles.push({ x, z, w: plot - 2, d: plot - 2, color: '#b0b7bf' });
-            }
-          }
-        }
+    const midrises = [];
+    const spots = [];
+    const STEP = 21;
+    for (let gx = -340; gx <= 340; gx += STEP) {
+      for (let gz = -340; gz <= 340; gz += STEP) {
+        const x = gx + (random() - 0.5) * STEP * 0.8;
+        const z = gz + (random() - 0.5) * STEP * 0.8;
+        const radius = Math.hypot(x, z);
+        if (radius < 110 || radius > 360 || insideDistrict(x, z, 6) || nearPath(x, z, 5)) { random(); continue; }
+        const roll = random();
+        if (roll < 0.42) {
+          const count = 3 + Math.floor(random() * 5);
+          for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * 12, z: z + (random() - 0.5) * 12, size: 0.8 + random() * 0.8, shade: random() });
+        } else if (roll < 0.56) houses.push({ x, z, width: 6 + random() * 3, depth: 6 + random() * 3, height: 3.5 + random() * 2, hue: random(), roof: random(), turn: random() * Math.PI });
+        else if (roll < 0.65) sculptures.push({ x, z, hue: random(), kind: Math.floor(random() * 3), size: 1.5 + random() * 1.5 });
+        else if (roll < 0.72) kiosks.push({ x, z, hue: random(), turn: random() * Math.PI });
+        else if (roll < 0.79) spots.push({ type: 'campfire', x, z });
+        else if (roll < 0.85) spots.push({ type: 'art', x, z, link: COMMUNITY_LINKS[Math.floor(random() * COMMUNITY_LINKS.length)], seed: Math.floor(random() * 1000), turn: random() * Math.PI * 2 });
+        else if (roll < 0.9) spots.push({ type: 'picnic', x, z, turn: random() * Math.PI });
+        else if (roll < 0.94) spots.push({ type: 'sale', x, z });
+        else midrises.push({ x, z, width: 9 + random() * 5, depth: 9 + random() * 5, height: 8 + random() * 10, hue: random() });
       }
     }
 
@@ -284,127 +355,161 @@ const City = (() => {
     const scale = new THREE.Vector3();
     const color = new THREE.Color();
     const pastel = ['#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#ffadad', '#f1faee'];
-    const addInstanced = (instanced, castShadow = true) => {
-      instanced.castShadow = castShadow;
+    const addInstanced = (instanced, solid = true) => {
+      instanced.castShadow = true;
       instanced.receiveShadow = true;
       scene.add(instanced);
-      sharedCollidables.push(instanced);
-      pickables.push(instanced);
+      if (solid) { sharedCollidables.push(instanced); pickables.push(instanced); }
     };
 
-    // Mid-rise scenes: window texture that glows at night
+    // Trees (round, Decentraland-style, with autumn accents)
+    const trunkMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.35, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), Math.max(1, trees.length));
+    const crownMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), material('#ffffff', { roughness: 0.9 }), Math.max(1, trees.length));
+    trunkMesh.count = crownMesh.count = trees.length;
+    trees.forEach((tree, index) => {
+      matrix.compose(position.set(tree.x, GROUND_LEVEL, tree.z), quaternion.identity(), scale.set(tree.size, tree.size * 2.5, tree.size));
+      trunkMesh.setMatrixAt(index, matrix);
+      matrix.compose(position.set(tree.x, GROUND_LEVEL + tree.size * 3.4, tree.z), quaternion.identity(), scale.set(tree.size * 1.9, tree.size * 1.7, tree.size * 1.9));
+      crownMesh.setMatrixAt(index, matrix);
+      if (tree.shade > 0.68) crownMesh.setColorAt(index, color.set(['#ff7f50', '#f78fb3', '#ffb347', '#ff4d6d'][Math.floor(tree.shade * 100) % 4]));
+      else crownMesh.setColorAt(index, color.setHSL(0.27 + tree.shade * 0.08, 0.5, 0.34 + tree.shade * 0.12));
+    });
+    addInstanced(trunkMesh);
+    addInstanced(crownMesh, false);
+
+    // Cottages with rounded walls and pyramid roofs, turned in every direction
+    const houseMap = repeated(windowsTexture('#ffffff', '#ffe9a8'), 2, 1);
+    const houseMaterial = new THREE.MeshStandardMaterial({ map: houseMap, emissiveMap: houseMap, emissive: '#000000', roughness: 0.8 });
+    nightWindowMaterials.push(houseMaterial);
+    const houseMesh = new THREE.InstancedMesh(PropKit.kit.roundedUnitBox(), houseMaterial, Math.max(1, houses.length));
+    const roofMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(0.75, 1, 4).rotateY(Math.PI / 4).translate(0, 0.5, 0), material('#ffffff', { flatShading: true }), Math.max(1, houses.length));
+    houseMesh.count = roofMesh.count = houses.length;
+    const roofColors = ['#c0392b', '#2c3e50', '#16a085', '#8e44ad', '#d35400'];
+    houses.forEach((house, index) => {
+      quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), house.turn);
+      matrix.compose(position.set(house.x, GROUND_LEVEL, house.z), quaternion, scale.set(house.width, house.height, house.depth));
+      houseMesh.setMatrixAt(index, matrix);
+      houseMesh.setColorAt(index, color.set(pastel[Math.floor(house.hue * pastel.length)]));
+      matrix.compose(position.set(house.x, GROUND_LEVEL + house.height, house.z), quaternion, scale.set(house.width * 1.15, house.height * 0.7, house.depth * 1.15));
+      roofMesh.setMatrixAt(index, matrix);
+      roofMesh.setColorAt(index, color.set(roofColors[Math.floor(house.roof * roofColors.length)]));
+    });
+    addInstanced(houseMesh);
+    addInstanced(roofMesh);
+
+    // A few mid-rise scenes with lit windows
     const windowMap = repeated(windowsTexture('#ffffff', '#ffe9a8'), 2, 3);
-    const buildingMaterial = new THREE.MeshStandardMaterial({ map: windowMap, emissiveMap: windowMap, emissive: '#000000', roughness: 0.6 });
+    const buildingMaterial = new THREE.MeshStandardMaterial({ map: windowMap, emissiveMap: windowMap, emissive: '#000000', roughness: 0.4, metalness: 0.2 });
     nightWindowMaterials.push(buildingMaterial);
-    const buildingMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), buildingMaterial, Math.max(1, buildings.length));
-    buildingMesh.count = buildings.length;
-    buildings.forEach((building, index) => {
+    const buildingMesh = new THREE.InstancedMesh(PropKit.kit.roundedUnitBox(), buildingMaterial, Math.max(1, midrises.length));
+    buildingMesh.count = midrises.length;
+    midrises.forEach((building, index) => {
       matrix.compose(position.set(building.x, GROUND_LEVEL, building.z), quaternion.identity(), scale.set(building.width, building.height, building.depth));
       buildingMesh.setMatrixAt(index, matrix);
       buildingMesh.setColorAt(index, color.set(pastel[Math.floor(building.hue * pastel.length)]));
     });
     addInstanced(buildingMesh);
 
-    // Small houses with pyramid roofs, doors and windows
-    const houseMap = repeated(windowsTexture('#ffffff', '#ffe9a8'), 2, 1);
-    const houseMaterial = new THREE.MeshStandardMaterial({ map: houseMap, emissiveMap: houseMap, emissive: '#000000', roughness: 0.8 });
-    nightWindowMaterials.push(houseMaterial);
-    const houseMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), houseMaterial, Math.max(1, houses.length));
-    const roofMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(0.75, 1, 4).rotateY(Math.PI / 4).translate(0, 0.5, 0), material('#ffffff', { flatShading: true }), Math.max(1, houses.length));
-    const doorMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, 2, 0.1).translate(0, 1, 0), material('#6d4c41'), Math.max(1, houses.length));
-    houseMesh.count = roofMesh.count = doorMesh.count = houses.length;
-    const roofColors = ['#c0392b', '#2c3e50', '#16a085', '#8e44ad', '#d35400'];
-    houses.forEach((house, index) => {
-      matrix.compose(position.set(house.x, GROUND_LEVEL, house.z), quaternion.identity(), scale.set(house.width, house.height, house.depth));
-      houseMesh.setMatrixAt(index, matrix);
-      houseMesh.setColorAt(index, color.set(pastel[Math.floor(house.hue * pastel.length)]));
-      matrix.compose(position.set(house.x, GROUND_LEVEL + house.height, house.z), quaternion.identity(), scale.set(house.width * 1.15, house.height * 0.7, house.depth * 1.15));
-      roofMesh.setMatrixAt(index, matrix);
-      roofMesh.setColorAt(index, color.set(roofColors[Math.floor(house.roof * roofColors.length)]));
-      matrix.makeTranslation(house.x, GROUND_LEVEL, house.z + house.depth / 2 + 0.05);
-      doorMesh.setMatrixAt(index, matrix);
-    });
-    addInstanced(houseMesh);
-    addInstanced(roofMesh);
-    scene.add(doorMesh);
-
-    // Trees
-    const trunkMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.35, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), trees.length);
-    const crownMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material('#ffffff', { flatShading: true }), trees.length);
-    trees.forEach((tree, index) => {
-      matrix.compose(position.set(tree.x, GROUND_LEVEL, tree.z), quaternion.identity(), scale.set(tree.size, tree.size * 2.5, tree.size));
-      trunkMesh.setMatrixAt(index, matrix);
-      matrix.compose(position.set(tree.x, GROUND_LEVEL + tree.size * 3.4, tree.z), quaternion.identity(), scale.set(tree.size * 1.8, tree.size * 2, tree.size * 1.8));
-      crownMesh.setMatrixAt(index, matrix);
-      // Mostly green, with Decentraland-style autumn pinks and oranges
-      if (tree.shade > 0.7) crownMesh.setColorAt(index, color.set(['#ff7f50', '#f78fb3', '#ffb347', '#ff4d6d'][Math.floor(tree.shade * 100) % 4]));
-      else crownMesh.setColorAt(index, color.setHSL(0.27 + tree.shade * 0.08, 0.5, 0.32 + tree.shade * 0.12));
-    });
-    addInstanced(trunkMesh);
-    // Foliage is decorative: the avatar walks under it instead of landing on treetops
-    crownMesh.castShadow = true;
-    scene.add(crownMesh);
-
-    // Paths and plazas
-    const tileMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.1, 1), material('#ffffff', { roughness: 1 }), tiles.length);
-    tiles.forEach((tile, index) => {
-      matrix.compose(position.set(tile.x, GROUND_LEVEL + 0.05, tile.z), quaternion.identity(), scale.set(tile.w, 1, tile.d));
-      tileMesh.setMatrixAt(index, matrix);
-      tileMesh.setColorAt(index, color.set(tile.color));
-    });
-    addInstanced(tileMesh, false);
-
-    // Community art sculptures on pedestals, slowly spinning
-    const pedestalMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(2, 1.2, 2).translate(0, 0.6, 0), material('#f5f5f5'), Math.max(1, sculptures.length));
-    const artGeometries = [new THREE.IcosahedronGeometry(1, 0), new THREE.TorusKnotGeometry(0.7, 0.22, 48, 8), new THREE.OctahedronGeometry(1, 0)];
-    const artMeshes = artGeometries.map((geometry) => new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25, metalness: 0.3, flatShading: true }), Math.max(1, sculptures.length)));
-    artMeshes.forEach((artMesh) => { artMesh.count = 0; });
+    // Spinning community sculptures on pedestals
+    const pedestalMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.1, 1.3, 1.2, 16).translate(0, 0.6, 0), material('#f5f5f5'), Math.max(1, sculptures.length));
     pedestalMesh.count = sculptures.length;
+    const artGeometries = [new THREE.IcosahedronGeometry(1, 0), new THREE.TorusKnotGeometry(0.7, 0.22, 48, 8), new THREE.OctahedronGeometry(1, 0)];
+    const artMeshes = artGeometries.map((geometry) => new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.2, metalness: 0.4, flatShading: true }), Math.max(1, sculptures.length)));
+    artMeshes.forEach((artMesh) => { artMesh.count = 0; });
     sculptures.forEach((sculpture, index) => {
       matrix.makeTranslation(sculpture.x, GROUND_LEVEL, sculpture.z);
       pedestalMesh.setMatrixAt(index, matrix);
       const artMesh = artMeshes[sculpture.kind];
-      const slot = artMesh.count++;
-      sculpture.slot = slot;
-      artMesh.setColorAt(slot, color.setHSL(sculpture.hue, 0.75, 0.55));
+      sculpture.slot = artMesh.count++;
+      artMesh.setColorAt(sculpture.slot, color.setHSL(sculpture.hue, 0.75, 0.55));
     });
     addInstanced(pedestalMesh);
     artMeshes.forEach((artMesh) => { artMesh.castShadow = true; scene.add(artMesh); });
-    const spinQuaternion = new THREE.Quaternion();
+    const spin = new THREE.Quaternion();
     const yAxis = new THREE.Vector3(0, 1, 0);
     animatedCity.push((time) => {
       sculptures.forEach((sculpture) => {
-        spinQuaternion.setFromAxisAngle(yAxis, time * 0.5 + sculpture.hue * 6);
-        matrix.compose(position.set(sculpture.x, GROUND_LEVEL + 2.4 + sculpture.size * 0.6 + Math.sin(time + sculpture.hue * 9) * 0.2, sculpture.z), spinQuaternion, scale.setScalar(sculpture.size * 0.6));
+        spin.setFromAxisAngle(yAxis, time * 0.5 + sculpture.hue * 6);
+        matrix.compose(position.set(sculpture.x, GROUND_LEVEL + 2.4 + sculpture.size * 0.6 + Math.sin(time + sculpture.hue * 9) * 0.2, sculpture.z), spin, scale.setScalar(sculpture.size * 0.6));
         artMeshes[sculpture.kind].setMatrixAt(sculpture.slot, matrix);
       });
       artMeshes.forEach((artMesh) => { artMesh.instanceMatrix.needsUpdate = true; });
     });
 
     // Market kiosks with striped awnings
-    const kioskBody = new THREE.InstancedMesh(new THREE.BoxGeometry(4, 2.4, 3).translate(0, 1.2, 0), material('#fafafa'), Math.max(1, kiosks.length));
+    const kioskBody = new THREE.InstancedMesh(PropKit.kit.roundedUnitBox(), material('#fafafa'), Math.max(1, kiosks.length));
     const kioskAwning = new THREE.InstancedMesh(new THREE.BoxGeometry(5, 0.25, 4.2).translate(0, 3, 0.4), material('#ffffff'), Math.max(1, kiosks.length));
     kioskBody.count = kioskAwning.count = kiosks.length;
     kiosks.forEach((kiosk, index) => {
-      matrix.makeTranslation(kiosk.x, GROUND_LEVEL, kiosk.z);
+      quaternion.setFromAxisAngle(yAxis, kiosk.turn);
+      matrix.compose(position.set(kiosk.x, GROUND_LEVEL, kiosk.z), quaternion, scale.set(4, 2.4, 3));
       kioskBody.setMatrixAt(index, matrix);
+      matrix.compose(position.set(kiosk.x, GROUND_LEVEL, kiosk.z), quaternion, scale.set(1, 1, 1));
       kioskAwning.setMatrixAt(index, matrix);
       kioskAwning.setColorAt(index, color.setHSL(kiosk.hue, 0.8, 0.55));
     });
     addInstanced(kioskBody);
     addInstanced(kioskAwning);
 
-    // "Parcel for sale" signs on empty land
-    signs.forEach((sign) => {
-      const post = new THREE.Group();
-      post.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, 2, 0.15), material('#795548')));
-      post.children[0].position.y = 1;
-      const board = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1, 0.08), new THREE.MeshBasicMaterial({ map: PropKit.kit.labelTexture('PARCEL FOR SALE', { bg: '#fff3e0', fg: '#e65100', font: 'bold 52px Segoe UI, Arial, sans-serif' }) }));
-      board.position.y = 2.2;
-      post.add(board);
-      post.position.set(sign.x, GROUND_LEVEL, sign.z);
-      scene.add(post);
+    // Hand-built social spots: campfires with benches, digital art with community links, picnics
+    const pois = new THREE.Group();
+    spots.forEach((spot) => {
+      const spotGroup = new THREE.Group();
+      spotGroup.position.set(spot.x, GROUND_LEVEL, spot.z);
+      if (spot.type === 'campfire') {
+        spotGroup.add(cylinder(1.4, 1.5, 0.3, material('#8d8d8d', { roughness: 1 }), 0, 0.15, 0, 10));
+        for (let i = 0; i < 4; i++) {
+          const log = cylinder(0.15, 0.15, 1.6, material('#6d4c41'), 0, 0.4, 0, 6);
+          log.rotation.set(Math.PI / 2, 0, (i / 4) * Math.PI);
+          spotGroup.add(log);
+        }
+        const flame = mesh(new THREE.ConeGeometry(0.6, 1.6, 7), glowMaterial('#ff9f1c', 2, { transparent: true, opacity: 0.9 }), 0, 1.2, 0);
+        spotGroup.add(flame);
+        animatedCity.push((time) => { flame.scale.set(1, 0.8 + Math.sin(time * 14 + spot.x) * 0.25, 1); });
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2 + 0.4;
+          const bench = new THREE.Group();
+          bench.add(box(2.2, 0.14, 0.6, material('#a8743f'), 0, 0.55, 0));
+          bench.add(box(0.12, 0.55, 0.5, material('#5d4037'), -0.9, 0.27, 0));
+          bench.add(box(0.12, 0.55, 0.5, material('#5d4037'), 0.9, 0.27, 0));
+          bench.position.set(Math.cos(angle) * 3.6, 0, Math.sin(angle) * 3.6);
+          bench.rotation.y = -angle + Math.PI / 2;
+          spotGroup.add(interactive(bench, 'sit', 'Campfire bench'));
+        }
+        spotGroup.userData.label = 'Campfire: sit down and chat';
+      } else if (spot.type === 'art') {
+        const [name, url] = spot.link;
+        const frame = new THREE.Group();
+        frame.add(box(0.15, 3, 0.15, material('#3e2723'), -1.3, 1.5, 0));
+        frame.add(box(0.15, 3, 0.15, material('#3e2723'), 1.3, 1.5, 0));
+        frame.add(box(3, 2.2, 0.12, material('#2b2d42'), 0, 2.6, 0));
+        frame.add(box(2.7, 1.9, 0.05, new THREE.MeshBasicMaterial({ map: PropKit.kit.artTexture(spot.seed) }), 0, 2.6, 0.09));
+        frame.add(box(2.7, 0.45, 0.06, new THREE.MeshBasicMaterial({ map: labelTexture(`${name} ↗`, { bg: '#1877f2', fg: '#ffffff', width: 512, height: 90, font: 'bold 40px Segoe UI, Arial' }) }), 0, 1.25, 0.1));
+        frame.rotation.y = spot.turn;
+        frame.userData.label = `Digital art · ${name} (E to open)`;
+        frame.userData.url = url;
+        spotGroup.add(interactive(frame, 'link', name));
+      } else if (spot.type === 'picnic') {
+        const table = new THREE.Group();
+        table.add(box(2.6, 0.12, 1.2, material('#c8956d'), 0, 0.8, 0));
+        [-1, 1].forEach((side) => {
+          table.add(box(2.6, 0.1, 0.4, material('#c8956d'), 0, 0.45, side * 0.9));
+          table.add(box(0.12, 0.8, 1, material('#8d5a2b'), side * 1, 0.4, 0));
+        });
+        table.add(box(1.4, 0.05, 1, material('#e63946'), 0, 0.87, 0));
+        table.rotation.y = spot.turn;
+        spotGroup.add(interactive(table, 'sit', 'Picnic table'));
+        spotGroup.add(sphere(1.4, material('#2f9e44'), 3.4, 2.6, 0, 10));
+        spotGroup.add(cylinder(0.2, 0.25, 2, material('#6d4c41'), 3.4, 1, 0, 6));
+      } else if (spot.type === 'sale') {
+        spotGroup.add(box(0.15, 2, 0.15, material('#795548'), 0, 1, 0));
+        spotGroup.add(box(2.4, 1, 0.08, new THREE.MeshBasicMaterial({ map: labelTexture('PARCEL FOR SALE', { bg: '#fff3e0', fg: '#e65100', font: 'bold 52px Segoe UI, Arial, sans-serif' }) }), 0, 2.2, 0));
+      }
+      pois.add(spotGroup);
     });
+    scene.add(pois);
+    pickables.push(pois);
+    sharedCollidables.push(pois);
 
     // A lake under the floating Zen temple
     const zen = districts.find((district) => district.world.elevation);
@@ -778,14 +883,14 @@ const City = (() => {
   // Called once every district is loaded
   function finalize() {
     buildGround();
-    buildRoads();
+    buildPaths();
     buildNeighborhoods();
     buildSkyline();
     buildHorizon();
   }
 
   return {
-    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL,
+    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, paths,
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,
     // Objects the walking avatar can stand on or bump into around a point
     collidablesAt(x, z) {
