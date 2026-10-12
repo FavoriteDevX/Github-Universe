@@ -3,7 +3,7 @@
  "backgroundColor": "#2b2f3a",
  "blocks": [
   {
-   "type": "floor",
+   "type": "toki_ground",
    "position": [
     0,
     -0.2,
@@ -14,8 +14,8 @@
     0.4,
     52
    ],
-   "color": "#7cb342",
-   "label": "Parkour Park"
+   "color": "#4e8a3a",
+   "label": "Parkour Park (Toki Land)"
   },
   {
    "type": "parkour_start",

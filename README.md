@@ -31,6 +31,16 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **Silicon Valley**: one tech campus where the headquarters stand side by side along boulevards around a central plaza: Apple Park, Googleplex, Meta, Anthropic, OpenAI, GitHub, Tesla, Microsoft, Intel, NVIDIA, HP, LinkedIn, Uber, Netflix, Cisco, Oracle, EA, Adobe and eBay.
 - **Autoplay video screens**: the keynote screens, the Theatre and the Apple Store play muted automatically when you walk close (browsers only allow muted autoplay; click a screen for sound).
 - **Screenshot mode**: **Shift+U** hides the whole interface and leaves only the scenery.
+- **Clean, Decentraland-style HUD**: only chat bubbles (they fade after a while; Enter shows the history), a small chat field, your location and coin balance, and a **dock** in the bottom-right corner that opens the profile, places, minimap, metro, Codify, inventory, invites and controls.
+- **Codify**: press **C** (or use the dock) to open a code editor on the right. Pick a language, write code and press **Add to world**: a soft spinning terminal block floats in front of you with your code above it, updating live as you type. Blocks are **private** (only you see them) unless you tick **Visible to others**, then the devs in your lobby see the block and its code in real time. E on your block edits it again.
+- **Fry your Code**: at the Genesis Plaza **Firepit** (a real campfire with logs, embers, layered flames, sparks and smoke) press E: your code block goes on a stick and roasts over the fire while bugs pop out of it. It is a playful bug finder (unbalanced brackets, `==`, `var`, leftover `console.log`/TODOs, hardcoded secrets, bare `except:`, infinite loops, `DELETE` without `WHERE`, `unwrap()`... plus the browser's own JavaScript parser for syntax errors), with a roast report in the Codify panel.
+- **Roblox-style seats everywhere**: E sits on benches, sofas, stools, theatre and amphitheater seats, HQ chairs, campfire benches, picnic tables and more.
+- **Events Explorer**: the spawn is a round plaza in front of the square pool, ringed by walls of **Top Rated** scenes, **Events** (the Worlds) and live **Dev News**, with JUMP IN cards, a diving board into the pool and a floating golden arrow. Paths start there and lead to every district, and the districts are linked to each other by winding paths.
+- **Multiverse Hotel & mini hotels**: an architectural hotel district (giant neon "M" letters around a glass tower, red swirling lobby, spiral stairs, floating beds, teal lounge) plus mini capsule and neon-cube hotels in Genesis City and in several Worlds. **E on a bed at night** sets your spawn point (`/bed`); when half of the online devs are asleep the night is skipped for everyone, like Minecraft.
+- **In-game economy (not real money)**: Multiverse Coins (**MVC**) are earned with commits (+3), chests (+5), supply drops (+25) and the Gravity Flip reward (+50), and spent on **land parcels** (250 MVC) marked by "PARCEL FOR SALE" signs around Genesis City; bought parcels show the owner. `/pay` sends coins to another dev. There is no cryptocurrency, wallet or blockchain: MVC have no real value and cannot be bought or sold.
+- **Sky and edge of the world**: Minecraft-style blocky clouds at 150 m that you can fly through (the view gets hazier the higher you go and turns white inside a cloud); past the neighborhoods the land empties out gradually, a dark treeline and rolling hills close the horizon, and an invisible wall stops you at the last coordinate (±640 m).
+- **Night lights**: path lamps glow with soft halos at night and glowing stones float over pedestals along the paths.
+- **More around the plaza**: Decentraland-style ad cube towers and a floating LED cube, supertrees with glowing bulbs, the Hall of Builders (pink colonnade), a marble statue, a kinetic sculpture, the Pavilion of Light, open promenades with planters, the **Cotton Cloud Shop** in the center of the plaza and a mini plaza with a fountain and a floating message cube at every cowork.
 - **Living World**: a Minecraft-length day (10 minutes of day, 10 of night, 20 in total) with a live countdown in the HUD; at night the sky turns deep navy-violet with stars and a moon while windows, lamps and billboards light up. Rain, snow, thunderstorms, traffic on US-101 and a Caltrain.
 - **Immersive Lighting & Shadows**: PCF soft shadow maps give the whole world an organic architectural-maquette look.
 - **Welcome Screen & Accounts**: a sign-up / log-in screen over the README banner. Accounts live on the server with scrypt-hashed passwords and session tokens; your inventory is saved with your account. Already signed in? You go straight in.
@@ -60,6 +70,8 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 | `N` | Open / close the Multiverse Metro map |
 | `E` (while riding) | Get off a vehicle |
 | `Shift` + `U` | Hide / show the whole interface (scenery only) |
+| `C` | Open / close Codify (code editor) |
+| `V` | Turn the sound of the video screens on / off |
 
 ---
 
@@ -80,6 +92,15 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/spawn` | Back to Genesis Plaza |
 | `/sethome` / `/home` | Save your current spot and come back to it later (stored in your browser) |
 | `/metro [place]` (also `/train`) | Open the metro map, or ride the train straight to a place |
+| `/bed` | Go back to the last bed you slept in (your spawn point) |
+
+### Economy (in-game coins only)
+| Command | Action |
+| --- | --- |
+| `/balance` (also `/wallet`) | Your Multiverse Coins (MVC) |
+| `/pay <player> <amount>` | Send coins to another developer |
+| `/buyland` (also `/land`) | Buy the empty parcel you are standing on (250 MVC) |
+| `/lands` | List your parcels |
 
 > Moving **another** player always requires their consent (`/tpahere` + `/tpaccept`). There is no server operator, so nobody can drag other players around.
 
@@ -173,9 +194,11 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `techsquare` | **Tech Square** | Far from the center: LED screens with live GitHub commits and PRs, Big Tech stocks and dev trending topics, fireworks |
 | `gamer` | **Gamer District** | Far from the center: the Gravity Flip tower, arcade cabinets, neon pillars, a mini-game arena and LAN-party desks |
 | `villas` | **Aero-Glass Oasis** | Far from the center: floating glass villas with smart glass and low-gravity infinity pools |
+| `festival` | **Soundwave Festival** | A big music event "amplifying Spotify": an entrance gate of LED screens on truss with a walkable bridge, flame cannons, a main stage with an LED equalizer wall, lasers, sound waves on the floor and a crowd of dancing cursors. Spotify's official embedded player (Today's Top Hits) is on the stage: press play on it, Spotify embeds do not autoplay; the show follows a 124 BPM clock because browsers cannot read the audio of an embed |
+| `hotel` | **Multiverse Hotel** | Glass tower behind giant neon "M" letters; red swirling lobby, spiral staircase, floating beds (sleep at night), reception, golden hexagon lamps, fireflies, teal lounge, capsule pods and a neon cube hotel |
 | `equalizer` | **Graphic Equalizer** | The Tower of Icons: real app icons that pulse with the music, and a spiral of icon platforms with a sound/effect on every step |
 | `workspace` | **Holo Workspace** | A futuristic glass office on a pastel gradient floor: acrylic tables and chairs with laptops, a round lounge sofa and the live Commit Leaderboard |
-| `parkour` | **Parkour Park** | Toki Land-style red platforms climbing to a finish flag, spinning coins, a timer and Crystal Falls |
+| `parkour` | **Parkour Park** | Toki Land-style red platforms climbing to a finish flag, spinning coins and a timer, on a lawn with autumn-leaf mats, puddles, cones, pink trees, a golden key and amethyst rocks with a waterfall |
 | `districts` | **Genesis Districts** | Roads, the Vegas casino (blinking marquee), Fashion Street, Aetheria cyber tower and private lots (GitHub Enterprise HQ, Vercel Deploy Zone, StackOverflow Lab) |
 | `lobby` | **HQ Lobby** | The core social room around the central reception desk, lounge sofas and the Infinite Coffee Bar |
 | `pavilion` | **Repository Pavilion** | Exhibition of green and blue pedestals with floating files, folders and branches, plus a commit history wall |
@@ -190,7 +213,7 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `sandbox` | **Sandbox Voxels** | A castle tower, a voxel bridge, an NFT showcase and a quest NPC |
 | `retro` | **Retro Contributions** | A full year of contributions as 3D voxels |
 | `beach` | **Tropical Beach** | Palm trees, beach chairs and umbrellas by the water |
-| `zen` | **Zen Temple** | A private floating island above a lake, with a waterfall, cherry trees and a meditation altar |
+| `zen` | **Zen Temple** | A floating island with cherry trees and a meditation altar; its waterfall pours all the way down to a plaza on the ground with a splash pond, benches and an elevator back up |
 
 ### Worlds (enter with the side menu or `/world <key>`)
 | `/world` key | District | How it works |
@@ -240,6 +263,9 @@ github-multiverse/
     ├── techsquare.js    # Tech Square LED screens, stock bars, fireworks, Hall of Fame & Newsroom boards
     ├── metro.js         # Multiverse Metro map and train rides
     ├── vehicles.js      # Cyber Garage: hover cars and light cycles, riding and neon trails
+    ├── festival.js      # Soundwave Festival: LED gate, stage, lasers, sound waves, dancing crowd
+    ├── codify.js        # Codify editor, code blocks in the world (private/shared), Fry your Code bug finder
+    ├── hotels.js        # Multiverse Hotel and mini hotels (beds to sleep at night)
     ├── interactions.js  # E-actions: laptops, seats, coffee, arcade, fishing, parkour, emotes
     ├── landmarks.js     # Silicon Valley headquarters, highways, traffic, Caltrain, billboards
     ├── museum.js        # Museum exhibits, Hall of Internet History, Minimal Art Gallery

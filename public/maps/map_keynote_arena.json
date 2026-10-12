@@ -119,6 +119,23 @@
     2
    ],
    "color": "#edf2f4"
+  },
+  {
+   "type": "mini_hotel",
+   "position": [
+    -44.0,
+    0,
+    -44.0
+   ],
+   "scale": [
+    10,
+    6,
+    10
+   ],
+   "color": "#63c5c9",
+   "label": "Mini Hotel",
+   "variant": "cube",
+   "name": "Keynote Amphitheater Inn"
   }
  ]
 }

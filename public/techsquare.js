@@ -348,7 +348,97 @@ const TechSquare = (() => {
     }
   };
 
-  const rules = [[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+  const rules = [
+    [/shibuya_building/, 'shibuyaBuilding'],[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+  // ---------------------------------------------------------------------------
+  // Shibuya-style buildings: colorful facades, vertical neon signs, a white
+  // corner store with a big slogan, a pastel striped column and shop windows
+  // ---------------------------------------------------------------------------
+  const SIGN_WORDS = ['コード', 'カラオケ', 'ラーメン', 'ゲーム', 'デバッグ', 'お店', 'ハッカソン', '飲食店', 'モール', 'アプリ'];
+  function verticalSign(text, background, color) {
+    return PropKit.kit.canvasTexture(`vsign|${text}|${background}`, 128, 64 + text.length * 100, (ctx, w, h) => {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 84px "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      [...text].forEach((char, i) => ctx.fillText(char, w / 2, 82 + i * 100));
+    });
+  }
+
+  function horizontalSign(text, background, color) {
+    return PropKit.kit.canvasTexture(`hsign|${text}|${background}`, 512, 128, (ctx, w, h) => {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 80px "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, w / 2, h / 2 + 4);
+    });
+  }
+
+  function stripedTexture(base, stripe) {
+    return PropKit.kit.canvasTexture(`stripes|${base}|${stripe}`, 256, 256, (ctx, w, h) => {
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = stripe;
+      for (let y = 0; y < h; y += 32) ctx.fillRect(0, y, w, 12);
+    });
+  }
+
+  Object.assign(builders, {
+    shibuyaBuilding(group, { w, h, d, data }) {
+      const variant = (data && data.variant) || 'stripes';
+      const seed = (data && data.seed) || 0;
+      const palettes = {
+        stripes: ['#e8590c', '#ffd8a8'],
+        pastel: ['#fff4e6', '#ffa8a8'],
+        corner: ['#f8f9fa', '#1c3d6e']
+      };
+      const [base, accent] = palettes[variant] || palettes.stripes;
+      if (variant === 'corner') {
+        // White rounded corner store with a slogan, navy curved side and a striped column
+        group.add(roundedSlab(w, h, d, 3, material(base, { roughness: 0.5 })));
+        group.add(mesh(new THREE.CylinderGeometry(d / 2, d / 2, h, 32, 1, false, 0, Math.PI), material(accent, { roughness: 0.4 }), w / 2, h / 2, 0));
+        const slogan = horizontalSign((data && data.slogan) || 'WHATEVER YOU CODE', base, '#1d1d1f');
+        group.add(box(w * 0.6, w * 0.15, 0.1, new THREE.MeshBasicMaterial({ map: slogan }), -w * 0.05, h * 0.62, d / 2 + 0.05));
+        // Shop window with displays
+        group.add(box(w * 0.7, 4.2, 0.1, material('#bfe3ff', { transparent: true, opacity: 0.45, roughness: 0.05 }), -w * 0.05, 2.3, d / 2 + 0.06));
+        for (let i = 0; i < 4; i++) group.add(box(1.2, 2.4, 0.1, new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture(['GitHub', 'Figma', 'Docker', 'Rust'][i], { tagline: 'merch', background: '#ffffff', foreground: '#1d1d1f', width: 256, height: 512 }) }), -w * 0.3 + i * 2, 1.7, d / 2 - 0.5));
+        // Pastel striped column at the corner
+        ['#ff8fab', '#69db7c', '#4dabf7'].forEach((color, i) => group.add(box(0.35, h + 1, 0.35, material(color), -w / 2 - 0.6 + i * 0.36, (h + 1) / 2, d / 2 + 0.8)));
+        group.add(box(w * 0.5, 2.2, 0.2, new THREE.MeshBasicMaterial({ map: horizontalSign('お店 · DEV STORE', '#1c3d6e', '#69db7c') }), -w * 0.05, h - 1.6, d / 2 + 0.1));
+      } else {
+        const facade = new THREE.MeshStandardMaterial({ map: repeated(stripedTexture(base, accent), Math.max(1, w / 8), h / 8), roughness: 0.6 });
+        group.add(roundedSlab(w, h, d, 0.8, facade));
+        // Recessed windows as darker bands with glass
+        for (let floor = 1; floor < Math.floor(h / 4); floor++) group.add(box(w * 0.7, 1.6, 0.1, material('#2b3a55', { transparent: true, opacity: 0.85, roughness: 0.1 }), 0, floor * 4 + 1, d / 2 + 0.05));
+        // Vertical neon signs on the corners and a horizontal one at the top
+        const signColors = [['#ffd43b', '#c92a2a'], ['#ffffff', '#5f3dc4'], ['#ff8fab', '#ffffff'], ['#b2f2bb', '#2b8a3e']];
+        [-1, 1].forEach((side, i) => {
+          const word = SIGN_WORDS[(seed + i * 3) % SIGN_WORDS.length];
+          const [bg, fg] = signColors[(seed + i) % signColors.length];
+          const height = word.length * 1.5 + 0.6;
+          const sign = box(1.4, height, 0.3, new THREE.MeshBasicMaterial({ map: verticalSign(word, bg, fg) }), side * (w / 2 + 0.3), h * 0.55, d / 2 - 0.4);
+          sign.rotation.y = side * Math.PI / 2;
+          group.add(sign);
+          const light = box(1.5, height + 0.2, 0.1, glow(fg, 0.6), side * (w / 2 + 0.3), h * 0.55, d / 2 - 0.4);
+          light.rotation.y = side * Math.PI / 2;
+          group.add(light);
+        });
+        const [bg, fg] = signColors[(seed + 2) % signColors.length];
+        group.add(box(w * 0.7, 2, 0.3, new THREE.MeshBasicMaterial({ map: horizontalSign(SIGN_WORDS[(seed + 5) % SIGN_WORDS.length], bg, fg) }), 0, h - 1.4, d / 2 + 0.2));
+        // Glowing shop front on the ground floor
+        group.add(box(w * 0.8, 3, 0.1, glow('#fff3bf', 0.5), 0, 1.6, d / 2 + 0.06));
+      }
+    }
+  });
+
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 
   function init(socket, scene, system) {

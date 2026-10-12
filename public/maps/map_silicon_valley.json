@@ -563,6 +563,23 @@
    ],
    "color": "#d35400",
    "label": "COMMIT EARLY. COMMIT OFTEN."
+  },
+  {
+   "type": "mini_hotel",
+   "position": [
+    -204.0,
+    0,
+    174.0
+   ],
+   "scale": [
+    10,
+    6,
+    10
+   ],
+   "color": "#63c5c9",
+   "label": "Mini Hotel",
+   "variant": "pod",
+   "name": "Silicon Valley Inn"
   }
  ]
 }

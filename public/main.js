@@ -41,6 +41,21 @@ let viewMode = 'explore'; // 'explore' (third person) or 'map' (aerial overview)
 let flying = false; // Minecraft creative-style flight: double-tap Space
 let tunnelFall = null; // the 5-second fall down the underground water tunnel
 const TUNNEL_FALL_SECONDS = 5;
+let lastAltitudeBlur = 0;
+let lastEdgeWarning = 0;
+let wallet = 0; // Multiverse Coins (in-game only)
+let sleepingLocal = false;
+
+function wakeUp() {
+  if (!sleepingLocal) return;
+  sleepingLocal = false;
+  document.body.classList.remove('sleeping');
+  if (socket && socket.connected) socket.emit('sleep', false);
+}
+
+function bedSpawn() {
+  try { const saved = JSON.parse(localStorage.getItem('multiverse-bed')); return saved ? new THREE.Vector3(saved.x, saved.y, saved.z) : null; } catch (error) { return null; }
+}
 let lastSpaceTap = 0;
 let localCommits = 0;
 let lastDayPhase = null;
@@ -261,6 +276,7 @@ function placeLanding(place) {
 // Highest walkable surface under (x, z), searching downward from fromY
 function groundHeightAt(x, z, fromY) {
   downRay.set(new THREE.Vector3(x, fromY, z), new THREE.Vector3(0, -1, 0));
+  downRay.camera = camera; // sprites need a camera to be raycast
   downRay.far = fromY - City.GROUND_LEVEL + 120; // reaches the underground level (about -60)
   const hit = downRay.intersectObjects(City.collidablesAt(x, z), true).find(isSolidHit);
   if (hit) return hit.point.y;
@@ -379,7 +395,19 @@ function updateAvatar(deltaSeconds) {
       avatar.grounded = avatar.position.y - ground < 0.05;
     }
   }
-  if (avatar.position.y < City.GROUND_LEVEL - 100) flyTo(places[0].target, null, 'You fell out of the world. Back to spawn!');
+  // Edge of Genesis City: past the outskirts there is only empty land, then an
+  // invisible wall at the last coordinates (Worlds far away are not affected)
+  const limit = City.WORLD_LIMIT;
+  const insideCity = Math.abs(avatar.position.x) < limit + 300 && Math.abs(avatar.position.z) < limit + 300;
+  if (insideCity && (Math.abs(avatar.position.x) > limit || Math.abs(avatar.position.z) > limit)) {
+    avatar.position.x = THREE.MathUtils.clamp(avatar.position.x, -limit, limit);
+    avatar.position.z = THREE.MathUtils.clamp(avatar.position.z, -limit, limit);
+    if (performance.now() - lastEdgeWarning > 8000) {
+      lastEdgeWarning = performance.now();
+      appendSystemMessage('🧱 You reached the edge of Genesis City. Beyond this point there is nothing but empty horizon.');
+    }
+  }
+  if (avatar.position.y < City.GROUND_LEVEL - 100) flyTo(bedSpawn() || places[0].target, null, 'You fell out of the world. Back to your spawn point!');
 
   // The camera follows the avatar in third person
   const delta = avatar.position.clone().sub(previous);
@@ -601,6 +629,22 @@ function bindInputEvents() {
     if (labeled) openInfoCard(labeled.userData);
   });
 
+  // Dock (bottom right): opens the panels that are hidden to keep the view clean
+  document.querySelectorAll('#dock button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const toggle = button.dataset.toggle;
+      if (toggle) { button.classList.toggle('active', document.body.classList.toggle(toggle)); return; }
+      const action = button.dataset.action;
+      if (action === 'metro') Metro.open();
+      if (action === 'codify') Codify.open();
+      if (action === 'inventory') LootSystem.toggleInventory();
+      if (action === 'invite') document.getElementById('invite-button').click();
+      if (action === 'lobby') document.getElementById('lobby-button').click();
+    });
+  });
+  ui.chatInput.addEventListener('focus', () => { document.body.classList.add('chat-active'); ui.chatLog.scrollTop = ui.chatLog.scrollHeight; });
+  ui.chatInput.addEventListener('blur', () => document.body.classList.remove('chat-active'));
+
   window.addEventListener('keydown', (event) => {
     if (document.activeElement === ui.chatInput) {
       if (event.key === 'Escape') ui.chatInput.blur();
@@ -619,6 +663,8 @@ function bindInputEvents() {
     if (event.key === 'U') { document.body.classList.toggle('hide-ui'); return; }
     if (event.key === 'Escape') { closeInfoCard(); closeStream(); }
     if (event.key.toLowerCase() === 'm') { setViewMode(viewMode === 'map' ? 'explore' : 'map'); return; }
+    if (event.key.toLowerCase() === 'v') { appendSystemMessage(VideoScreens.toggleSound() ? '🔊 Video screens: sound ON (press V to mute).' : '🔇 Video screens muted (press V for sound).'); return; }
+    if (event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey) { if (Codify.isOpen()) Codify.close(); else Codify.open(); event.preventDefault(); return; }
     if (event.key.toLowerCase() === 'n') { if (Metro.isOpen()) Metro.close(); else Metro.open(); return; }
     if (event.key === 'Escape' && Metro.isOpen()) { Metro.close(); return; }
     if (event.key.toLowerCase() === 'e' && Vehicles.isMounted()) { Vehicles.dismount(); appendSystemMessage('🚶 You got off the vehicle.'); return; }
@@ -632,6 +678,7 @@ function bindInputEvents() {
     if (event.key.toLowerCase() === 'i') { LootSystem.toggleInventory(); return; }
     if (/^[1-5]$/.test(event.key)) { LootSystem.useSlot(parseInt(event.key, 10) - 1); return; }
     if (event.key === ' ') event.preventDefault();
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(event.key.toLowerCase())) wakeUp();
     keysPressed.add(event.key.toLowerCase());
   });
   window.addEventListener('keyup', (event) => keysPressed.delete(event.key.toLowerCase()));
@@ -768,8 +815,12 @@ function updateHud() {
   if (hudFrame++ % 10) return;
   const position = localCursor.target;
   const district = City.districtAt(position.x, position.z);
+  const chip = document.getElementById('location-chip');
+  if (chip) chip.firstChild.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : 'Genesis City';
   ui.district.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : 'Genesis City';
   ui.parcel.textContent = district && district.world.world ? 'World' : `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
+  const parcelChip = document.getElementById('location-parcel');
+  if (parcelChip) parcelChip.textContent = ui.parcel.textContent;
   // Minecraft-length day: 10 min of day, then night (20 min full cycle)
   const ticks = currentTicks();
   const isDay = ticks < 12000;
@@ -900,6 +951,8 @@ const TIME_PRESETS = { sunrise: 0, day: 1000, morning: 1000, noon: 6000, sunset:
 const HELP_PAGES = [
   ['Teleport', '/tp <player> | /tp <x> <z> | /tp <x> <y> <z> (supports ~ relative) | /tpa <player> | /tpahere <player> | /tpaccept | /tpdeny'],
   ['Places', '/world <place> (alias /warp /goto) | /worlds | /spawn | /sethome | /home'],
+  ['Codify', 'C opens Codify: write code, Add to world (private unless you tick Visible to others) | E on your block to edit it | Fry your Code at the Genesis Plaza firepit'],
+  ['Economy', '/balance | /pay <player> <amount> | /buyland (the parcel you stand on) | /lands — Multiverse Coins are in-game only'],
   ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder>'],
   ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear | /invite'],
   ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or double-tap Space) | E near laptops, seats, coffee, arcades, fishing spots, art, elevators | /commits'],
@@ -1021,6 +1074,35 @@ function interpretChatCommand(inputBuffer) {
       const weather = (args[0] || '').toLowerCase();
       if (!['clear', 'rain', 'snow', 'thunder'].includes(weather)) { appendSystemMessage('Usage: /weather <clear|rain|snow|thunder>'); break; }
       requestWorldState({ weather });
+      break;
+    }
+    case 'bed': {
+      const spot = bedSpawn();
+      if (spot) flyTo(spot, null, '🛏️ Back to your bed.');
+      else appendSystemMessage('You have no bed yet. Sleep in a hotel bed (Multiverse Hotel or the mini hotels) to set your spawn point.');
+      break;
+    }
+    case 'balance':
+    case 'wallet':
+      appendSystemMessage(`🪙 You have ${wallet} MVC (Multiverse Coins: in-game only, no real value). Earn them with commits, chests and supply drops; spend them on land parcels.`);
+      break;
+    case 'pay': {
+      const amount = parseInt(args[1], 10);
+      if (!args[0] || !(amount > 0)) { appendSystemMessage('Usage: /pay <player> <amount>'); break; }
+      if (socket && socket.connected) socket.emit('pay', { to: args[0], amount });
+      break;
+    }
+    case 'buyland':
+    case 'land': {
+      const parcel = ui.parcel.textContent;
+      if (!/^-?\d+,-?\d+$/.test(parcel)) { appendSystemMessage('Stand on a Genesis City parcel to buy it.'); break; }
+      if (City.districtAt(avatar.position.x, avatar.position.z)) { appendSystemMessage('This parcel is part of a district. Find a "PARCEL FOR SALE" sign or an empty lot outside the scenes.'); break; }
+      interactionHooks().buyLand(parcel);
+      break;
+    }
+    case 'lands': {
+      const mine = Object.entries(City.landOwners).filter(([, land]) => localDeveloperData && land.owner.toLowerCase() === localDeveloperData.devTag.toLowerCase()).map(([parcel]) => parcel);
+      appendSystemMessage(mine.length ? `🏡 Your parcels: ${mine.join(' · ')}` : '🏡 You do not own land yet. Look for "PARCEL FOR SALE" signs around Genesis City (250 MVC).');
       break;
     }
     case 'nick': {
@@ -1145,6 +1227,8 @@ function appendSystemMessage(text) {
 
 function appendChatItem(item) {
   ui.chatLog.appendChild(item);
+  // Like Decentraland, messages fade away after a while (Enter shows the history)
+  setTimeout(() => item.classList.add('faded'), 25000);
   while (ui.chatLog.children.length > 150) ui.chatLog.firstChild.remove();
   ui.chatLog.scrollTop = ui.chatLog.scrollHeight;
 }
@@ -1155,6 +1239,11 @@ function appendChatItem(item) {
 function setConnectionStatus(state, label) {
   ui.connectionDot.className = state;
   ui.connection.textContent = label;
+}
+
+function updateWalletChip() {
+  const chip = document.getElementById('wallet-chip');
+  if (chip) chip.textContent = `🪙 ${wallet} MVC`;
 }
 
 function updateOnlineCounter() {
@@ -1201,6 +1290,15 @@ function setupNetwork(session) {
 
   socket.on('connect', () => setConnectionStatus('online', 'Connected'));
   socket.on('disconnect', () => { setConnectionStatus('offline', 'Reconnecting...'); clearRemotePeers(); });
+
+  socket.on('wallet', ({ coins, earned, spent, reason } = {}) => {
+    wallet = coins;
+    updateWalletChip();
+    if (earned) appendSystemMessage(`🪙 +${earned} MVC (${reason}). Balance: ${coins} MVC.`);
+    if (spent) appendSystemMessage(`🪙 -${spent} MVC (${reason}). Balance: ${coins} MVC.`);
+  });
+  socket.on('lands', (lands) => City.setLandOwners(lands));
+  socket.on('wake_up', () => { if (sleepingLocal) { sleepingLocal = false; document.body.classList.remove('sleeping'); } });
 
   socket.on('local_registration_success', (assignedIdentity) => {
     clearRemotePeers();
@@ -1287,11 +1385,15 @@ function animate() {
   updateLocalCursorFromPointer();
   emitCursor(false);
 
-  const { flash } = City.updateEnvironment({ ticks: currentTicks(), weather: worldClock.weather, camera, focus: controls.target, deltaSeconds, time: elapsed });
+  const { flash, haze, inCloud } = City.updateEnvironment({ ticks: currentTicks(), weather: worldClock.weather, camera, focus: controls.target, deltaSeconds, time: elapsed });
+  // High altitude blurs the view a little; flying through a cloud blurs it a lot
+  const blur = Math.round((haze * 1.6 + inCloud * 4) * 4) / 4;
+  if (blur !== lastAltitudeBlur) { renderer.domElement.style.filter = blur ? `blur(${blur}px)` : ''; lastAltitudeBlur = blur; }
   if (flash) lightningUntil = performance.now() + 120;
   ui.flash.style.opacity = performance.now() < lightningUntil ? '0.55' : '0';
 
   PropKit.animatedObjects.forEach((object) => object.userData.animate(elapsed));
+  Codify.update(elapsed);
   LootSystem.update(elapsed, deltaSeconds);
   Interactions.update(avatar.position, !!avatar.moving);
   // District titles fade out when the camera gets close, so they never block the view
@@ -1390,6 +1492,25 @@ function interactionHooks() {
     buff: (name, seconds) => LootSystem.addBuff(name, seconds),
     emote: (type) => (type ? playLocalEmote(type) : applyEmote(localCursor, null)),
     setAvatarPosition: (position) => { avatar.position.copy(position); avatar.velocityY = 0; flying = false; },
+    sleep: (bed) => {
+      const spot = bed.getWorldPosition(new THREE.Vector3());
+      avatar.position.set(spot.x, spot.y + 0.6, spot.z);
+      avatar.velocityY = 0;
+      flying = false;
+      playLocalEmote('sit');
+      try { localStorage.setItem('multiverse-bed', JSON.stringify({ x: spot.x, y: spot.y + 0.6, z: spot.z })); } catch (error) { /* storage blocked */ }
+      sleepingLocal = true;
+      document.body.classList.add('sleeping');
+      appendSystemMessage('🛏️ Good night! Your spawn point is now this bed (/bed). Move to get up.');
+      if (socket && socket.connected) socket.emit('sleep', true);
+      else if (currentTicks() > 12500 && currentTicks() < 23500) requestWorldState({ ticks: 0 });
+    },
+    buyLand: (parcel) => {
+      const owner = City.landOwner(parcel);
+      if (owner) { appendSystemMessage(`🏡 Parcel ${parcel} belongs to ${owner}.`); return; }
+      if (!socket || !socket.connected) { appendSystemMessage('Land can only be bought when connected to the server.'); return; }
+      if (window.confirm(`Buy parcel ${parcel} for 250 MVC (in-game coins, not real money)? You have ${wallet} MVC.`)) socket.emit('buy_land', { parcel });
+    },
     inspect: (title, info) => { ui.infoTitle.textContent = title; ui.infoType.textContent = info; ui.infoCard.style.display = 'block'; },
     jumpTo: (key) => { const place = findPlace(key); if (place) teleportToPlace(place); },
     commitCount: () => localCommits,
@@ -1475,6 +1596,24 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   LootSystem.init(lootHooks());
   Interactions.init(interactionHooks());
   TechSquare.init(socket, scene, appendSystemMessage);
+  Codify.init({
+    scene,
+    socket,
+    system: appendSystemMessage,
+    localTag: () => (localDeveloperData ? localDeveloperData.devTag : session.username),
+    emit: (event, data) => { if (socket && socket.connected) socket.emit(event, data); },
+    avatarPosition: () => avatar.position,
+    releaseKeys: () => keysPressed.clear(),
+    spotInFront: (distance) => {
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      const spot = avatar.position.clone().add(forward.multiplyScalar(distance));
+      spot.y = groundHeightAt(spot.x, spot.z, avatar.position.y + 2);
+      return spot;
+    }
+  });
   Vehicles.init({
     scene,
     system: appendSystemMessage,

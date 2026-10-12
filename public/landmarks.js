@@ -389,6 +389,7 @@
       [-1, 1].forEach((side) => {
         furniture.add(box(3.2, 0.6, 1.2, fabric, side * bw * 0.3, base + 0.5, bz + bd * 0.32));
         furniture.add(box(3.2, 0.8, 0.3, fabric, side * bw * 0.3, base + 0.9, bz + bd * 0.32 - 0.5));
+        group.add(PropKit.kit.seat(side * bw * 0.3, base + 0.8, bz + bd * 0.32, 'Lobby sofa'));
         furniture.add(cylinder(0.5, 0.4, 0.8, material('#e9ecef'), side * (bw / 2 - 1.2), base + 0.6, frontZ - 1.2, 10));
         furniture.add(sphere(0.8, material('#2f9e44'), side * (bw / 2 - 1.2), base + 1.6, frontZ - 1.2, 10));
       });
@@ -400,7 +401,10 @@
           const x = side * bw * 0.18 + bw * 0.08;
           furniture.add(box(4, 0.08, 1.6, desk, x, y + 0.75, bz + bd * 0.12));
           [-1.6, 1.6].forEach((dx) => furniture.add(box(0.08, 0.75, 1.4, chair, x + dx, y + 0.37, bz + bd * 0.12)));
-          [-1, 1].forEach((seat) => furniture.add(box(0.6, 0.5, 0.6, chair, x + seat, y + 0.25, bz + bd * 0.12 + 1.3)));
+          [-1, 1].forEach((seat) => {
+            furniture.add(box(0.6, 0.5, 0.6, chair, x + seat, y + 0.25, bz + bd * 0.12 + 1.3));
+            group.add(PropKit.kit.seat(x + seat, y + 0.5, bz + bd * 0.12 + 1.3, 'Office chair'));
+          });
           group.add(PropKit.kit.laptop(x - 1, y + 0.79, bz + bd * 0.12 + 0.3, 0));
           group.add(PropKit.kit.laptop(x + 1, y + 0.79, bz + bd * 0.12 + 0.3, 0));
         });

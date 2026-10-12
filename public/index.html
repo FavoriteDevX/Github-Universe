@@ -490,6 +490,84 @@
       to { transform: translate(var(--drift), 105vh) rotate(720deg); }
     }
 
+
+    /* Codify: code editor panel on the right (replaces the map cards while open) */
+    #codify-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 100vw); z-index: 40;
+      display: none; flex-direction: column; gap: 10px; padding: 16px;
+      background: rgba(13, 17, 23, 0.94); color: #e6edf3; border-left: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: var(--sans, 'Segoe UI', Arial, sans-serif); backdrop-filter: blur(6px);
+    }
+    body.codify-open #codify-panel { display: flex; }
+    body.codify-open #minimap-panel, body.codify-open #worlds-panel, body.codify-open #help-panel, body.codify-open #dock { display: none !important; }
+    #codify-panel header { display: flex; justify-content: space-between; align-items: center; font-size: 18px; }
+    #codify-panel header button { background: none; border: 0; color: #e6edf3; font-size: 24px; cursor: pointer; }
+    #codify-panel label { font-size: 13px; color: #8b949e; display: flex; gap: 8px; align-items: center; }
+    #codify-panel select { flex: 1; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 6px; }
+    #codify-code {
+      flex: 1; min-height: 220px; resize: none; background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+      border-radius: 8px; padding: 10px; font: 13px/1.5 Menlo, Consolas, monospace; tab-size: 2;
+    }
+    .codify-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    #codify-add { background: var(--accent, #1877f2); color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+    #codify-status { font-size: 12px; color: #8b949e; margin: 0; }
+    #codify-report { font-size: 13px; max-height: 32vh; overflow: auto; }
+    #codify-report h4 { margin: 6px 0; }
+    #codify-report ul { margin: 0; padding-left: 18px; }
+    #codify-report .codify-note { font-size: 11px; color: #6e7681; }
+
+    /* ---------- Clean Decentraland-style HUD ----------
+       Only chat bubbles, a small chat field and the dock (bottom right) are on
+       screen; the dock opens the profile, places, map, help and more. */
+    body:not(.show-profile) #hud, body:not(.show-places) #worlds-panel, body:not(.show-help) #help-panel,
+    body:not(.show-map) #minimap-panel, #top-bar { display: none !important; }
+    #help-panel { bottom: 76px !important; }
+    #chat-panel {
+      background: transparent !important; border: 0 !important; box-shadow: none !important;
+      backdrop-filter: none !important; width: 340px; bottom: 14px;
+    }
+    #chat-log {
+      height: auto; max-height: 240px; overflow: hidden; padding: 0;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 40px); mask-image: linear-gradient(to bottom, transparent 0, #000 40px);
+    }
+    body.chat-active #chat-log { overflow-y: auto; -webkit-mask-image: none; mask-image: none; }
+    #chat-log li {
+      width: fit-content; max-width: 100%; margin: 5px 0; padding: 6px 11px; border-radius: 12px 12px 12px 4px;
+      background: rgba(22, 22, 32, 0.72); color: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); transition: opacity 0.8s;
+    }
+    #chat-log li.system { background: rgba(24, 119, 242, 0.55); color: #fff; font-style: normal; }
+    #chat-log li.faded { opacity: 0; }
+    body.chat-active #chat-log li.faded { opacity: 1; }
+    #chat-form { border: 0 !important; margin-top: 6px; background: rgba(22, 22, 32, 0.66); border-radius: 10px; }
+    #chat-form button { display: none; }
+    #location-chip {
+      position: fixed; top: 12px; left: 12px; z-index: 20; padding: 6px 12px; border-radius: 10px;
+      background: rgba(22, 22, 32, 0.66); color: #fff; font: 600 13px var(--font, 'Segoe UI', Arial, sans-serif);
+      pointer-events: none;
+    }
+    #wallet-chip {
+      position: fixed; top: 46px; left: 12px; z-index: 20; padding: 4px 10px; border-radius: 10px;
+      background: rgba(22, 22, 32, 0.66); color: #ffd43b; font: 600 12px var(--font, 'Segoe UI', Arial, sans-serif); pointer-events: none;
+    }
+    body.hide-ui #wallet-chip { display: none !important; }
+    /* Sleeping in a hotel bed: the screen fades to night */
+    #sleep-overlay { position: fixed; inset: 0; z-index: 15; pointer-events: none; background: radial-gradient(circle, rgba(10, 12, 30, 0.6), rgba(5, 6, 15, 0.92)); opacity: 0; transition: opacity 1.5s; display: grid; place-items: center; color: #dbe4ff; font: 600 20px var(--font, 'Segoe UI', Arial, sans-serif); }
+    body.sleeping #sleep-overlay { opacity: 1; }
+    #location-chip small { opacity: 0.7; font-weight: 400; margin-left: 6px; }
+    #dock {
+      position: fixed; right: 14px; bottom: 14px; z-index: 25; display: flex; gap: 4px; padding: 5px;
+      background: rgba(22, 22, 32, 0.72); border-radius: 12px; backdrop-filter: blur(6px);
+    }
+    #dock button {
+      width: 36px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: #fff;
+      font-size: 17px; cursor: pointer; display: grid; place-items: center;
+    }
+    #dock button:hover, #dock button.active { background: rgba(255, 255, 255, 0.16); }
+    #dock button[data-label]:hover::after {
+      content: attr(data-label); position: absolute; bottom: 52px; right: 14px; padding: 4px 8px; border-radius: 6px;
+      background: rgba(0, 0, 0, 0.8); font-size: 12px; white-space: nowrap;
+    }
+    body.hide-ui #dock, body.hide-ui #location-chip { display: none !important; }
     /* Shift+U: scenery only */
     body.hide-ui .panel, body.hide-ui #ui-overlay-container, body.hide-ui #top-bar, body.hide-ui #hotbar,
     body.hide-ui #buff-bar, body.hide-ui #loot-prompt, body.hide-ui #interact-prompt, body.hide-ui #parkour-timer {
@@ -546,7 +624,7 @@
     <div><kbd>E</kbd> interact &amp; loot &middot; <kbd>1-5</kbd> items &middot; <kbd>I</kbd> inventory</div>
     <div><kbd>/e wave</kbd> emotes &middot; laptops: <kbd>E</kbd> to work</div>
     <div><kbd>Enter</kbd> / <kbd>T</kbd> chat &middot; <kbd>/help</kbd> commands</div>
-    <div><kbd>N</kbd> metro map &middot; <kbd>Shift</kbd>+<kbd>U</kbd> hide / show the interface</div>
+    <div><kbd>N</kbd> metro map &middot; <kbd>V</kbd> video sound &middot; <kbd>Shift</kbd>+<kbd>U</kbd> hide the interface</div>
   </section>
 
   <section id="minimap-panel" class="panel" aria-label="Minimap">
@@ -560,6 +638,20 @@
     <span id="lobby-badge"></span>
   </div>
 
+
+  <div id="location-chip">Genesis Plaza<small id="location-parcel"></small></div>
+  <div id="wallet-chip" title="Multiverse Coins (in-game only)">🪙 0 MVC</div>
+  <nav id="dock" aria-label="Menu">
+    <button type="button" data-toggle="show-profile" data-label="Profile & status">👤</button>
+    <button type="button" data-toggle="show-places" data-label="Places (jump in)">📍</button>
+    <button type="button" data-toggle="show-map" data-label="Minimap">🗺️</button>
+    <button type="button" data-action="metro" data-label="Metro (N)">🚇</button>
+    <button type="button" data-action="codify" data-label="Codify (C)">&lt;/&gt;</button>
+    <button type="button" data-action="inventory" data-label="Inventory (I)">🎒</button>
+    <button type="button" data-action="invite" data-label="Invite peers">🔗</button>
+    <button type="button" data-action="lobby" data-label="New private lobby">🔒</button>
+    <button type="button" data-toggle="show-help" data-label="Controls">❓</button>
+  </nav>
   <div id="interact-prompt"></div>
   <div id="parkour-timer"></div>
 
@@ -589,7 +681,7 @@
   <section id="chat-panel" class="panel" aria-label="Chat">
     <ul id="chat-log" aria-live="polite"></ul>
     <form id="chat-form" autocomplete="off">
-      <input id="chat-input" maxlength="200" placeholder="Say something or type /help">
+      <input id="chat-input" maxlength="200" placeholder="Press Enter to chat">
       <button type="submit">Send</button>
     </form>
   </section>
@@ -607,6 +699,7 @@
     </div>
   </div>
   <div id="lightning-flash"></div>
+  <div id="sleep-overlay">💤 Sleeping... (move to get up)</div>
 
   <!-- Welcome screen shown before entering the multiverse -->
   <div id="auth-screen">
@@ -653,6 +746,9 @@
   <script src="techsquare.js"></script>
   <script src="vehicles.js"></script>
   <script src="equalizer.js"></script>
+  <script src="festival.js"></script>
+  <script src="codify.js"></script>
+  <script src="hotels.js"></script>
   <script src="metro.js"></script>
   <script src="auth.js"></script>
   <script src="main.js"></script>

@@ -181,6 +181,23 @@
    ],
    "color": "#e8dcc4",
    "label": "Ball Mouse (1985)"
+  },
+  {
+   "type": "mini_hotel",
+   "position": [
+    -44.0,
+    0,
+    44.0
+   ],
+   "scale": [
+    10,
+    6,
+    10
+   ],
+   "color": "#63c5c9",
+   "label": "Mini Hotel",
+   "variant": "pod",
+   "name": "Museum of Forgotten Tech Inn"
   }
  ]
 }

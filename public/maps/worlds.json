@@ -27,7 +27,8 @@
    2,
    0
   ],
-  "color": "#9b59b6"
+  "color": "#9b59b6",
+  "scale": 1.4
  },
  {
   "key": "social",
@@ -82,7 +83,8 @@
    0,
    2
   ],
-  "color": "#27ae60"
+  "color": "#27ae60",
+  "scale": 1.5
  },
  {
   "key": "mall",
@@ -93,7 +95,8 @@
    1,
    2
   ],
-  "color": "#ff007f"
+  "color": "#ff007f",
+  "scale": 1.4
  },
  {
   "key": "apple",
@@ -115,7 +118,8 @@
    2,
    -1
   ],
-  "color": "#00ffcc"
+  "color": "#00ffcc",
+  "scale": 1.6
  },
  {
   "key": "arcade",
@@ -137,7 +141,8 @@
    -2,
    -2
   ],
-  "color": "#e84118"
+  "color": "#e84118",
+  "scale": 1.5
  },
  {
   "key": "sandbox",
@@ -148,7 +153,8 @@
    -2,
    2
   ],
-  "color": "#00d2ff"
+  "color": "#00d2ff",
+  "scale": 1.4
  },
  {
   "key": "retro",
@@ -159,7 +165,8 @@
    2,
    2
   ],
-  "color": "#39d353"
+  "color": "#39d353",
+  "scale": 2.2
  },
  {
   "key": "beach",
@@ -182,7 +189,8 @@
    -3
   ],
   "elevation": 26,
-  "color": "#2ed573"
+  "color": "#2ed573",
+  "scale": 1.6
  },
  {
   "key": "workspace",
@@ -265,6 +273,36 @@
    1
   ],
   "color": "#4dabf7"
+ },
+ {
+  "key": "festival",
+  "file": "map_festival.json",
+  "name": "Soundwave Festival",
+  "description": "A big music event amplifying Spotify: LED gate, main stage, lasers, sound waves and a dancing crowd",
+  "cell": [
+   -1,
+   3
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#1db954"
+ },
+ {
+  "key": "hotel",
+  "file": "map_hotel.json",
+  "name": "Multiverse Hotel",
+  "description": "Architectural hotel: giant neon M facade, red swirl lobby, floating beds. Sleep at night to skip it",
+  "cell": [
+   1,
+   -4
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#ff8fd8"
  },
  {
   "key": "museum",

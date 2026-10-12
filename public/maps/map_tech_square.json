@@ -237,6 +237,112 @@
    ],
    "color": "#3a3f4b",
    "label": "LIVE DATA|GitHub \u00b7 Nasdaq \u00b7 Dev trends|refreshed by the server"
+  },
+  {
+   "type": "shibuya_building",
+   "position": [
+    -44,
+    0,
+    -44
+   ],
+   "scale": [
+    16,
+    26,
+    14
+   ],
+   "color": "#ffffff",
+   "label": "Shibuya-style building",
+   "variant": "stripes",
+   "seed": 0
+  },
+  {
+   "type": "shibuya_building",
+   "position": [
+    44,
+    0,
+    -44
+   ],
+   "scale": [
+    16,
+    30,
+    14
+   ],
+   "color": "#ffffff",
+   "label": "Shibuya-style building",
+   "variant": "pastel",
+   "seed": 3
+  },
+  {
+   "type": "shibuya_building",
+   "position": [
+    -40,
+    0,
+    52
+   ],
+   "scale": [
+    18,
+    22,
+    10
+   ],
+   "color": "#ffffff",
+   "label": "Shibuya-style building",
+   "variant": "pastel",
+   "seed": 6,
+   "rotationY": 3.14159
+  },
+  {
+   "type": "shibuya_building",
+   "position": [
+    40,
+    0,
+    52
+   ],
+   "scale": [
+    18,
+    18,
+    10
+   ],
+   "color": "#ffffff",
+   "label": "Shibuya-style building",
+   "variant": "corner",
+   "slogan": "WHATEVER YOU CODE",
+   "rotationY": 3.14159
+  },
+  {
+   "type": "shibuya_building",
+   "position": [
+    -50,
+    0,
+    18
+   ],
+   "scale": [
+    8,
+    20,
+    12
+   ],
+   "color": "#ffffff",
+   "label": "Shibuya-style building",
+   "variant": "stripes",
+   "seed": 7,
+   "rotationY": 1.5708
+  },
+  {
+   "type": "shibuya_building",
+   "position": [
+    50,
+    0,
+    18
+   ],
+   "scale": [
+    8,
+    24,
+    12
+   ],
+   "color": "#ffffff",
+   "label": "Shibuya-style building",
+   "variant": "pastel",
+   "seed": 1,
+   "rotationY": -1.5708
   }
  ]
 }

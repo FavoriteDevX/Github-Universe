@@ -129,15 +129,159 @@
     },
 
     purpleRocks(group, { w, h, d }) {
-      const rock = material('#7048e8', { flatShading: true, roughness: 0.8 });
-      for (let i = 0; i < 6; i++) {
-        const peak = mesh(new THREE.ConeGeometry(w * (0.18 + (i % 3) * 0.05), h * (0.6 + (i % 2) * 0.4), 5), rock, ((i * 37) % 10 / 10 - 0.5) * w * 0.7, -h / 2 + h * 0.3, ((i * 53) % 10 / 10 - 0.5) * d * 0.7);
+      // Faceted amethyst rocks with orange moss, a pool on top and a waterfall
+      const rock = material('#7048e8', { flatShading: true, roughness: 0.75 });
+      const dark = material('#5f3dc4', { flatShading: true, roughness: 0.8 });
+      const moss = material('#f59f00', { flatShading: true, roughness: 1 });
+      for (let i = 0; i < 9; i++) {
+        const size = w * (0.16 + (i % 3) * 0.06);
+        const peak = mesh(new THREE.DodecahedronGeometry(size, 0), i % 2 ? rock : dark, ((i * 37) % 10 / 10 - 0.5) * w * 0.75, -h / 2 + size * (0.8 + (i % 4) * 0.35), ((i * 53) % 10 / 10 - 0.5) * d * 0.75);
+        peak.scale.y = 1.4 + (i % 3) * 0.4;
+        peak.rotation.set(i, i * 2, 0);
         group.add(peak);
+        const cap = mesh(new THREE.DodecahedronGeometry(size * 0.55, 0), moss, peak.position.x, peak.position.y + size * peak.scale.y * 0.75, peak.position.z);
+        cap.scale.y = 0.3;
+        group.add(cap);
       }
-      const fall = box(w * 0.2, h * 0.8, 0.3, material('#99e9f2', { transparent: true, opacity: 0.75, emissive: '#99e9f2', emissiveIntensity: 0.3 }), 0, 0, d / 2);
+      const pool = cylinder(w * 0.2, w * 0.2, 0.2, material('#66d9e8', { roughness: 0.1, emissive: '#3bc9db', emissiveIntensity: 0.25 }), 0, h * 0.3, d * 0.15, 20);
+      group.add(pool);
+      const fallTexture = PropKit.kit.canvasTexture('tokiFall', 64, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#99e9f2';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        for (let i = 0; i < 30; i++) ctx.fillRect((i * 13) % cw, (i * 37) % ch, 3, 18);
+      });
+      const fallMap = repeated(fallTexture, 1, 2);
+      const fall = box(w * 0.22, h * 0.8, 0.2, new THREE.MeshStandardMaterial({ map: fallMap, transparent: true, opacity: 0.85, emissive: '#99e9f2', emissiveIntensity: 0.35 }), 0, -h * 0.1, d / 2);
+      fall.castShadow = false;
       group.add(fall);
+      animate(fall, (time) => { fallMap.offset.y = time * 1.2; });
     },
 
+    // Waterfall pouring from a floating island all the way down to a plaza on
+    // the ground, with a splash pond and an elevator back up to the island
+    skyWaterfall(group, { w, h, data }) {
+      const waterTexture = PropKit.kit.canvasTexture('skyFall', 64, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#74c0fc';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        for (let i = 0; i < 40; i++) ctx.fillRect((i * 11) % cw, (i * 47) % ch, 2 + (i % 3), 24);
+      });
+      const map = repeated(waterTexture, 1, h / 6);
+      const stream = mesh(new THREE.CylinderGeometry(w * 0.35, w * 0.55, h, 16, 1, true), new THREE.MeshStandardMaterial({ map, transparent: true, opacity: 0.8, emissive: '#74c0fc', emissiveIntensity: 0.3, side: THREE.DoubleSide, depthWrite: false }), 0, -h / 2, 0);
+      stream.castShadow = false;
+      stream.raycast = () => {};
+      group.add(stream);
+      // Mist where the water lands
+      const mist = [];
+      for (let i = 0; i < 6; i++) {
+        const puff = new THREE.Sprite(new THREE.SpriteMaterial({ color: '#e7f5ff', transparent: true, opacity: 0.35, depthWrite: false }));
+        puff.raycast = () => {};
+        puff.userData.phase = i / 6;
+        group.add(puff);
+        mist.push(puff);
+      }
+      // Plaza below: pavers, a round splash pond, benches and the elevator
+      const plaza = new THREE.Group();
+      plaza.position.y = -h;
+      plaza.add(cylinder(w * 4, w * 4, 0.3, new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.cobbleTexture('#d8c3a5'), 4, 4), roughness: 0.9 }), 0, 0.15, 0, 48));
+      plaza.add(cylinder(w * 1.6, w * 1.7, 0.6, material('#f1ece4'), 0, 0.3, 0, 32));
+      const pond = cylinder(w * 1.45, w * 1.45, 0.1, material('#4dabf7', { roughness: 0.05, metalness: 0.3, emissive: '#1c7ed6', emissiveIntensity: 0.2 }), 0, 0.62, 0, 32);
+      pond.raycast = () => {};
+      plaza.add(pond);
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const bench = new THREE.Group();
+        bench.add(box(2.2, 0.12, 0.6, material('#c9a27a'), 0, 0.55, 0));
+        [-0.9, 0.9].forEach((dx) => bench.add(box(0.1, 0.55, 0.5, material('#495057'), dx, 0.27, 0)));
+        bench.position.set(Math.cos(angle) * w * 2.6, 0.3, Math.sin(angle) * w * 2.6);
+        bench.rotation.y = -angle + Math.PI / 2;
+        plaza.add(interactive(bench, 'sit', 'Waterfall plaza bench'));
+      }
+      const elevator = new THREE.Group();
+      elevator.add(cylinder(1.4, 1.4, 0.3, glow('#2ed573', 0.8), 0, 0.45, 0, 24));
+      elevator.add(mesh(new THREE.CylinderGeometry(1.5, 1.5, 4, 24, 1, true), material('#cfe8ff', { transparent: true, opacity: 0.25, side: THREE.DoubleSide }), 0, 2.4, 0));
+      const beam = mesh(new THREE.CylinderGeometry(0.6, 0.6, h, 12, 1, true), new THREE.MeshBasicMaterial({ color: '#b2f2bb', transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false }), 0, h / 2, 0);
+      beam.raycast = () => {};
+      elevator.add(beam);
+      const caption = textSprite('Elevator · up to the floating island (E)', { width: 8, background: 'rgba(46, 213, 115, 0.9)' });
+      caption.position.y = 5.2;
+      elevator.add(caption);
+      elevator.position.set(w * 3, 0.3, 0);
+      // data.top: landing spot on the island, relative to the top of the waterfall
+      const target = (data && data.top) || [0, 2.5, 0];
+      elevator.userData.destination = new THREE.Vector3(target[0], target[1] + h, target[2]);
+      plaza.add(interactive(elevator, 'warp', 'Up to the floating island'));
+      group.add(plaza);
+      animate(stream, (time) => {
+        map.offset.y = time * 1.6;
+        mist.forEach((puff, i) => {
+          const t = (time * 0.4 + puff.userData.phase) % 1;
+          puff.position.set(Math.sin(i * 2.1) * w * t * 1.5, -h + 0.8 + t * 3, Math.cos(i * 2.1) * w * t * 1.5);
+          puff.scale.setScalar(1.5 + t * 4);
+          puff.material.opacity = 0.35 * (1 - t);
+        });
+      });
+      group.userData.label = 'Sky waterfall';
+    },
+
+    // Toki Land ground: lawn with autumn-leaf mats, blue puddles and paths
+    tokiGround(group, { w, d }) {
+      const texture = PropKit.kit.canvasTexture('tokiGround', 1024, 1024, (ctx, cw, ch) => {
+        ctx.fillStyle = '#4e8a3a';
+        ctx.fillRect(0, 0, cw, ch);
+        let seed = 5;
+        const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+        for (let i = 0; i < 1600; i++) { ctx.fillStyle = ['#5c9a45', '#457c33', '#66a84f'][i % 3]; ctx.fillRect(random() * cw, random() * ch, 4, 6); }
+        // Autumn leaf mats (orange/yellow speckled patches)
+        for (let i = 0; i < 9; i++) {
+          const x = random() * cw;
+          const y = random() * ch;
+          const r = 60 + random() * 90;
+          ctx.fillStyle = '#e8a33a';
+          ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.6, random() * 3, 0, Math.PI * 2); ctx.fill();
+          for (let k = 0; k < 140; k++) { ctx.fillStyle = ['#f59f00', '#ffd43b', '#d9480f', '#ffa94d'][k % 4]; ctx.fillRect(x + (random() - 0.5) * r * 1.6, y + (random() - 0.5) * r, 5, 4); }
+        }
+        // Blue puddles
+        for (let i = 0; i < 5; i++) {
+          const x = random() * cw;
+          const y = random() * ch;
+          ctx.fillStyle = '#74c0fc';
+          ctx.beginPath(); ctx.ellipse(x, y, 40 + random() * 40, 20 + random() * 25, random() * 3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.beginPath(); ctx.ellipse(x - 10, y - 6, 16, 6, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        // Paver path around the edge
+        ctx.strokeStyle = '#d8c3a5';
+        ctx.lineWidth = 60;
+        ctx.strokeRect(40, 40, cw - 80, ch - 80);
+      });
+      const ground = box(w, 0.4, d, new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
+      ground.castShadow = false;
+      group.add(ground);
+      // Low white walls with cones, mushroom-pink trees and a floating golden key
+      const white = material('#f1ece4', { roughness: 0.7 });
+      [[-w / 2 + 6, -d / 2 + 10, 0.6, 12], [w / 2 - 10, d / 2 - 6, 10, 0.6]].forEach(([x, z, ww, dd]) => group.add(box(ww, 1.6, dd, white, x, 0.8, z)));
+      for (let i = 0; i < 10; i++) {
+        const cone = mesh(new THREE.ConeGeometry(0.4, 1.6, 8), material(i % 2 ? '#ff8787' : '#f8f9fa', { roughness: 0.6 }), -w / 2 + 4 + (i * 5.3) % (w - 8), 1, -d / 2 + 3 + ((i * 7.1) % 6));
+        group.add(cone);
+      }
+      [[-18, -16], [20, -18], [-22, 2], [8, 20]].forEach(([x, z], i) => {
+        group.add(cylinder(0.25, 0.35, 3, material('#6d4c41'), x, 1.5, z, 8));
+        const crown = sphere(1.8, material(['#f783ac', '#e64980', '#ffa8a8', '#da77f2'][i], { flatShading: true }), x, 3.8, z, 8);
+        crown.scale.y = 0.75;
+        group.add(crown);
+      });
+      const key = new THREE.Group();
+      const gold = glow('#fcc419', 0.8);
+      { const ring = mesh(new THREE.TorusGeometry(0.5, 0.12, 8, 20), gold); key.add(ring); }
+      key.add(box(1.6, 0.18, 0.18, gold, 1.2, 0, 0));
+      key.add(box(0.18, 0.4, 0.18, gold, 1.8, -0.25, 0));
+      key.add(box(0.18, 0.3, 0.18, gold, 1.5, -0.2, 0));
+      key.position.set(-17, 16.5, -4);
+      group.add(key);
+      animate(key, (time) => { key.rotation.y = time; key.position.y = 16.5 + Math.sin(time * 2) * 0.3; });
+    },
     // Welcome Hall extras: round bar with stools, floating crystals, wall TV
     barCounter(group, { w, h }) {
       const radius = w / 2;
@@ -696,7 +840,7 @@
   const rules = [
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
-    [/purple_rocks/, 'purpleRocks'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
+    [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
     [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));

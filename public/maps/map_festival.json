@@ -1,0 +1,169 @@
+{
+ "themeName": "Soundwave Festival",
+ "backgroundColor": "#1a1426",
+ "blocks": [
+  {
+   "type": "toki_floor_festival",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    124,
+    0.4,
+    124
+   ],
+   "color": "#231a33"
+  },
+  {
+   "type": "festival_gate",
+   "position": [
+    0,
+    0,
+    -50
+   ],
+   "scale": [
+    34,
+    13,
+    4
+   ],
+   "color": "#ff922b",
+   "label": "Soundwave Festival entrance"
+  },
+  {
+   "type": "festival_stage",
+   "position": [
+    0,
+    0,
+    34
+   ],
+   "scale": [
+    40,
+    20,
+    14
+   ],
+   "color": "#1db954",
+   "label": "Soundwave main stage",
+   "rotationY": 3.14159
+  },
+  {
+   "type": "light_tower",
+   "position": [
+    -40,
+    0,
+    10
+   ],
+   "scale": [
+    2,
+    16,
+    2
+   ],
+   "color": "#fff3bf"
+  },
+  {
+   "type": "light_tower",
+   "position": [
+    40,
+    0,
+    10
+   ],
+   "scale": [
+    2,
+    16,
+    2
+   ],
+   "color": "#fff3bf"
+  },
+  {
+   "type": "light_tower",
+   "position": [
+    -40,
+    0,
+    -25
+   ],
+   "scale": [
+    2,
+    14,
+    2
+   ],
+   "color": "#fff3bf"
+  },
+  {
+   "type": "light_tower",
+   "position": [
+    40,
+    0,
+    -25
+   ],
+   "scale": [
+    2,
+    14,
+    2
+   ],
+   "color": "#fff3bf"
+  },
+  {
+   "type": "ad_cube_stack",
+   "position": [
+    -48,
+    0,
+    -40
+   ],
+   "scale": [
+    5,
+    15,
+    5
+   ],
+   "color": "#1db954",
+   "label": "Ad tower",
+   "seed": 6
+  },
+  {
+   "type": "ad_cube_stack",
+   "position": [
+    48,
+    0,
+    -40
+   ],
+   "scale": [
+    5,
+    15,
+    5
+   ],
+   "color": "#f15bb5",
+   "label": "Ad tower",
+   "seed": 2
+  },
+  {
+   "type": "supertree",
+   "position": [
+    -50,
+    0,
+    40
+   ],
+   "scale": [
+    8,
+    18,
+    8
+   ],
+   "color": "#3f8f3a",
+   "label": "Supertree"
+  },
+  {
+   "type": "supertree",
+   "position": [
+    50,
+    0,
+    40
+   ],
+   "scale": [
+    8,
+    18,
+    8
+   ],
+   "color": "#3f8f3a",
+   "label": "Supertree"
+  }
+ ]
+}

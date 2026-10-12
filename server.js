@@ -29,6 +29,18 @@ try {
   if (error.code !== 'ENOENT') console.error('[ACCOUNTS] Could not read users file:', error.message);
 }
 
+accounts.lands = accounts.lands || {}; // parcel "x,z" -> { owner, boughtAt }
+
+// In-game economy (like Decentraland's MANA and LAND, but NOT real money):
+// Multiverse Coins (MVC) are earned by playing and spent on land parcels.
+const STARTING_COINS = 100;
+const LAND_PRICE = 250;
+const MAX_PARCEL = 40; // Genesis City spans parcels -40..40 (16 m each)
+function walletOf(account) {
+  if (typeof account.coins !== 'number') account.coins = STARTING_COINS;
+  return account.coins;
+}
+
 let saveTimer = null;
 function saveAccounts() {
   clearTimeout(saveTimer);
@@ -187,6 +199,7 @@ function spawnSupplyDrop() {
 }
 setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
 
+const sharedCodeBlocks = new Map(); // Codify blocks their owners chose to share
 const VEHICLES = new Set(['rosso', 'wedge', 'volt', 'cyberwedge', 'cycle', 'cycleRed']);
 const EMOTES = new Set(['wave', 'dance', 'cheer', 'clap', 'sit', 'think', 'ship', 'coffee']);
 
@@ -443,6 +456,8 @@ io.on('connection', (socket) => {
     if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', 'Your inventory is full. Use or /drop something first.'); return; }
     account.lastTowerReward = now;
     account.inventory.push({ id: 'hoodie', foundAt: now });
+    account.coins = walletOf(account) + 50;
+    socket.emit('wallet', { coins: account.coins, earned: 50, reason: 'Gravity Flip reward' });
     saveAccounts();
     socket.emit('inventory', account.inventory);
     socket.emit('loot_result', { item: 'hoodie', from: 'drop' });
@@ -450,6 +465,90 @@ io.on('connection', (socket) => {
   });
 
   // Vehicles from the Hypercar Showroom, shown to everyone in the lobby
+  // Hotels: sleep in a bed at night; when at least half of the online devs are
+  // asleep the night is skipped for everyone (like Minecraft)
+  socket.on('sleep', (sleeping) => {
+    const dev = developer();
+    if (!dev) return;
+    const ticks = currentTicks();
+    const night = ticks > 12500 && ticks < 23500;
+    if (sleeping && !night) { socket.emit('system_message', '🛏️ You can only sleep at night. Your spawn point was set to this bed.'); return; }
+    dev.sleeping = !!sleeping;
+    if (!sleeping) return;
+    const online = Object.values(activeDevelopers);
+    const asleep = online.filter((other) => other.sleeping).length;
+    const needed = Math.max(1, Math.ceil(online.length / 2));
+    if (asleep < needed) { io.emit('system_message', `🛏️ ${dev.devTag} is sleeping (${asleep}/${needed} devs needed to skip the night).`); return; }
+    worldState.ticks = 0;
+    worldState.changedAt = Date.now();
+    online.forEach((other) => { other.sleeping = false; });
+    io.emit('world_state', worldStatePayload({ by: dev.devTag, kind: 'time' }));
+    io.emit('system_message', '🌅 Enough devs slept through the night. Good morning, Genesis City!');
+    io.emit('wake_up');
+  });
+
+  // Codify: code blocks are private by default; only blocks the owner chose to
+  // share are relayed to the devs of the same lobby (and to newcomers)
+  socket.emit('code_blocks', [...sharedCodeBlocks.values()].filter((block) => block.room === room).map((block) => block.data));
+  socket.on('code_block_share', (data) => {
+    const dev = developer();
+    if (!dev || !data || typeof data.id !== 'string' || typeof data.code !== 'string') return;
+    const id = data.id.slice(0, 60);
+    const existing = sharedCodeBlocks.get(id);
+    if (existing && existing.socketId !== socket.id) return;
+    const position = data.position || {};
+    const clean = {
+      id,
+      owner: dev.devTag,
+      language: String(data.language || 'javascript').replace(/[^a-z]/g, '').slice(0, 12),
+      code: data.code.slice(0, 4000),
+      position: { x: Number(position.x) || 0, y: Number(position.y) || 0, z: Number(position.z) || 0 }
+    };
+    if (!existing && [...sharedCodeBlocks.values()].filter((block) => block.socketId === socket.id).length >= 10) return;
+    sharedCodeBlocks.set(id, { socketId: socket.id, room, data: clean });
+    socket.to(room).emit('code_block', clean);
+  });
+  socket.on('code_block_remove', (id) => {
+    const block = sharedCodeBlocks.get(id);
+    if (!block || block.socketId !== socket.id) return;
+    sharedCodeBlocks.delete(id);
+    socket.to(room).emit('code_block_remove', id);
+  });
+
+  // Economy: wallet, land parcels and transfers between devs
+  socket.emit('wallet', { coins: walletOf(account) });
+  socket.emit('lands', accounts.lands);
+  socket.on('buy_land', ({ parcel } = {}) => {
+    const dev = developer();
+    if (!dev || typeof parcel !== 'string' || !/^-?\d{1,3},-?\d{1,3}$/.test(parcel)) return;
+    const [px, pz] = parcel.split(',').map(Number);
+    if (Math.abs(px) > MAX_PARCEL || Math.abs(pz) > MAX_PARCEL) { socket.emit('system_message', 'That parcel is outside Genesis City.'); return; }
+    if (accounts.lands[parcel]) { socket.emit('system_message', `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`); return; }
+    if (walletOf(account) < LAND_PRICE) { socket.emit('system_message', `You need ${LAND_PRICE} MVC to buy a parcel (you have ${account.coins}). Earn coins with commits, chests and supply drops.`); return; }
+    account.coins -= LAND_PRICE;
+    accounts.lands[parcel] = { owner: account.username, boughtAt: Date.now() };
+    saveAccounts();
+    socket.emit('wallet', { coins: account.coins, spent: LAND_PRICE, reason: `parcel ${parcel}` });
+    io.emit('lands', accounts.lands);
+    io.emit('system_message', `🏡 ${dev.devTag} bought parcel ${parcel} in Genesis City!`);
+  });
+  socket.on('pay', ({ to, amount } = {}) => {
+    const dev = developer();
+    const value = Math.floor(Number(amount));
+    if (!dev || typeof to !== 'string' || !(value >= 1 && value <= 100000)) return;
+    const target = accounts.users[to.toLowerCase()];
+    if (!target || target === account) { socket.emit('system_message', 'Unknown developer.'); return; }
+    if (walletOf(account) < value) { socket.emit('system_message', `Not enough MVC (you have ${account.coins}).`); return; }
+    account.coins -= value;
+    target.coins = walletOf(target) + value;
+    saveAccounts();
+    socket.emit('wallet', { coins: account.coins, spent: value, reason: `payment to ${target.username}` });
+    Object.entries(activeDevelopers).forEach(([id, other]) => {
+      if (other.devTag.toLowerCase() !== target.username.toLowerCase()) return;
+      io.to(id).emit('wallet', { coins: target.coins, earned: value, reason: `payment from ${account.username}` });
+    });
+  });
+
   socket.on('set_vehicle', (key) => {
     const dev = developer();
     if (!dev) return;
@@ -470,6 +569,8 @@ io.on('connection', (socket) => {
     if (!dev || !(lines >= 3) || now - (dev.lastCommitAt || 0) < 5000) return;
     dev.lastCommitAt = now;
     account.commits = (account.commits || 0) + 1;
+    account.coins = walletOf(account) + 3;
+    socket.emit('wallet', { coins: account.coins, earned: 3, reason: 'commit' });
     saveAccounts();
     io.to(room).emit('system_message', `✔ ${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
     io.emit('commit_leaderboard', commitLeaderboard());
@@ -493,6 +594,9 @@ io.on('connection', (socket) => {
 
     const item = rollItem(loot.kind);
     account.inventory.push({ id: item.id, foundAt: Date.now() });
+    const bonus = loot.kind === 'drop' ? 25 : 5;
+    account.coins = walletOf(account) + bonus;
+    socket.emit('wallet', { coins: account.coins, earned: bonus, reason: loot.kind === 'drop' ? 'supply drop' : 'chest' });
     saveAccounts();
     socket.emit('inventory', account.inventory);
     socket.emit('loot_result', { item: item.id, from: loot.kind });
@@ -540,6 +644,11 @@ io.on('connection', (socket) => {
       console.log(`[NETWORK] Developer disconnected: ${developer().devTag}`);
       delete activeDevelopers[socket.id];
       io.to(room).emit('developer_left_network', socket.id);
+      sharedCodeBlocks.forEach((block, id) => {
+        if (block.socketId !== socket.id) return;
+        sharedCodeBlocks.delete(id);
+        io.to(room).emit('code_block_remove', id);
+      });
     }
   });
 });
