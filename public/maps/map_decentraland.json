@@ -15,7 +15,14 @@
     184
    ],
    "color": "#c98b5a",
-   "label": "Genesis Plaza"
+   "label": "Genesis Plaza",
+   "holes": [
+    [
+     -62,
+     22,
+     8
+    ]
+   ]
   },
   {
    "type": "glow_ring",
@@ -154,14 +161,14 @@
   {
    "type": "theatre",
    "position": [
-    -64,
+    -62,
     0,
     -44
    ],
    "scale": [
-    44,
-    16,
-    30
+    52,
+    18,
+    34
    ],
    "color": "#7b2d26",
    "label": "GitHub Multiverse Theatre"
@@ -333,9 +340,9 @@
   {
    "type": "shop_info_center",
    "position": [
-    -80,
+    -34,
     5,
-    -82
+    -80
    ],
    "scale": [
     14,
@@ -348,9 +355,9 @@
   {
    "type": "shop_coffee_commits",
    "position": [
-    80,
+    34,
     5,
-    -82
+    -80
    ],
    "scale": [
     14,
@@ -363,9 +370,9 @@
   {
    "type": "shop_merch_wearables",
    "position": [
-    -80,
+    -68,
     5,
-    52
+    58
    ],
    "scale": [
     14,
@@ -378,9 +385,9 @@
   {
    "type": "shop_dev_marketplace",
    "position": [
-    80,
+    68,
     5,
-    52
+    58
    ],
    "scale": [
     14,
@@ -561,20 +568,6 @@
   {
    "type": "lamp_post",
    "position": [
-    46.0,
-    3,
-    0.0
-   ],
-   "scale": [
-    0.4,
-    6,
-    0.4
-   ],
-   "color": "#fff3c4"
-  },
-  {
-   "type": "lamp_post",
-   "position": [
     39.8,
     3,
     23.0
@@ -727,118 +720,6 @@
    "color": "#fff3c4"
   },
   {
-   "type": "bench",
-   "position": [
-    35.3,
-    0,
-    7.2
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    19.9,
-    0,
-    30.0
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    -7.2,
-    0,
-    35.3
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    -30.0,
-    0,
-    19.9
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    -35.3,
-    0,
-    -7.2
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    -19.9,
-    0,
-    -30.0
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    7.2,
-    0,
-    -35.3
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
-   "type": "bench",
-   "position": [
-    30.0,
-    0,
-    -19.9
-   ],
-   "scale": [
-    2.4,
-    1,
-    0.8
-   ],
-   "color": "#a8743f"
-  },
-  {
    "type": "flower_bed",
    "position": [
     14,
@@ -893,48 +774,6 @@
     2
    ],
    "color": "#9c6644"
-  },
-  {
-   "type": "hydrant",
-   "position": [
-    20,
-    0.4,
-    30
-   ],
-   "scale": [
-    0.6,
-    0.8,
-    0.6
-   ],
-   "color": "#d62828"
-  },
-  {
-   "type": "hydrant",
-   "position": [
-    -22,
-    0.4,
-    28
-   ],
-   "scale": [
-    0.6,
-    0.8,
-    0.6
-   ],
-   "color": "#d62828"
-  },
-  {
-   "type": "hydrant",
-   "position": [
-    26,
-    0.4,
-    -30
-   ],
-   "scale": [
-    0.6,
-    0.8,
-    0.6
-   ],
-   "color": "#d62828"
   },
   {
    "type": "hot_air_balloon",
@@ -1096,6 +935,206 @@
      "A developer's most important instrument."
     ]
    ]
+  },
+  {
+   "type": "square_pool",
+   "position": [
+    -62,
+    0,
+    22
+   ],
+   "scale": [
+    8,
+    1,
+    8
+   ],
+   "color": "#2ec4f2",
+   "label": "Underground entrance",
+   "depth": 43
+  },
+  {
+   "type": "underground_hall",
+   "position": [
+    -62,
+    -60,
+    22
+   ],
+   "scale": [
+    44,
+    14,
+    44
+   ],
+   "color": "#b07a45",
+   "label": "Welcome to the Underground"
+  },
+  {
+   "type": "history_corridor",
+   "position": [
+    -6,
+    -60,
+    22
+   ],
+   "scale": [
+    60,
+    7,
+    11
+   ],
+   "color": "#b3001b",
+   "label": "Hall of Internet History"
+  },
+  {
+   "type": "minimal_gallery",
+   "position": [
+    39,
+    -60,
+    22
+   ],
+   "scale": [
+    30,
+    16,
+    26
+   ],
+   "color": "#e8e6e1",
+   "label": "Minimal Art Gallery"
+  },
+  {
+   "type": "firepit",
+   "position": [
+    -26,
+    0,
+    -22
+   ],
+   "scale": [
+    16,
+    1,
+    16
+   ],
+   "color": "#ff8c1a",
+   "label": "The Firepit"
+  },
+  {
+   "type": "mini_game_arena",
+   "position": [
+    26,
+    0,
+    -28
+   ],
+   "scale": [
+    20,
+    1,
+    20
+   ],
+   "color": "#7a5cff",
+   "label": "Mini-Game Arena"
+  },
+  {
+   "type": "teleport_portal",
+   "position": [
+    -24,
+    0,
+    74
+   ],
+   "scale": [
+    7,
+    7,
+    1
+   ],
+   "color": "#f39c12",
+   "label": "Portal to Silicon Valley",
+   "target": "valley"
+  },
+  {
+   "type": "teleport_portal",
+   "position": [
+    -8,
+    0,
+    74
+   ],
+   "scale": [
+    7,
+    7,
+    1
+   ],
+   "color": "#ffd43b",
+   "label": "Portal to Tech Square",
+   "target": "techsquare"
+  },
+  {
+   "type": "teleport_portal",
+   "position": [
+    8,
+    0,
+    74
+   ],
+   "scale": [
+    7,
+    7,
+    1
+   ],
+   "color": "#8d6e63",
+   "label": "Portal to Museum of Forgotten Tech",
+   "target": "museum"
+  },
+  {
+   "type": "teleport_portal",
+   "position": [
+    24,
+    0,
+    74
+   ],
+   "scale": [
+    7,
+    7,
+    1
+   ],
+   "color": "#2f9e44",
+   "label": "Portal to Green-Tech Sandbox",
+   "target": "greentech"
+  },
+  {
+   "type": "sky_platform",
+   "position": [
+    34,
+    0,
+    -52
+   ],
+   "scale": [
+    18,
+    22,
+    18
+   ],
+   "color": "#c49a6c",
+   "label": "Panorama Deck"
+  },
+  {
+   "type": "metro_station",
+   "position": [
+    -14,
+    0,
+    40
+   ],
+   "scale": [
+    10,
+    1,
+    4
+   ],
+   "color": "#1877f2",
+   "label": "Genesis Plaza Station"
+  },
+  {
+   "type": "vehicle_showroom",
+   "position": [
+    40,
+    0,
+    4
+   ],
+   "scale": [
+    24,
+    6,
+    14
+   ],
+   "color": "#0b0b12",
+   "label": "Hypercar Showroom"
   }
  ]
 }

@@ -207,6 +207,66 @@
   "color": "#e03131"
  },
  {
+  "key": "techsquare",
+  "file": "map_tech_square.json",
+  "name": "Tech Square",
+  "description": "Times Square-style giant screens with live GitHub commits, Big Tech stocks and dev trends",
+  "cell": [
+   -4,
+   -4
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#ffd43b"
+ },
+ {
+  "key": "gamer",
+  "file": "map_gamer_district.json",
+  "name": "Gamer District",
+  "description": "Gravity Flip tower, arcades, LAN party and a mini-game arena",
+  "cell": [
+   3,
+   3
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#9775fa"
+ },
+ {
+  "key": "villas",
+  "file": "map_glass_villas.json",
+  "name": "Aero-Glass Oasis",
+  "description": "A neighborhood of floating glass villas with smart glass and low-gravity infinity pools",
+  "cell": [
+   -4,
+   3
+  ],
+  "span": [
+   2,
+   2
+  ],
+  "color": "#4dabf7"
+ },
+ {
+  "key": "equalizer",
+  "file": "map_equalizer.json",
+  "name": "Graphic Equalizer",
+  "description": "The Tower of Icons: real app icons pulse like a giant equalizer; every icon you step on plays its own effect",
+  "cell": [
+   3,
+   -1
+  ],
+  "span": [
+   1,
+   1
+  ],
+  "color": "#4dabf7"
+ },
+ {
   "key": "museum",
   "file": "map_museum.json",
   "name": "Museum of Forgotten Tech",
@@ -325,169 +385,141 @@
   "key": "valley",
   "file": "map_silicon_valley.json",
   "name": "Silicon Valley",
-  "description": "Apple Park, Googleplex, Anthropic, Tesla, EA, Meta, NVIDIA and more",
+  "description": "One campus with the HQs of Apple, Google, Meta, Anthropic, OpenAI, GitHub, NVIDIA, Tesla, EA and more",
   "region": {
    "center": [
     14000,
     0
    ],
    "size": [
-    560,
-    640
+    440,
+    380
    ]
   },
   "color": "#f39c12",
   "view": [
    0,
-   180,
-   240
+   40,
+   70
   ],
   "places": [
    {
-    "key": "sf",
-    "name": "San Francisco",
+    "key": "applepark",
+    "name": "Apple Park",
     "at": [
-     -40,
-     -255
-    ]
-   },
-   {
-    "key": "anthropic",
-    "name": "Anthropic",
-    "at": [
-     45,
-     -238
-    ]
-   },
-   {
-    "key": "openai",
-    "name": "OpenAI",
-    "at": [
-     -85,
-     -238
-    ]
-   },
-   {
-    "key": "github",
-    "name": "GitHub HQ",
-    "at": [
-     -130,
-     -238
-    ]
-   },
-   {
-    "key": "goldengate",
-    "name": "Golden Gate Bridge",
-    "at": [
-     -200,
-     -300
-    ]
-   },
-   {
-    "key": "oracle",
-    "name": "Oracle",
-    "at": [
-     100,
-     -170
-    ]
-   },
-   {
-    "key": "ea",
-    "name": "Electronic Arts",
-    "at": [
-     -85,
-     -160
-    ]
-   },
-   {
-    "key": "meta",
-    "name": "Meta",
-    "at": [
-     95,
-     -95
-    ]
-   },
-   {
-    "key": "stanford",
-    "name": "Stanford",
-    "at": [
-     -130,
-     12
-    ]
-   },
-   {
-    "key": "tesla",
-    "name": "Tesla HQ",
-    "at": [
-     90,
-     8
+     -140,
+     -30
     ]
    },
    {
     "key": "google",
     "name": "Googleplex",
     "at": [
-     95,
-     85
+     5,
+     -40
     ]
    },
    {
-    "key": "chm",
-    "name": "Computer History Museum",
+    "key": "meta",
+    "name": "Meta",
     "at": [
-     -75,
-     70
+     135,
+     -50
     ]
    },
    {
-    "key": "nasa",
-    "name": "NASA Hangar One",
+    "key": "anthropic",
+    "name": "Anthropic",
     "at": [
-     95,
-     150
+     -170,
+     62
     ]
    },
    {
-    "key": "applepark",
-    "name": "Apple Park",
+    "key": "openai",
+    "name": "OpenAI",
     "at": [
-     -181,
-     222
+     -120,
+     62
+    ]
+   },
+   {
+    "key": "github",
+    "name": "GitHub HQ",
+    "at": [
+     -70,
+     62
+    ]
+   },
+   {
+    "key": "tesla",
+    "name": "Tesla",
+    "at": [
+     70,
+     62
+    ]
+   },
+   {
+    "key": "microsoft",
+    "name": "Microsoft",
+    "at": [
+     120,
+     62
+    ]
+   },
+   {
+    "key": "intel",
+    "name": "Intel",
+    "at": [
+     170,
+     62
     ]
    },
    {
     "key": "nvidia",
     "name": "NVIDIA",
     "at": [
-     78,
-     195
+     -170,
+     110
     ]
    },
    {
-    "key": "levis",
-    "name": "Levi's Stadium",
+    "key": "netflix",
+    "name": "Netflix",
     "at": [
-     178,
-     200
+     100,
+     110
     ]
    },
    {
-    "key": "sanjose",
-    "name": "San Jose",
+    "key": "oracle",
+    "name": "Oracle",
     "at": [
-     0,
-     290
+     -150,
+     190
     ]
    },
    {
-    "key": "fremont",
-    "name": "Tesla Fremont Factory",
+    "key": "ea",
+    "name": "Electronic Arts",
     "at": [
-     248,
-     -20
+     -75,
+     185
+    ]
+   },
+   {
+    "key": "adobe",
+    "name": "Adobe",
+    "at": [
+     75,
+     185
     ]
    }
   ],
-  "world": true
+  "world": true,
+  "spawn": [
+   0,
+   150
+  ]
  }
 ]
