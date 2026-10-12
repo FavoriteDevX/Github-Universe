@@ -1,4 +1,4 @@
-# 🌐 GitHub Multiverse
+## GitHub Multiverse
 
 <img width="1000" height="561" alt="image" src="https://github.com/user-attachments/assets/1c7a81c7-6897-4ce4-bc3c-422fa9a61cfe" />
 
