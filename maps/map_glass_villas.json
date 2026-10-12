@@ -1,0 +1,156 @@
+{
+ "themeName": "Aero-Glass Oasis - Floating Glass Villas",
+ "backgroundColor": "#74c0fc",
+ "blocks": [
+  {
+   "type": "water_mirror",
+   "position": [
+    0,
+    -0.3,
+    0
+   ],
+   "scale": [
+    118,
+    0.3,
+    118
+   ],
+   "color": "#74c0fc",
+   "label": "Water mirror"
+  },
+  {
+   "type": "glass_villa",
+   "position": [
+    -34,
+    0,
+    -30
+   ],
+   "scale": [
+    14,
+    8,
+    10
+   ],
+   "color": "#1c7ed6",
+   "label": "Glass Villa 1"
+  },
+  {
+   "type": "glass_villa",
+   "position": [
+    10,
+    0,
+    -36
+   ],
+   "scale": [
+    14,
+    8,
+    10
+   ],
+   "color": "#ae3ec9",
+   "label": "Glass Villa 2"
+  },
+  {
+   "type": "glass_villa",
+   "position": [
+    40,
+    0,
+    -6
+   ],
+   "scale": [
+    14,
+    8,
+    10
+   ],
+   "color": "#0ca678",
+   "label": "Glass Villa 3"
+  },
+  {
+   "type": "glass_villa",
+   "position": [
+    -20,
+    0,
+    12
+   ],
+   "scale": [
+    14,
+    8,
+    10
+   ],
+   "color": "#f76707",
+   "label": "Glass Villa 4"
+  },
+  {
+   "type": "glass_villa",
+   "position": [
+    22,
+    0,
+    32
+   ],
+   "scale": [
+    14,
+    8,
+    10
+   ],
+   "color": "#e64980",
+   "label": "Glass Villa 5"
+  },
+  {
+   "type": "glass_villa",
+   "position": [
+    -40,
+    0,
+    40
+   ],
+   "scale": [
+    14,
+    8,
+    10
+   ],
+   "color": "#1098ad",
+   "label": "Glass Villa 6"
+  },
+  {
+   "type": "arc_stepping_walkway",
+   "position": [
+    0,
+    0.15,
+    0
+   ],
+   "scale": [
+    3,
+    0.2,
+    110
+   ],
+   "color": "#f8f9fa",
+   "label": "Floating walkway"
+  },
+  {
+   "type": "arc_stepping_walkway",
+   "position": [
+    0,
+    0.15,
+    0
+   ],
+   "scale": [
+    110,
+    0.2,
+    3
+   ],
+   "color": "#f8f9fa",
+   "label": "Floating walkway"
+  },
+  {
+   "type": "metro_station",
+   "position": [
+    0,
+    0.2,
+    50
+   ],
+   "scale": [
+    10,
+    1,
+    4
+   ],
+   "color": "#4dabf7",
+   "label": "Aero-Glass Oasis Station"
+  }
+ ]
+}

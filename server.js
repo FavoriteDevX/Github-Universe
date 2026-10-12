@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const crypto = require('crypto');
+const TechFeeds = require('./feeds');
 const path = require('path'); // Core module to handle absolute system directory paths smoothly
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
@@ -186,6 +187,7 @@ function spawnSupplyDrop() {
 }
 setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
 
+const VEHICLES = new Set(['rosso', 'wedge', 'volt', 'cyberwedge', 'cycle', 'cycleRed']);
 const EMOTES = new Set(['wave', 'dance', 'cheer', 'clap', 'sit', 'think', 'ship', 'coffee']);
 
 function commitLeaderboard() {
@@ -270,6 +272,7 @@ io.on('connection', (socket) => {
   socket.emit('world_state', worldStatePayload());
   socket.emit('game_state', publicGameState());
   socket.emit('loot_spawns', publicLoot());
+  socket.emit('tech_feeds', TechFeeds.snapshot());
   socket.emit('inventory', account.inventory);
   socket.to(room).emit('new_developer_joined', activeDevelopers[socket.id]);
 
@@ -431,6 +434,29 @@ io.on('connection', (socket) => {
     io.emit('system_message', `${developer().devTag} planted a tree in the Green-Tech Sandbox. Renewable energy: ${Math.min(100, 40 + gameState.trees.length * 2)}%`);
   });
 
+  // Gravity Flip tower reward: a rare wearable, at most once every 30 minutes
+  socket.on('tower_reward', () => {
+    const dev = developer();
+    if (!dev) return;
+    const now = Date.now();
+    if (now - (account.lastTowerReward || 0) < 30 * 60 * 1000) { socket.emit('system_message', '🏆 You already claimed the Gravity Flip reward. Come back in 30 minutes!'); return; }
+    if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', 'Your inventory is full. Use or /drop something first.'); return; }
+    account.lastTowerReward = now;
+    account.inventory.push({ id: 'hoodie', foundAt: now });
+    saveAccounts();
+    socket.emit('inventory', account.inventory);
+    socket.emit('loot_result', { item: 'hoodie', from: 'drop' });
+    io.to(room).emit('system_message', `🏆 ${dev.devTag} conquered the Gravity Flip tower and earned an Epic Senior Dev Hoodie!`);
+  });
+
+  // Vehicles from the Hypercar Showroom, shown to everyone in the lobby
+  socket.on('set_vehicle', (key) => {
+    const dev = developer();
+    if (!dev) return;
+    dev.vehicle = VEHICLES.has(key) ? key : null;
+    io.to(room).emit('peer_updated', { id: socket.id, devTag: dev.devTag, vehicle: dev.vehicle });
+  });
+
   // Roblox-style emotes, relayed to the lobby
   socket.on('emote', (emote) => {
     if (!developer() || !EMOTES.has(emote)) return;
@@ -522,6 +548,14 @@ io.on('connection', (socket) => {
 function getRandomPastelColor() {
   const pastelColors = ['#ffb7b2', '#ffdac1', '#e2f0cb', '#b5ead7', '#c7ceea', '#ff9aa2', '#a8e6cf'];
   return pastelColors[Math.floor(Math.random() * pastelColors.length)];
+}
+
+// Live data for the Tech Square billboards (GitHub, stocks, dev trends)
+if (process.env.DISABLE_FEEDS !== '1') {
+  TechFeeds.start({
+    onUpdate: (snapshot) => io.emit('tech_feeds', snapshot),
+    onHighlight: (highlight) => io.emit('feed_highlight', highlight)
+  });
 }
 
 const PORT = process.env.PORT || 3000;

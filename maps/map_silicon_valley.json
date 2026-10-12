@@ -1,0 +1,568 @@
+{
+ "themeName": "Silicon Valley Tech Campus - Headquarters of the Tech World",
+ "backgroundColor": "#87ceeb",
+ "blocks": [
+  {
+   "type": "campus_ground",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    440,
+    0.4,
+    380
+   ],
+   "color": "#8fc15c",
+   "label": "Silicon Valley Tech Campus"
+  },
+  {
+   "type": "campus_avenue_road",
+   "position": [
+    0,
+    0.07,
+    30
+   ],
+   "scale": [
+    10,
+    0.1,
+    340
+   ],
+   "color": "#4a4f55",
+   "label": "Innovation Avenue"
+  },
+  {
+   "type": "north_boulevard_road",
+   "position": [
+    0,
+    0.07,
+    -20
+   ],
+   "scale": [
+    420,
+    0.1,
+    10
+   ],
+   "color": "#4a4f55",
+   "label": "Infinite Loop Boulevard"
+  },
+  {
+   "type": "south_boulevard_road",
+   "position": [
+    0,
+    0.07,
+    125
+   ],
+   "scale": [
+    420,
+    0.1,
+    10
+   ],
+   "color": "#4a4f55",
+   "label": "Hacker Way Boulevard"
+  },
+  {
+   "type": "square_floor",
+   "position": [
+    0,
+    0.02,
+    55
+   ],
+   "scale": [
+    60,
+    0.06,
+    50
+   ],
+   "color": "#d9c7a8",
+   "label": "Campus Plaza"
+  },
+  {
+   "type": "fountain",
+   "position": [
+    0,
+    0.5,
+    55
+   ],
+   "scale": [
+    16,
+    1,
+    16
+   ],
+   "color": "#4dabf7",
+   "label": "Campus Fountain"
+  },
+  {
+   "type": "arch_gate",
+   "position": [
+    0,
+    9,
+    165
+   ],
+   "scale": [
+    26,
+    18,
+    3
+   ],
+   "color": "#e9d8b4",
+   "label": "WELCOME TO SILICON VALLEY"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -24,
+    3.5,
+    40
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -24,
+    3.5,
+    70
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    24,
+    3.5,
+    40
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    24,
+    3.5,
+    70
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "apple_park",
+   "position": [
+    -140,
+    6,
+    -95
+   ],
+   "scale": [
+    120,
+    12,
+    120
+   ],
+   "color": "#f2f2f2",
+   "label": "Apple Park - Cupertino"
+  },
+  {
+   "type": "googleplex",
+   "position": [
+    5,
+    7,
+    -80
+   ],
+   "scale": [
+    84,
+    14,
+    64
+   ],
+   "color": "#4285f4",
+   "label": "Googleplex - Mountain View"
+  },
+  {
+   "type": "meta_campus",
+   "position": [
+    135,
+    5,
+    -80
+   ],
+   "scale": [
+    70,
+    10,
+    44
+   ],
+   "color": "#0866ff",
+   "label": "Meta - 1 Hacker Way"
+  },
+  {
+   "type": "hq_anthropic",
+   "position": [
+    -170,
+    10,
+    40
+   ],
+   "scale": [
+    30,
+    20,
+    26
+   ],
+   "color": "#d97757",
+   "label": "Anthropic HQ"
+  },
+  {
+   "type": "hq_openai",
+   "position": [
+    -120,
+    10,
+    40
+   ],
+   "scale": [
+    30,
+    20,
+    26
+   ],
+   "color": "#10a37f",
+   "label": "OpenAI HQ"
+  },
+  {
+   "type": "hq_github",
+   "position": [
+    -70,
+    10,
+    40
+   ],
+   "scale": [
+    30,
+    20,
+    26
+   ],
+   "color": "#24292f",
+   "label": "GitHub HQ"
+  },
+  {
+   "type": "hq_tesla",
+   "position": [
+    70,
+    10,
+    40
+   ],
+   "scale": [
+    30,
+    20,
+    26
+   ],
+   "color": "#cc0000",
+   "label": "Tesla HQ"
+  },
+  {
+   "type": "hq_microsoft",
+   "position": [
+    120,
+    10,
+    40
+   ],
+   "scale": [
+    30,
+    20,
+    26
+   ],
+   "color": "#737373",
+   "label": "Microsoft HQ"
+  },
+  {
+   "type": "hq_intel",
+   "position": [
+    170,
+    10,
+    40
+   ],
+   "scale": [
+    30,
+    20,
+    26
+   ],
+   "color": "#0071c5",
+   "label": "Intel HQ"
+  },
+  {
+   "type": "nvidia_campus",
+   "position": [
+    -170,
+    7,
+    85
+   ],
+   "scale": [
+    56,
+    14,
+    36
+   ],
+   "color": "#76b900",
+   "label": "NVIDIA - Endeavor & Voyager"
+  },
+  {
+   "type": "hq_hp",
+   "position": [
+    -100,
+    6,
+    90
+   ],
+   "scale": [
+    30,
+    12,
+    24
+   ],
+   "color": "#0096d6",
+   "label": "HP"
+  },
+  {
+   "type": "hq_linkedin",
+   "position": [
+    -55,
+    7,
+    90
+   ],
+   "scale": [
+    26,
+    14,
+    22
+   ],
+   "color": "#0a66c2",
+   "label": "LinkedIn"
+  },
+  {
+   "type": "hq_uber",
+   "position": [
+    55,
+    7,
+    90
+   ],
+   "scale": [
+    26,
+    14,
+    22
+   ],
+   "color": "#000000",
+   "label": "Uber"
+  },
+  {
+   "type": "hq_netflix",
+   "position": [
+    100,
+    6,
+    90
+   ],
+   "scale": [
+    30,
+    12,
+    24
+   ],
+   "color": "#e50914",
+   "label": "Netflix"
+  },
+  {
+   "type": "hq_cisco",
+   "position": [
+    160,
+    6,
+    90
+   ],
+   "scale": [
+    36,
+    12,
+    26
+   ],
+   "color": "#049fd9",
+   "label": "Cisco"
+  },
+  {
+   "type": "oracle_campus",
+   "position": [
+    -150,
+    0,
+    160
+   ],
+   "scale": [
+    50,
+    24,
+    44
+   ],
+   "color": "#c74634",
+   "label": "Oracle"
+  },
+  {
+   "type": "ea_campus",
+   "position": [
+    -75,
+    7,
+    160
+   ],
+   "scale": [
+    44,
+    14,
+    34
+   ],
+   "color": "#ff4747",
+   "label": "Electronic Arts"
+  },
+  {
+   "type": "adobe_towers",
+   "position": [
+    75,
+    20,
+    160
+   ],
+   "scale": [
+    40,
+    40,
+    30
+   ],
+   "color": "#fa0f00",
+   "label": "Adobe"
+  },
+  {
+   "type": "hq_ebay",
+   "position": [
+    150,
+    6,
+    160
+   ],
+   "scale": [
+    30,
+    12,
+    24
+   ],
+   "color": "#e53238",
+   "label": "eBay"
+  },
+  {
+   "type": "tree_cluster",
+   "position": [
+    -200,
+    0,
+    -20
+   ],
+   "scale": [
+    30,
+    1,
+    300
+   ],
+   "color": "#2e7d32"
+  },
+  {
+   "type": "tree_cluster",
+   "position": [
+    200,
+    0,
+    -20
+   ],
+   "scale": [
+    30,
+    1,
+    300
+   ],
+   "color": "#2e7d32"
+  },
+  {
+   "type": "tree_cluster",
+   "position": [
+    0,
+    0,
+    -150
+   ],
+   "scale": [
+    380,
+    1,
+    20
+   ],
+   "color": "#2e7d32"
+  },
+  {
+   "type": "tree_cluster",
+   "position": [
+    0,
+    0,
+    185
+   ],
+   "scale": [
+    380,
+    1,
+    10
+   ],
+   "color": "#2e7d32"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    -90,
+    6,
+    -6
+   ],
+   "scale": [
+    14,
+    12,
+    0.6
+   ],
+   "color": "#2c3e50",
+   "label": "WELCOME TO SILICON VALLEY"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    -30,
+    6,
+    -6
+   ],
+   "scale": [
+    14,
+    12,
+    0.6
+   ],
+   "color": "#1877f2",
+   "label": "GITHUB MULTIVERSE: DEVS ONLY BEYOND THIS POINT"
+  },
+  {
+   "type": "billboard",
+   "position": [
+    30,
+    6,
+    -6
+   ],
+   "scale": [
+    14,
+    12,
+    0.6
+   ],
+   "color": "#16a085",
+   "label": "SHIP IT. THEN FIX IT."
+  },
+  {
+   "type": "billboard",
+   "position": [
+    90,
+    6,
+    -6
+   ],
+   "scale": [
+    14,
+    12,
+    0.6
+   ],
+   "color": "#d35400",
+   "label": "COMMIT EARLY. COMMIT OFTEN."
+  }
+ ]
+}

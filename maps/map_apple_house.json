@@ -1,0 +1,308 @@
+{
+ "themeName": "House of MAC - Apple Store Experience",
+ "backgroundColor": "#f5f5f7",
+ "blocks": [
+  {
+   "type": "aluminum_floor",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    52,
+    0.4,
+    52
+   ],
+   "color": "#e5e5ea",
+   "label": "Apple Plaza Ground"
+  },
+  {
+   "type": "apple_store",
+   "position": [
+    0,
+    0,
+    -4
+   ],
+   "scale": [
+    30,
+    9,
+    22
+   ],
+   "color": "#f5f5f7",
+   "label": "House of MAC - Apple Store"
+  },
+  {
+   "type": "macos_interactive_terminal",
+   "position": [
+    0,
+    1,
+    12
+   ],
+   "scale": [
+    6,
+    2,
+    1
+   ],
+   "color": "#1d1d1f",
+   "label": "Software Integration Node (Xcode Mini-Game)"
+  },
+  {
+   "type": "pocket_show_stage",
+   "position": [
+    14,
+    0.3,
+    16
+   ],
+   "scale": [
+    10,
+    0.6,
+    6
+   ],
+   "color": "#ff3b30",
+   "label": "Live Music Virtual Stage"
+  },
+  {
+   "type": "glass_facade_pillar_left",
+   "position": [
+    -17,
+    6,
+    -4
+   ],
+   "scale": [
+    1,
+    12,
+    10
+   ],
+   "color": "#a2aaad"
+  },
+  {
+   "type": "glass_facade_pillar_right",
+   "position": [
+    17,
+    6,
+    -4
+   ],
+   "scale": [
+    1,
+    12,
+    10
+   ],
+   "color": "#a2aaad"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    -18,
+    5,
+    18
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "Mac|Apple personal computers",
+   "image": "macbook-air.jpg"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    -8,
+    5,
+    22
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#f5f5f7",
+   "label": "macOS|Apple desktop operating system",
+   "dark": false,
+   "image": "macos.jpg"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    22,
+    5,
+    -20
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "Xcode|Apple developer tools"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    -22,
+    5,
+    -20
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "Swift|Programming language by Apple"
+  },
+  {
+   "type": "plant",
+   "position": [
+    20,
+    1,
+    6
+   ],
+   "scale": [
+    1.8,
+    2.2,
+    1.8
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "bench",
+   "position": [
+    6,
+    0,
+    20
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.8
+   ],
+   "color": "#d4b48c"
+  },
+  {
+   "type": "apple_video_billboard",
+   "position": [
+    18,
+    6,
+    20
+   ],
+   "scale": [
+    12,
+    12,
+    0.5
+   ],
+   "color": "#000000",
+   "label": "Apple on YouTube - official films and ads"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    -24,
+    5,
+    0
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "App Store|Ship your apps to the world"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    24,
+    5,
+    0
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "Safari|The web, the Apple way"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    -14,
+    5,
+    -24
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "Apple Arcade|Games for every Apple device"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    14,
+    5,
+    -24
+   ],
+   "scale": [
+    8,
+    10,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "iCloud|Your stuff, everywhere"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    -26,
+    5,
+    10
+   ],
+   "scale": [
+    12,
+    12,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "MacBook Neo|Big value for small business.",
+   "image": "macbook-neo.jpg"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    26,
+    5,
+    10
+   ],
+   "scale": [
+    12,
+    12,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "Apple M1|Small chip. Giant leap.",
+   "image": "m1.jpg"
+  },
+  {
+   "type": "apple_billboard",
+   "position": [
+    4,
+    5,
+    26
+   ],
+   "scale": [
+    12,
+    12,
+    0.3
+   ],
+   "color": "#000000",
+   "label": "macOS apps|Finder, Safari, Music, Messages and more",
+   "image": "mac-apps.jpg"
+  }
+ ]
+}

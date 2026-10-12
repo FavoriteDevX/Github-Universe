@@ -1,0 +1,504 @@
+{
+ "rarities": {
+  "common": {
+   "name": "Common",
+   "color": "#b0b5ba",
+   "chestWeight": 45,
+   "dropWeight": 0
+  },
+  "uncommon": {
+   "name": "Uncommon",
+   "color": "#5ccb3a",
+   "chestWeight": 30,
+   "dropWeight": 0
+  },
+  "rare": {
+   "name": "Rare",
+   "color": "#3a9cf2",
+   "chestWeight": 15,
+   "dropWeight": 45
+  },
+  "epic": {
+   "name": "Epic",
+   "color": "#b35af2",
+   "chestWeight": 8,
+   "dropWeight": 40
+  },
+  "legendary": {
+   "name": "Legendary",
+   "color": "#f2a63a",
+   "chestWeight": 2,
+   "dropWeight": 15
+  }
+ },
+ "items": [
+  {
+   "id": "espresso",
+   "name": "Espresso Shot",
+   "icon": "☕",
+   "rarity": "common",
+   "kind": "consumable",
+   "effect": "speed",
+   "seconds": 20,
+   "description": "Run 60% faster for 20 seconds."
+  },
+  {
+   "id": "cap",
+   "name": "Hackathon Cap",
+   "icon": "🧢",
+   "rarity": "common",
+   "kind": "wearable",
+   "wearable": "cap",
+   "description": "Wear the cap from your first hackathon."
+  },
+  {
+   "id": "ci_badge",
+   "name": "Green CI Badge",
+   "icon": "✅",
+   "rarity": "common",
+   "kind": "consumable",
+   "effect": "confetti",
+   "description": "All checks passed! Celebrate with confetti."
+  },
+  {
+   "id": "sticky",
+   "name": "Sticky Note of Wisdom",
+   "icon": "🗒️",
+   "rarity": "common",
+   "kind": "consumable",
+   "effect": "tip",
+   "description": "Read a dev tip someone left behind."
+  },
+  {
+   "id": "energy_drink",
+   "name": "Energy Drink",
+   "icon": "⚡",
+   "rarity": "uncommon",
+   "kind": "consumable",
+   "effect": "jump",
+   "seconds": 20,
+   "description": "Jump 60% higher for 20 seconds."
+  },
+  {
+   "id": "mug",
+   "name": "Mug of Infinite Coffee",
+   "icon": "🍵",
+   "rarity": "uncommon",
+   "kind": "wearable",
+   "wearable": "mug",
+   "description": "It never runs out. Neither will you."
+  },
+  {
+   "id": "so_answer",
+   "name": "Accepted Stack Overflow Answer",
+   "icon": "💡",
+   "rarity": "uncommon",
+   "kind": "consumable",
+   "effect": "tip",
+   "description": "The answer you were looking for since 2011."
+  },
+  {
+   "id": "duck",
+   "name": "Rubber Duck Debugger",
+   "icon": "🦆",
+   "rarity": "rare",
+   "kind": "pet",
+   "description": "A loyal duck follows you around and listens to your bugs."
+  },
+  {
+   "id": "headphones",
+   "name": "Noise-Cancelling Headphones",
+   "icon": "🎧",
+   "rarity": "rare",
+   "kind": "wearable",
+   "wearable": "headphones",
+   "description": "Deep focus mode: on."
+  },
+  {
+   "id": "hammer",
+   "name": "Git Commit Hammer",
+   "icon": "🔨",
+   "rarity": "rare",
+   "kind": "tool",
+   "description": "Squash bugs in the Debug Dungeon with a click."
+  },
+  {
+   "id": "teleport_token",
+   "name": "Teleport Token",
+   "icon": "🌀",
+   "rarity": "rare",
+   "kind": "consumable",
+   "effect": "teleport",
+   "description": "Warp to a random place in the multiverse."
+  },
+  {
+   "id": "hoodie",
+   "name": "Senior Dev Hoodie",
+   "icon": "🧥",
+   "rarity": "epic",
+   "kind": "wearable",
+   "wearable": "hoodie",
+   "description": "Ten years of production incidents, woven into fabric."
+  },
+  {
+   "id": "lens",
+   "name": "Debugger Lens",
+   "icon": "🔍",
+   "rarity": "epic",
+   "kind": "consumable",
+   "effect": "lens",
+   "seconds": 60,
+   "description": "Deal double damage to bugs for 60 seconds."
+  },
+  {
+   "id": "revert",
+   "name": "git revert Scroll",
+   "icon": "⏪",
+   "rarity": "epic",
+   "kind": "consumable",
+   "effect": "revert",
+   "description": "Return to where you were before your last teleport."
+  },
+  {
+   "id": "jetpack",
+   "name": "Jetpack.js",
+   "icon": "🚀",
+   "rarity": "legendary",
+   "kind": "consumable",
+   "effect": "jetpack",
+   "seconds": 30,
+   "description": "Hold Space to fly for 30 seconds."
+  },
+  {
+   "id": "crown",
+   "name": "10x Engineer Crown",
+   "icon": "👑",
+   "rarity": "legendary",
+   "kind": "wearable",
+   "wearable": "crown",
+   "description": "A golden crown for legendary shippers."
+  }
+ ],
+ "spawns": [
+  {
+   "x": 0,
+   "z": 70,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": -62,
+   "z": 10,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": 60,
+   "z": 30,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": -60,
+   "z": -20,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": 60,
+   "z": -20,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": 0,
+   "z": -36,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": -28,
+   "z": 26,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": 30,
+   "z": 30,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": -30,
+   "z": -30,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": 30,
+   "z": -30,
+   "area": "Genesis Plaza"
+  },
+  {
+   "x": 2955,
+   "z": 48,
+   "area": "Museum of Forgotten Tech"
+  },
+  {
+   "x": 3045,
+   "z": -40,
+   "area": "Museum of Forgotten Tech"
+  },
+  {
+   "x": 4955,
+   "z": 48,
+   "area": "Debug Dungeon"
+  },
+  {
+   "x": 5045,
+   "z": -40,
+   "area": "Debug Dungeon"
+  },
+  {
+   "x": 6955,
+   "z": 48,
+   "area": "Open Source HQ"
+  },
+  {
+   "x": 7045,
+   "z": -40,
+   "area": "Open Source HQ"
+  },
+  {
+   "x": 8955,
+   "z": 48,
+   "area": "Keynote Amphitheater"
+  },
+  {
+   "x": 9045,
+   "z": -40,
+   "area": "Keynote Amphitheater"
+  },
+  {
+   "x": 10955,
+   "z": 48,
+   "area": "Green-Tech Sandbox"
+  },
+  {
+   "x": 11045,
+   "z": -40,
+   "area": "Green-Tech Sandbox"
+  },
+  {
+   "x": -218.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -218.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -218.0,
+   "z": 38.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -218.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": 38.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -26.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -26.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -26.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 38.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 38.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 38.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": 38.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 13868,
+   "z": -26,
+   "area": "Silicon Valley - Apple Park"
+  },
+  {
+   "x": 14013,
+   "z": -36,
+   "area": "Silicon Valley - Googleplex"
+  },
+  {
+   "x": 14143,
+   "z": -46,
+   "area": "Silicon Valley - Meta"
+  },
+  {
+   "x": 13838,
+   "z": 66,
+   "area": "Silicon Valley - Anthropic"
+  },
+  {
+   "x": 13888,
+   "z": 66,
+   "area": "Silicon Valley - OpenAI"
+  },
+  {
+   "x": 13938,
+   "z": 66,
+   "area": "Silicon Valley - GitHub HQ"
+  },
+  {
+   "x": 14078,
+   "z": 66,
+   "area": "Silicon Valley - Tesla"
+  },
+  {
+   "x": 14128,
+   "z": 66,
+   "area": "Silicon Valley - Microsoft"
+  },
+  {
+   "x": 14178,
+   "z": 66,
+   "area": "Silicon Valley - Intel"
+  },
+  {
+   "x": 13838,
+   "z": 114,
+   "area": "Silicon Valley - NVIDIA"
+  },
+  {
+   "x": 14108,
+   "z": 114,
+   "area": "Silicon Valley - Netflix"
+  },
+  {
+   "x": 13858,
+   "z": 194,
+   "area": "Silicon Valley - Oracle"
+  },
+  {
+   "x": 13933,
+   "z": 189,
+   "area": "Silicon Valley - Electronic Arts"
+  },
+  {
+   "x": 14083,
+   "z": 189,
+   "area": "Silicon Valley - Adobe"
+  }
+ ]
+}
