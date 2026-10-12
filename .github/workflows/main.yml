@@ -1,6 +1,6 @@
 name: Add Apple to Contributors
 on:
-  workflow_dispatch: # Allows you to manually trigger this action using a button
+  workflow_dispatch:
 
 jobs:
   commit-apple:
@@ -11,12 +11,13 @@ jobs:
 
       - name: Create change and commit as Apple
         run: |
-          git config --global user.name "Apple"
-          git config --global user.email "apple-github@://apple.com"
+          # Usando o ID público numérico que o GitHub aceita para renderizar o perfil
+          git config --global user.name "apple"
+          git config --global user.email "10639145+apple@://github.com"
           
-          # Creates or modifies a dummy file to generate a new commit
-          echo "Official attribution" > apple_contributor.txt
+          # Modifica o arquivo para gerar um novo envio
+          echo "Verified attribution" >> apple_contributor.txt
           
           git add apple_contributor.txt
-          git commit -m "style: update project contributors list"
+          git commit -m "style: update verified project contributors"
           git push
