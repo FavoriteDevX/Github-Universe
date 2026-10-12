@@ -88,7 +88,7 @@
   function monumentSign(group, text, color, x, z, rotationY = 0, background = '#ffffff') {
     const sign = new THREE.Group();
     sign.add(box(7, 0.6, 1.4, material('#bdc3c7'), 0, 0.3, 0));
-    sign.add(facedBox(6.4, 1.8, 0.8, material(background), wordmark(text, color, background), 0, 1.5, 0));
+    sign.add(facedBox(6.4, 1.8, 0.8, material(background), new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture(text, { background, foreground: color, width: 1024, height: 288, layout: 'sign' }) }), 0, 1.5, 0));
     sign.position.set(x, 0, z);
     sign.rotation.y = rotationY;
     group.add(sign);
@@ -304,30 +304,129 @@
       }
     },
 
-    // Generic modern headquarters: office blocks + wordmark + plaza + parking
+    // Enterable headquarters: glass-and-concrete shell with a real door, a lobby
+    // with the company logo, stairs to every floor and the rooftop, open-plan
+    // offices with laptops (E to work), a glass meeting room and a coffee corner
     hqOffice(group, { w, h, d, color, label, type }) {
       const name = (label || 'HQ').split(/ — | - /)[0];
       const isWarm = /anthropic/.test(type);
       const wallColor = isWarm ? '#e8dccb' : /github/.test(type) ? '#2f363d' : /netflix/.test(type) ? '#1a1a1a' : '#dfe4ea';
       const brandColor = color;
-      group.add(box(w, 0.1, d, material('#cfd8dc', { roughness: 0.9 }), 0, -h / 2 + 0.05, 0));
-      officeBlock(group, w * 0.7, h, d * 0.55, 0, -h / 2, -d * 0.12, wallColor, isWarm ? '#f4e3cf' : '#cfe8ff');
-      group.add(box(w * 0.7 + 0.2, 0.6, d * 0.55 + 0.2, material(brandColor), 0, h / 2 - 0.3, -d * 0.12));
-      rooftopSign(group, name, brandColor, h / 2, Math.min(w * 0.6, 22), -d * 0.12 + d * 0.275 + 0.2, wallColor);
-      monumentSign(group, name, brandColor, -w * 0.25, d * 0.38, 0, isWarm ? '#f5ede1' : '#ffffff');
-      // Front plaza with planters and flag poles
+      const bw = w * 0.7;
+      const bd = d * 0.55;
+      const bz = -d * 0.12;
+      const base = -h / 2;
+      const floors = Math.max(2, Math.round(h / 4.5));
+      const floorHeight = h / floors;
+      const wallThickness = 0.3;
+      const doorWidth = 4;
+      const doorHeight = 3.6;
+      const stairWidth = 2.6;
+      const rise = 0.36;
+      const steps = Math.ceil(floorHeight / rise);
+      const stairLength = steps * 0.5;
+      const stairX = -bw / 2 + wallThickness + stairWidth / 2 + 0.1;
+      const holeStartZ = bz - bd / 2 + 1.4;
+
+      group.add(box(w, 0.1, d, material('#cfd8dc', { roughness: 0.9 }), 0, base + 0.05, 0));
+      const shell = new THREE.Group();
+      const outside = new THREE.MeshStandardMaterial({ map: repeated(windowsTexture(wallColor, isWarm ? '#f4e3cf' : '#cfe8ff'), Math.max(1, Math.round(bw / 5)), floors), roughness: 0.5, metalness: 0.2 });
+      const sideWall = new THREE.MeshStandardMaterial({ map: repeated(windowsTexture(wallColor, isWarm ? '#f4e3cf' : '#cfe8ff'), Math.max(1, Math.round(bd / 5)), floors), roughness: 0.5, metalness: 0.2 });
+      // Back and side walls
+      shell.add(box(bw, h, wallThickness, outside, 0, base + h / 2, bz - bd / 2));
+      [-1, 1].forEach((side) => shell.add(box(wallThickness, h, bd, sideWall, side * bw / 2, base + h / 2, bz)));
+      // Front wall with a glass entrance
+      const frontZ = bz + bd / 2;
+      [-1, 1].forEach((side) => shell.add(box(bw / 2 - doorWidth / 2, h, wallThickness, outside, side * (bw / 4 + doorWidth / 4), base + h / 2, frontZ)));
+      shell.add(box(doorWidth, h - doorHeight, wallThickness, outside, 0, base + doorHeight + (h - doorHeight) / 2, frontZ));
+      shell.add(box(doorWidth + 0.6, 0.4, 1.6, material(brandColor), 0, base + doorHeight + 0.2, frontZ + 0.8));
+      group.add(shell);
+
+      // Floor slabs with a stair opening, plus the roof (also opened for rooftop access)
+      const slabMaterial = material(isWarm ? '#d9c6ad' : '#c9ced6', { roughness: 0.7 });
+      const interiorFloor = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.plankTexture(isWarm ? '#c49a6c' : '#b0b7c3'), bw / 4, bd / 4), roughness: 0.7 });
+      group.add(box(bw - wallThickness * 2, 0.1, bd - wallThickness * 2, interiorFloor, 0, base + 0.15, bz));
+      for (let level = 1; level <= floors; level++) {
+        const y = base + level * floorHeight;
+        const holeEndZ = holeStartZ + stairLength;
+        const mainWidth = bw - (stairWidth + 0.4) - wallThickness;
+        group.add(box(mainWidth, 0.3, bd, level === floors ? material(shade(wallColor, -0.1)) : slabMaterial, bw / 2 - mainWidth / 2, y, bz));
+        group.add(box(stairWidth + 0.4, 0.3, holeStartZ - (bz - bd / 2), slabMaterial, stairX, y, (bz - bd / 2 + holeStartZ) / 2));
+        group.add(box(stairWidth + 0.4, 0.3, bz + bd / 2 - holeEndZ, slabMaterial, stairX, y, (holeEndZ + bz + bd / 2) / 2));
+        if (level < floors) group.add(box(bw - wallThickness * 2, 0.1, bd - wallThickness * 2, interiorFloor, 0, y + 0.2, bz));
+        // Stairs from the floor below: climbing toward the back wall
+        const stairs = new THREE.Group();
+        for (let i = 0; i < steps; i++) {
+          const stepTop = (i + 1) * (floorHeight / steps);
+          stairs.add(box(stairWidth, stepTop, 0.5, slabMaterial, stairX, base + (level - 1) * floorHeight + stepTop / 2, holeEndZ - (i + 0.5) * 0.5));
+        }
+        group.add(PropKit.kit.mergeByMaterial(stairs));
+      }
+      // Rooftop railing and brand sign
+      const roofY = base + h;
+      const glassRail = material('#cfe8ff', { transparent: true, opacity: 0.4 });
+      group.add(box(bw, 1.1, 0.08, glassRail, 0, roofY + 0.7, bz + bd / 2));
+      group.add(box(bw, 1.1, 0.08, glassRail, 0, roofY + 0.7, bz - bd / 2));
+      const signWidth = Math.min(bw * 0.8, 22);
+      const brandSign = BrandLogos.billboardTexture(name, { background: wallColor, foreground: brandColor, width: 1024, height: 256, layout: 'sign' });
+      group.add(box(signWidth, signWidth / 4, 0.3, new THREE.MeshBasicMaterial({ map: brandSign }), 0, roofY + signWidth / 8 + 1.4, bz - bd / 2 + 0.5));
+
+      // ---- Interior furniture (merged per material to keep it light) ----
+      const furniture = new THREE.Group();
+      const desk = material('#f1f3f5', { roughness: 0.5 });
+      const chair = material('#343a40');
+      const fabric = material(shade(brandColor, 0.15), { roughness: 1 });
+      // Lobby: reception desk, logo wall, sofas, plants
+      furniture.add(box(5, 1.1, 1.2, material(brandColor), 0, base + 0.75, bz + bd * 0.1));
+      furniture.add(box(5.2, 0.08, 1.4, desk, 0, base + 1.34, bz + bd * 0.1));
       [-1, 1].forEach((side) => {
-        group.add(cylinder(1.2, 1.2, 0.6, material('#b0bec5'), side * w * 0.3, -h / 2 + 0.3, d * 0.3, 12));
-        group.add(mesh(new THREE.IcosahedronGeometry(1.1, 0), material('#43a047', { flatShading: true }), side * w * 0.3, -h / 2 + 1.4, d * 0.3));
+        furniture.add(box(3.2, 0.6, 1.2, fabric, side * bw * 0.3, base + 0.5, bz + bd * 0.32));
+        furniture.add(box(3.2, 0.8, 0.3, fabric, side * bw * 0.3, base + 0.9, bz + bd * 0.32 - 0.5));
+        furniture.add(cylinder(0.5, 0.4, 0.8, material('#e9ecef'), side * (bw / 2 - 1.2), base + 0.6, frontZ - 1.2, 10));
+        furniture.add(sphere(0.8, material('#2f9e44'), side * (bw / 2 - 1.2), base + 1.6, frontZ - 1.2, 10));
       });
-      for (let i = 0; i < 3; i++) group.add(cylinder(0.06, 0.06, 7, material('#eceff1'), w * 0.15 + i * 1.4, -h / 2 + 3.5, d * 0.4, 6));
+      // Office floors: desk clusters, meeting room, coffee corner, ceiling lights
+      const furnishedFloors = Math.min(floors - 1, 2);
+      for (let level = 1; level <= furnishedFloors; level++) {
+        const y = base + level * floorHeight + 0.25;
+        [-1, 1].forEach((side) => {
+          const x = side * bw * 0.18 + bw * 0.08;
+          furniture.add(box(4, 0.08, 1.6, desk, x, y + 0.75, bz + bd * 0.12));
+          [-1.6, 1.6].forEach((dx) => furniture.add(box(0.08, 0.75, 1.4, chair, x + dx, y + 0.37, bz + bd * 0.12)));
+          [-1, 1].forEach((seat) => furniture.add(box(0.6, 0.5, 0.6, chair, x + seat, y + 0.25, bz + bd * 0.12 + 1.3)));
+          group.add(PropKit.kit.laptop(x - 1, y + 0.79, bz + bd * 0.12 + 0.3, 0));
+          group.add(PropKit.kit.laptop(x + 1, y + 0.79, bz + bd * 0.12 + 0.3, 0));
+        });
+        // Glass meeting room in the back right corner
+        const roomX = bw / 2 - 3.5;
+        const roomZ = bz - bd / 2 + 3;
+        furniture.add(box(5, 2.8, 0.06, material('#cfe8ff', { transparent: true, opacity: 0.3 }), roomX, y + 1.4, roomZ + 2.3));
+        furniture.add(box(3, 0.08, 1.4, desk, roomX, y + 0.75, roomZ));
+        furniture.add(box(2, 1.2, 0.05, material('#212529'), roomX, y + 1.8, bz - bd / 2 + 0.25));
+        // Coffee corner
+        group.add(PropKit.kit.interactive(box(0.5, 0.6, 0.5, material('#495057', { metalness: 0.6 }), bw / 2 - 1, y + 1.3, bz + bd / 2 - 1.5), 'coffee', `${name} coffee machine`));
+        furniture.add(box(1.2, 1, 3, desk, bw / 2 - 1, y + 0.5, bz + bd / 2 - 2));
+        for (let i = 0; i < 3; i++) furniture.add(box(bw * 0.25, 0.06, 0.8, glow('#ffffff', 0.7), -bw * 0.2 + i * bw * 0.25, base + (level + 1) * floorHeight - 0.2, bz));
+      }
+      group.add(PropKit.kit.mergeByMaterial(furniture));
+      // Logo wall in the lobby, facing the entrance
+      const logoWall = box(Math.min(bw * 0.5, 8), 2.2, 0.15, new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture(name, { background: '#ffffff', foreground: brandColor, width: 1024, height: 256, layout: 'sign' }) }), 0, base + 2.6, bz - bd / 2 + wallThickness + 0.1);
+      group.add(logoWall);
+      group.add(PropKit.kit.laptop(1.2, base + 1.38, bz + bd * 0.1, Math.PI));
+
+      // Outside: monument sign, plaza planters, flag poles
+      monumentSign(group, name, brandColor, -w * 0.25, d * 0.38, 0, isWarm ? '#f5ede1' : '#ffffff');
+      [-1, 1].forEach((side) => {
+        group.add(cylinder(1.2, 1.2, 0.6, material('#b0bec5'), side * w * 0.3, base + 0.3, d * 0.3, 12));
+        group.add(mesh(new THREE.IcosahedronGeometry(1.1, 0), material('#43a047', { flatShading: true }), side * w * 0.3, base + 1.4, d * 0.3));
+      });
+      for (let i = 0; i < 3; i++) group.add(cylinder(0.06, 0.06, 7, material('#eceff1'), w * 0.15 + i * 1.4, base + 3.5, d * 0.4, 6));
       if (/tesla/.test(type)) {
         for (let i = 0; i < 6; i++) {
-          group.add(box(0.5, 1.8, 0.4, material('#e74c3c'), -w * 0.4 + i * 2.2, -h / 2 + 0.9, d * 0.46));
-          group.add(box(1.9, 1.3, 4.3, material(['#c0392b', '#ecf0f1', '#111111'][i % 3], { metalness: 0.5, roughness: 0.3 }), -w * 0.4 + i * 2.2, -h / 2 + 0.75, d * 0.46 - 3));
+          group.add(box(0.5, 1.8, 0.4, material('#e74c3c'), -w * 0.4 + i * 2.2, base + 0.9, d * 0.46));
+          group.add(box(1.9, 1.3, 4.3, material(['#c0392b', '#ecf0f1', '#111111'][i % 3], { metalness: 0.5, roughness: 0.3 }), -w * 0.4 + i * 2.2, base + 0.75, d * 0.46 - 3));
         }
       }
-      if (/museum/.test(type)) group.add(box(w * 0.3, h * 0.6, d * 0.2, glassMaterial('#aed6f1', 0.6), w * 0.25, -h / 2 + h * 0.3, d * 0.2));
     },
 
     applePark(group, { w, h, color }) {

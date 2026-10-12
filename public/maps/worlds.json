@@ -3,12 +3,20 @@
   "key": "plaza",
   "file": "map_decentraland.json",
   "name": "Genesis Plaza",
-  "description": "The default spawn at parcel (0,0), Decentraland style",
+  "description": "The heart of GitHub Multiverse: Welcome Hall, Theatre, Events Wall, pond and shops",
   "cell": [
-   0,
-   0
+   -1,
+   -1
   ],
-  "color": "#ff007f"
+  "color": "#1877f2",
+  "span": [
+   3,
+   3
+  ],
+  "spawn": [
+   0,
+   24
+  ]
  },
  {
   "key": "districts",
@@ -16,7 +24,7 @@
   "name": "Genesis Districts",
   "description": "Vegas, Fashion, Aetheria and private lots",
   "cell": [
-   1,
+   2,
    0
   ],
   "color": "#9b59b6"
@@ -27,7 +35,7 @@
   "name": "Horizon & Somnium",
   "description": "Social hub with a keynote podium",
   "cell": [
-   -1,
+   -2,
    0
   ],
   "color": "#3498db"
@@ -39,7 +47,7 @@
   "description": "Social room around the central desk",
   "cell": [
    0,
-   -1
+   -2
   ],
   "color": "#4a4a5a"
  },
@@ -50,7 +58,7 @@
   "description": "Exhibition of green and blue blocks",
   "cell": [
    1,
-   -1
+   -2
   ],
   "color": "#39d353"
  },
@@ -61,7 +69,7 @@
   "description": "Kanban whiteboards and sticky notes",
   "cell": [
    -1,
-   -1
+   -2
   ],
   "color": "#4dabf7"
  },
@@ -72,7 +80,7 @@
   "description": "Real estate and an art wall",
   "cell": [
    0,
-   1
+   2
   ],
   "color": "#27ae60"
  },
@@ -83,7 +91,7 @@
   "description": "Wearables mall",
   "cell": [
    1,
-   1
+   2
   ],
   "color": "#ff007f"
  },
@@ -94,7 +102,7 @@
   "description": "Aluminum plaza with a live music stage",
   "cell": [
    -1,
-   1
+   2
   ],
   "color": "#a2aaad"
  },
@@ -116,7 +124,7 @@
   "description": "Arcade cabinets and a pool table",
   "cell": [
    2,
-   0
+   1
   ],
   "color": "#00a8ff"
  },
@@ -126,8 +134,8 @@
   "name": "Hacker House",
   "description": "Two-story house",
   "cell": [
-   2,
-   1
+   -2,
+   -2
   ],
   "color": "#e84118"
  },
@@ -138,7 +146,7 @@
   "description": "Voxel castle and quest node",
   "cell": [
    -2,
-   -1
+   2
   ],
   "color": "#00d2ff"
  },
@@ -148,8 +156,8 @@
   "name": "Retro Contributions",
   "description": "A 3D contribution graph",
   "cell": [
-   -2,
-   0
+   2,
+   2
   ],
   "color": "#39d353"
  },
@@ -160,7 +168,7 @@
   "description": "Palm trees, chairs and umbrellas",
   "cell": [
    -2,
-   1
+   -1
   ],
   "color": "#ffeaa7"
  },
@@ -171,10 +179,32 @@
   "description": "Private floating island above the lake",
   "cell": [
    0,
-   -2
+   -3
   ],
   "elevation": 26,
   "color": "#2ed573"
+ },
+ {
+  "key": "workspace",
+  "file": "map_holo_workspace.json",
+  "name": "Holo Workspace",
+  "description": "Futuristic glass workspace with laptops and a commit leaderboard",
+  "cell": [
+   2,
+   -2
+  ],
+  "color": "#74c0fc"
+ },
+ {
+  "key": "parkour",
+  "file": "map_parkour_park.json",
+  "name": "Parkour Park",
+  "description": "Red floating platforms, coins and a timer, Toki Land style",
+  "cell": [
+   -2,
+   1
+  ],
+  "color": "#e03131"
  },
  {
   "key": "museum",

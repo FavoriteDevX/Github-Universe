@@ -186,6 +186,12 @@ function spawnSupplyDrop() {
 }
 setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
 
+const EMOTES = new Set(['wave', 'dance', 'cheer', 'clap', 'sit', 'think', 'ship', 'coffee']);
+
+function commitLeaderboard() {
+  return Object.values(accounts.users).filter((user) => user.commits).map((user) => [user.username, user.commits]).sort((a, b) => b[1] - a[1]).slice(0, 10);
+}
+
 function publicGameState() {
   const monsterState = {};
   Object.entries(monsters).forEach(([id, monster]) => { monsterState[id] = { hp: monster.hp, alive: monster.alive }; });
@@ -233,6 +239,9 @@ io.use((socket, next) => {
   const user = userFromToken(socket.handshake.auth && socket.handshake.auth.token);
   if (!user) return next(new Error('unauthorized'));
   socket.data.userKey = user.username.toLowerCase();
+  // Private lobbies: devs only see and hear others in the same lobby (default: public)
+  const lobby = typeof socket.handshake.auth.lobby === 'string' ? socket.handshake.auth.lobby.replace(/[^a-z0-9]/gi, '').slice(0, 12) : '';
+  socket.data.room = lobby ? `lobby:${lobby}` : 'lobby:public';
   next();
 });
 
@@ -253,12 +262,16 @@ io.on('connection', (socket) => {
   console.log(`[NETWORK] Developer registered: ${developerTag} (${socket.id})`);
 
   socket.emit('local_registration_success', activeDevelopers[socket.id]);
-  socket.emit('sync_entire_developer_pool', Object.values(activeDevelopers));
+  const room = socket.data.room;
+  socket.join(room);
+  activeDevelopers[socket.id].room = room;
+  socket.emit('sync_entire_developer_pool', Object.values(activeDevelopers).filter((peer) => peer.room === room));
+  socket.emit('commit_leaderboard', commitLeaderboard());
   socket.emit('world_state', worldStatePayload());
   socket.emit('game_state', publicGameState());
   socket.emit('loot_spawns', publicLoot());
   socket.emit('inventory', account.inventory);
-  socket.broadcast.emit('new_developer_joined', activeDevelopers[socket.id]);
+  socket.to(room).emit('new_developer_joined', activeDevelopers[socket.id]);
 
   const developer = () => activeDevelopers[socket.id];
 
@@ -267,13 +280,13 @@ io.on('connection', (socket) => {
     const position = sanitizePosition(transformData && transformData.position);
     if (!developer() || !position) return;
     developer().position = position;
-    socket.broadcast.emit('peer_cursor_transformed', { id: socket.id, position });
+    socket.to(room).emit('peer_cursor_transformed', { id: socket.id, position });
   });
 
   socket.on('chat_message', (rawText) => {
     const text = cleanText(rawText, MAX_CHAT_LENGTH);
     if (!developer() || !text) return;
-    io.emit('chat_message', { id: socket.id, devTag: developer().devTag, color: developer().color, text, timestamp: Date.now() });
+    io.to(room).emit('chat_message', { id: socket.id, devTag: developer().devTag, color: developer().color, text, timestamp: Date.now() });
   });
 
   socket.on('private_message', ({ targetId, text } = {}) => {
@@ -292,7 +305,7 @@ io.on('connection', (socket) => {
   socket.on('set_wearable', (item) => {
     if (!developer()) return;
     developer().wearable = WEARABLES.has(item) ? item : null;
-    io.emit('peer_updated', { id: socket.id, devTag: developer().devTag, wearable: developer().wearable });
+    io.to(room).emit('peer_updated', { id: socket.id, devTag: developer().devTag, wearable: developer().wearable });
   });
 
   // Minecraft-style /time, /gamerule doDaylightCycle and /weather (shared by everyone)
@@ -418,6 +431,24 @@ io.on('connection', (socket) => {
     io.emit('system_message', `${developer().devTag} planted a tree in the Green-Tech Sandbox. Renewable energy: ${Math.min(100, 40 + gameState.trees.length * 2)}%`);
   });
 
+  // Roblox-style emotes, relayed to the lobby
+  socket.on('emote', (emote) => {
+    if (!developer() || !EMOTES.has(emote)) return;
+    socket.to(room).emit('peer_emote', { id: socket.id, emote });
+  });
+
+  // Simulated work: every commit from a laptop is counted on the account
+  socket.on('commit', ({ lines } = {}) => {
+    const dev = developer();
+    const now = Date.now();
+    if (!dev || !(lines >= 3) || now - (dev.lastCommitAt || 0) < 5000) return;
+    dev.lastCommitAt = now;
+    account.commits = (account.commits || 0) + 1;
+    saveAccounts();
+    io.to(room).emit('system_message', `✔ ${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
+    io.emit('commit_leaderboard', commitLeaderboard());
+  });
+
   // Sent by the client once its loot catalog is loaded
   socket.on('loot_sync', () => {
     socket.emit('loot_spawns', publicLoot());
@@ -464,7 +495,7 @@ io.on('connection', (socket) => {
     }
     if (item.kind === 'wearable') {
       dev.wearable = dev.wearable === item.wearable ? null : item.wearable;
-      io.emit('peer_updated', { id: socket.id, devTag: dev.devTag, wearable: dev.wearable });
+      io.to(room).emit('peer_updated', { id: socket.id, devTag: dev.devTag, wearable: dev.wearable });
     }
     socket.emit('inventory', account.inventory);
     socket.emit('item_effect', { item: item.id });
@@ -482,7 +513,7 @@ io.on('connection', (socket) => {
     if (developer()) {
       console.log(`[NETWORK] Developer disconnected: ${developer().devTag}`);
       delete activeDevelopers[socket.id];
-      io.emit('developer_left_network', socket.id);
+      io.to(room).emit('developer_left_network', socket.id);
     }
   });
 });

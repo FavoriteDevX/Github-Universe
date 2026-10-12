@@ -7,7 +7,7 @@
     { "type": "wall", "position": [ -15, 5, 0 ], "scale": [ 1, 10, 30 ], "color": "#3d3d45" },
     { "type": "wall", "position": [ 15, 5, 0 ], "scale": [ 1, 10, 30 ], "color": "#3d3d45" },
     { "type": "wall", "position": [ 0, 5, -15 ], "scale": [ 30, 10, 1 ], "color": "#3d3d45" },
-    { "type": "wayfinding_board", "position": [ 0, 6, -14.3 ], "scale": [ 12, 3, 0.3 ], "color": "#ff2d7a", "label": "GitHub Multiverse HQ - Main Lobby" },
+    { "type": "wayfinding_board", "position": [ 0, 6, -14.3 ], "scale": [ 12, 3, 0.3 ], "color": "#1877f2", "label": "GitHub Multiverse HQ - Main Lobby" },
     { "type": "rug", "position": [ 0, 0.02, 5 ], "scale": [ 12, 0.04, 7 ], "color": "#3d3d6b" },
     { "type": "sofa", "position": [ -6, 0.6, 7 ], "scale": [ 5, 1.2, 2 ], "color": "#5f27cd", "label": "Pair Programming Lounge" },
     { "type": "sofa", "position": [ 6, 0.6, 7 ], "scale": [ 5, 1.2, 2 ], "color": "#5f27cd", "label": "Pair Programming Lounge" },

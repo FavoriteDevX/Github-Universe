@@ -181,164 +181,54 @@
  ],
  "spawns": [
   {
-   "x": -218.0,
-   "z": -218.0,
-   "area": "Genesis City"
+   "x": 0,
+   "z": 70,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -218.0,
-   "z": -90.0,
-   "area": "Genesis City"
+   "x": -62,
+   "z": 10,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -218.0,
-   "z": 38.0,
-   "area": "Genesis City"
+   "x": 60,
+   "z": 30,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -218.0,
-   "z": 166.0,
-   "area": "Genesis City"
+   "x": -60,
+   "z": -20,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -154.0,
-   "z": -154.0,
-   "area": "Genesis City"
+   "x": 60,
+   "z": -20,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -154.0,
-   "z": -26.0,
-   "area": "Genesis City"
+   "x": 0,
+   "z": -36,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -154.0,
-   "z": 102.0,
-   "area": "Genesis City"
+   "x": -28,
+   "z": 26,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -154.0,
-   "z": 230.0,
-   "area": "Genesis City"
+   "x": 30,
+   "z": 30,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -90.0,
-   "z": -218.0,
-   "area": "Genesis City"
+   "x": -30,
+   "z": -30,
+   "area": "Genesis Plaza"
   },
   {
-   "x": -90.0,
-   "z": -90.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": -90.0,
-   "z": 38.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": -90.0,
-   "z": 166.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": -26.0,
-   "z": -154.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": -26.0,
-   "z": -26.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": -26.0,
-   "z": 102.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": -26.0,
-   "z": 230.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 38.0,
-   "z": -218.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 38.0,
-   "z": -90.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 38.0,
-   "z": 38.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 38.0,
-   "z": 166.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 102.0,
-   "z": -154.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 102.0,
-   "z": -26.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 102.0,
-   "z": 102.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 102.0,
-   "z": 230.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 166.0,
-   "z": -218.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 166.0,
-   "z": -90.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 166.0,
-   "z": 38.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 166.0,
-   "z": 166.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 230.0,
-   "z": -154.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 230.0,
-   "z": -26.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 230.0,
-   "z": 102.0,
-   "area": "Genesis City"
-  },
-  {
-   "x": 230.0,
-   "z": 230.0,
-   "area": "Genesis City"
+   "x": 30,
+   "z": -30,
+   "area": "Genesis Plaza"
   },
   {
    "x": 13968,
@@ -479,6 +369,156 @@
    "x": 11045,
    "z": -40,
    "area": "Green-Tech Sandbox"
+  },
+  {
+   "x": -218.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -218.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -218.0,
+   "z": 38.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -218.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -154.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": 38.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -90.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -26.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -26.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": -26.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 38.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 38.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 38.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 102.0,
+   "z": 230.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": -218.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": -90.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": 38.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 166.0,
+   "z": 166.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": -154.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": -26.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": 102.0,
+   "area": "Genesis City"
+  },
+  {
+   "x": 230.0,
+   "z": 230.0,
+   "area": "Genesis City"
   }
  ]
 }

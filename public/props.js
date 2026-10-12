@@ -6,6 +6,14 @@
 // tree, an arcade cabinet, a Kanban board, a building with windows, etc.
 const PropKit = (() => {
   const animatedObjects = [];
+  // Objects the avatar can use with E (laptops, seats, coffee machines, arcades...)
+  const interactables = [];
+
+  function interactive(object, type, label) {
+    object.userData.interactable = { type, label };
+    interactables.push(object);
+    return object;
+  }
 
   // --------------------------------------------------------------------------
   // Materials, geometry helpers and canvas textures (cached and shared)
@@ -256,6 +264,136 @@ const PropKit = (() => {
     });
   }
 
+  // Hand-painted style textures (cobblestone, brick, wood planks, stucco, roof tiles)
+  function cobbleTexture(base = '#c98b5a') {
+    return canvasTexture(`cobble|${base}`, 256, 256, (ctx, w, h) => {
+      ctx.fillStyle = shade(base, -0.12);
+      ctx.fillRect(0, 0, w, h);
+      let seed = 7;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          const x = col * 32 + (row % 2) * 16 + random() * 4;
+          const y = row * 32 + random() * 4;
+          ctx.fillStyle = shade(base, (random() - 0.5) * 0.12);
+          ctx.beginPath();
+          ctx.ellipse(x + 14, y + 14, 13, 12, random(), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+          ctx.beginPath();
+          ctx.ellipse(x + 11, y + 10, 6, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    });
+  }
+
+  function brickTexture(base = '#b5533c') {
+    return canvasTexture(`brick|${base}`, 256, 256, (ctx, w, h) => {
+      ctx.fillStyle = '#d9cbb8';
+      ctx.fillRect(0, 0, w, h);
+      for (let row = 0; row < 16; row++) {
+        for (let col = 0; col < 5; col++) {
+          ctx.fillStyle = shade(base, ((row * 3 + col * 7) % 5 - 2) * 0.03);
+          ctx.fillRect(col * 56 + (row % 2) * 28 - 28, row * 16 + 2, 52, 13);
+        }
+      }
+    });
+  }
+
+  function plankTexture(base = '#a8743f') {
+    return canvasTexture(`plank|${base}`, 256, 256, (ctx, w, h) => {
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = shade(base, ((i * 5) % 3 - 1) * 0.05);
+        ctx.fillRect(0, i * 32, w, 30);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        ctx.fillRect(((i * 73) % 200) + 20, i * 32, 2, 30);
+      }
+    });
+  }
+
+  function stuccoTexture(base = '#f1e3c8') {
+    return canvasTexture(`stucco|${base}`, 128, 128, (ctx, w, h) => {
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 900; i++) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${((i * 13) % 7) * 0.008})`;
+        ctx.fillRect((i * 37) % w, (i * 91) % h, 2, 2);
+      }
+    });
+  }
+
+  function roofTileTexture(base = '#c0392b') {
+    return canvasTexture(`rooftile|${base}`, 128, 128, (ctx, w, h) => {
+      ctx.fillStyle = shade(base, -0.1);
+      ctx.fillRect(0, 0, w, h);
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 9; col++) {
+          ctx.fillStyle = shade(base, (row % 2) * 0.04);
+          ctx.beginPath();
+          ctx.arc(col * 16 + (row % 2) * 8, row * 16 + 14, 8, Math.PI, 0);
+          ctx.fill();
+        }
+      }
+    });
+  }
+
+  // Box with rounded vertical edges (softer, less "blocky" buildings)
+  function roundedSlab(w, h, d, radius, slabMaterial) {
+    const r = Math.min(radius, w / 2 - 0.01, d / 2 - 0.01);
+    const shape = new THREE.Shape();
+    shape.moveTo(-w / 2 + r, -d / 2);
+    shape.lineTo(w / 2 - r, -d / 2);
+    shape.quadraticCurveTo(w / 2, -d / 2, w / 2, -d / 2 + r);
+    shape.lineTo(w / 2, d / 2 - r);
+    shape.quadraticCurveTo(w / 2, d / 2, w / 2 - r, d / 2);
+    shape.lineTo(-w / 2 + r, d / 2);
+    shape.quadraticCurveTo(-w / 2, d / 2, -w / 2, d / 2 - r);
+    shape.lineTo(-w / 2, -d / 2 + r);
+    shape.quadraticCurveTo(-w / 2, -d / 2, -w / 2 + r, -d / 2);
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 6 });
+    geometry.rotateX(Math.PI / 2);
+    geometry.translate(0, h / 2, 0);
+    // Planar UVs so tiled textures wrap around the walls
+    const position = geometry.attributes.position;
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < position.count; i++) uv.setXY(i, (position.getX(i) + position.getZ(i)) / 4, position.getY(i) / 4);
+    return mesh(geometry, slabMaterial);
+  }
+
+  // Merges every mesh of a group into one mesh per material (fewer draw calls for big interiors)
+  function mergeByMaterial(source) {
+    source.updateMatrixWorld(true);
+    const buckets = new Map();
+    source.traverse((node) => {
+      if (!node.isMesh || Array.isArray(node.material)) return;
+      const geometry = node.geometry.index ? node.geometry.toNonIndexed() : node.geometry.clone();
+      geometry.applyMatrix4(node.matrixWorld);
+      if (!buckets.has(node.material)) buckets.set(node.material, []);
+      buckets.get(node.material).push(geometry);
+    });
+    const merged = new THREE.Group();
+    buckets.forEach((geometries, bucketMaterial) => {
+      const attributes = ['position', 'normal', 'uv'];
+      const total = geometries.reduce((sum, geometry) => sum + geometry.attributes.position.count, 0);
+      const output = new THREE.BufferGeometry();
+      attributes.forEach((name) => {
+        const size = name === 'uv' ? 2 : 3;
+        const array = new Float32Array(total * size);
+        let offset = 0;
+        geometries.forEach((geometry) => {
+          const attribute = geometry.attributes[name];
+          if (attribute) array.set(attribute.array, offset);
+          offset += geometry.attributes.position.count * size;
+        });
+        output.setAttribute(name, new THREE.BufferAttribute(array, size));
+      });
+      output.computeBoundingSphere();
+      merged.add(mesh(output, bucketMaterial));
+    });
+    return merged;
+  }
+
   // Floating text sprite (district names, pedestal captions, quest markers)
   function textSprite(text, { width = 8, color = '#ffffff', background = 'rgba(17, 15, 26, 0.78)', font = 'bold 44px Segoe UI, Arial, sans-serif' } = {}) {
     const texture = labelTexture(text, { bg: background, fg: color, width: 512, height: 128, font });
@@ -274,6 +412,21 @@ const PropKit = (() => {
   function animate(object, update) {
     object.userData.animate = update;
     animatedObjects.push(object);
+  }
+
+  // A laptop with a code editor on screen; press E next to it to start working
+  function laptop(x, y, z, rotationY = 0) {
+    const computer = new THREE.Group();
+    computer.add(box(0.7, 0.04, 0.48, material('#b0b7c3', { metalness: 0.7, roughness: 0.3 }), 0, 0.02, 0));
+    const lid = new THREE.Group();
+    lid.add(box(0.7, 0.46, 0.03, material('#b0b7c3', { metalness: 0.7, roughness: 0.3 }), 0, 0.23, 0));
+    lid.add(box(0.64, 0.4, 0.01, new THREE.MeshBasicMaterial({ map: codeScreenTexture('main.js') }), 0, 0.23, 0.02));
+    lid.position.z = -0.23;
+    lid.rotation.x = -0.25;
+    computer.add(lid);
+    computer.position.set(x, y, z);
+    computer.rotation.y = rotationY;
+    return interactive(computer, 'laptop', 'Laptop');
   }
 
   // --------------------------------------------------------------------------
@@ -497,6 +650,7 @@ const PropKit = (() => {
       const screen = box(o.w * 0.8, h * 0.32, 0.05, new THREE.MeshBasicMaterial({ map: arcadeScreenTexture(label || 'arcade', (color.length * 47) % 360) }), 0, h * 0.18, o.d * 0.2 + 0.03);
       inner.add(screen);
       inner.add(facedBox(o.w, h * 0.12, 0.1, body, new THREE.MeshBasicMaterial({ map: labelTexture(label || 'ARCADE', { bg: '#120f24', fg: '#ffe600', border: color }) }), 0, h * 0.44, o.d * 0.2 + 0.05));
+      interactive(inner, 'arcade', label || 'Arcade');
       group.add(inner);
     },
 
@@ -592,6 +746,7 @@ const PropKit = (() => {
         inner.add(box(0.84, 0.48, 0.02, new THREE.MeshBasicMaterial({ map: codeScreenTexture(label || 'Desk') }), o.w * offset, h / 2 + 0.4, -o.d * 0.15 - 0.04)).rotation.y = Math.PI;
         inner.add(box(0.08, 0.2, 0.08, material('#111'), o.w * offset, h / 2 + 0.1, -o.d * 0.15));
       });
+      inner.add(laptop(o.w * 0.35, h / 2 + 0.04, o.d * 0.05, Math.PI));
       group.add(inner);
     },
 
@@ -599,6 +754,7 @@ const PropKit = (() => {
       group.add(box(w, 0.12, d, material(color), 0, h / 2 - 0.06, 0));
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => group.add(box(0.12, h - 0.12, 0.12, material('#111'), (sx * (w - 0.3)) / 2, -0.06, (sz * (d - 0.3)) / 2)));
       group.add(box(0.8, 0.05, 0.3, material('#222'), 0, h / 2 + 0.03, d * 0.15));
+      group.add(laptop(-w * 0.3, h / 2, d * 0.1, 0.3));
       const chair = new THREE.Group();
       chair.add(box(0.8, 0.12, 0.8, material('#e84118'), 0, 0, 0));
       chair.add(box(0.8, 1.2, 0.12, material('#e84118'), 0, 0.6, 0.4));
@@ -622,7 +778,13 @@ const PropKit = (() => {
           const seat = box(0.7, 0.1, 0.7, chairMaterial);
           const offset = (along === 'x' ? d : w) / 2 + 0.6;
           if (along === 'x') seat.position.set(t, -h * 0.1, side * offset); else seat.position.set(side * offset, -h * 0.1, t);
-          group.add(seat);
+          group.add(interactive(seat, 'sit', 'Chair'));
+          // A laptop in front of every other seat, ready for simulated work
+          if ((i + (side > 0 ? 1 : 0)) % 2 === 0) {
+            const inset = (along === 'x' ? d : w) / 2 - 0.45;
+            const facing = along === 'x' ? (side > 0 ? 0 : Math.PI) : (side > 0 ? Math.PI / 2 : -Math.PI / 2);
+            group.add(along === 'x' ? laptop(t, h / 2, side * inset, facing) : laptop(side * inset, h / 2, t, facing));
+          }
         });
       }
     },
@@ -630,7 +792,7 @@ const PropKit = (() => {
     counter(group, { w, h, d, color }) {
       group.add(box(w, h - 0.1, d, material('#dcdde1'), 0, -0.05, 0));
       group.add(box(w + 0.1, 0.1, d + 0.1, material(color, { roughness: 0.2 }), 0, h / 2 - 0.05, 0));
-      group.add(box(0.3, 0.35, 0.3, material('#57606f', { metalness: 0.6 }), 0, h / 2 + 0.17, -d * 0.3));
+      group.add(interactive(box(0.3, 0.35, 0.3, material('#57606f', { metalness: 0.6 }), 0, h / 2 + 0.17, -d * 0.3), 'coffee', 'Coffee machine'));
       group.add(cylinder(0.12, 0.1, 0.3, material('#e84118'), 0, h / 2 + 0.15, d * 0.2, 10));
     },
 
@@ -642,7 +804,7 @@ const PropKit = (() => {
       inner.add(box(o.w, h * 0.45, o.d, fabric, 0, -h * 0.27, 0));
       inner.add(box(o.w, h * 0.9, o.d * 0.25, fabric, 0, -h * 0.05, -o.d * 0.38));
       [-1, 1].forEach((side) => inner.add(box(o.d * 0.2, h * 0.65, o.d, fabric, (side * (o.w - o.d * 0.2)) / 2, -h * 0.17, 0)));
-      for (let i = 0; i < 3; i++) inner.add(box(o.w * 0.28, h * 0.15, o.d * 0.6, material(shade(color, 0.08), { roughness: 1 }), -o.w * 0.3 + i * o.w * 0.3, h * 0.03, o.d * 0.05));
+      for (let i = 0; i < 3; i++) inner.add(interactive(box(o.w * 0.28, h * 0.15, o.d * 0.6, material(shade(color, 0.08), { roughness: 1 }), -o.w * 0.3 + i * o.w * 0.3, h * 0.03, o.d * 0.05), 'sit', 'Sofa'));
       group.add(inner);
     },
 
@@ -694,9 +856,9 @@ const PropKit = (() => {
       inner.add(box(o.w * 0.18, h, o.d, stone, -o.w * 0.41, 0, 0));
       inner.add(box(o.w * 0.18, h, o.d, stone, o.w * 0.41, 0, 0));
       inner.add(box(o.w, h * 0.2, o.d * 1.2, stone, 0, h * 0.4, 0));
-      const sign = new THREE.MeshBasicMaterial({ map: labelTexture(label || 'GENESIS PLAZA', { bg: '#14121f', fg: '#ff2d7a', font: 'bold 54px Segoe UI, Arial, sans-serif' }) });
+      const sign = new THREE.MeshBasicMaterial({ map: labelTexture(label || 'GENESIS PLAZA', { bg: '#14121f', fg: '#4dabf7', font: 'bold 54px Segoe UI, Arial, sans-serif' }) });
       inner.add(facedBox(o.w * 0.6, h * 0.12, 0.1, stone, sign, 0, h * 0.4, o.d * 0.6 + 0.05));
-      inner.add(box(o.w * 0.64, 0.08, 0.08, glow('#ff2d7a', 1.4), 0, h * 0.3, o.d * 0.6 + 0.05));
+      inner.add(box(o.w * 0.64, 0.08, 0.08, glow('#1877f2', 1.4), 0, h * 0.3, o.d * 0.6 + 0.05));
       group.add(inner);
     },
 
@@ -930,7 +1092,7 @@ const PropKit = (() => {
         storefront.castShadow = false;
         inner.add(storefront);
         if (isShop) {
-          const awning = box(o.w * 0.85, 0.12, 1.4, material(isCasino ? '#c0392b' : '#ff2d7a'), 0, -h / 2 + 2.7, o.d / 2 + 0.7);
+          const awning = box(o.w * 0.85, 0.12, 1.4, material(isCasino ? '#c0392b' : '#1877f2'), 0, -h / 2 + 2.7, o.d / 2 + 0.7);
           awning.rotation.x = 0.25;
           inner.add(awning);
         }
@@ -1138,8 +1300,9 @@ const PropKit = (() => {
 
   const kit = {
     material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite,
-    labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture
+    labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture,
+    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, mergeByMaterial, laptop, interactive
   };
 
-  return { buildBlock, registerBuilder, kit, textSprite, material, glow, animatedObjects };
+  return { buildBlock, registerBuilder, kit, textSprite, material, glow, animatedObjects, interactables };
 })();
