@@ -699,6 +699,11 @@
         group.userData.doorsOpen = Math.abs(doors[0].position.x) > size * 0.6;
       });
       group.userData.label = 'Underground entrance: step in and fall for 5 seconds';
+      // Big floating sign so newcomers (who spawn right in front) find the entrance
+      const sign = textSprite('⬇ UNDERGROUND · jump into the pool', { width: 11, background: 'rgba(24, 119, 242, 0.92)' });
+      sign.position.set(0, 5.5, 0);
+      group.add(sign);
+      animate(sign, (time) => { sign.position.y = 5.5 + Math.sin(time * 1.6) * 0.25; });
       window.undergroundEntrances = window.undergroundEntrances || [];
       window.undergroundEntrances.push({ group, size, depth });
     },

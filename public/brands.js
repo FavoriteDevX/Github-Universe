@@ -1,12 +1,17 @@
 // ============================================================================
 // BRAND LOGOS: REAL LOGOS FROM SIMPLE ICONS (CC0), LOADED AT RUNTIME FROM A CDN
 // ============================================================================
-// The SVGs used by the Multiverse are vendored in public/vendor/simple-icons
+// The SVGs used by the Multiverse are bundled in public/vendor/simple-icons.json
 // (CC0, works offline); any other slug falls back to the Simple Icons CDN.
 // Brands that asked Simple Icons to remove their logo (e.g. OpenAI, AWS,
 // Microsoft, LinkedIn, Oracle, Adobe, Salesforce) keep a text wordmark.
 const BrandLogos = (() => {
-  const SIMPLE_ICONS_LOCAL = 'vendor/simple-icons';
+  // Every logo used in the world, bundled in one file: { slug: "<svg ...>" }
+  let localIconsPromise = null;
+  function localIcons() {
+    if (!localIconsPromise) localIconsPromise = fetch('vendor/simple-icons.json').then((response) => (response.ok ? response.json() : {})).catch(() => ({}));
+    return localIconsPromise;
+  }
   const SIMPLE_ICONS_CDN = 'https://cdn.jsdelivr.net/npm/simple-icons@16.33.0/icons';
   // Brand name -> Simple Icons slug (only brands available in the library)
   const SLUGS = {
@@ -29,8 +34,8 @@ const BrandLogos = (() => {
   function loadLogoImage(slug, color) {
     const key = `${slug}|${color}`;
     if (!svgCache.has(key)) {
-      const get = (base) => fetch(`${base}/${slug}.svg`).then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.status))));
-      svgCache.set(key, get(SIMPLE_ICONS_LOCAL).catch(() => get(SIMPLE_ICONS_CDN))
+      const fromCdn = () => fetch(`${SIMPLE_ICONS_CDN}/${slug}.svg`).then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.status))));
+      svgCache.set(key, localIcons().then((icons) => icons[slug] || fromCdn()).catch(fromCdn)
         .then((svg) => new Promise((resolve, reject) => {
           const colored = svg.replace('<svg ', `<svg fill="${color}" width="512" height="512" `);
           const image = new Image();

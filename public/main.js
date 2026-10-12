@@ -308,7 +308,10 @@ function updateTunnelFall() {
   for (const entrance of window.undergroundEntrances || []) {
     entrance.group.getWorldPosition(center);
     const half = entrance.size / 2;
-    if (entrance.group.userData.doorsOpen && Math.abs(avatar.position.x - center.x) < half && Math.abs(avatar.position.z - center.z) < half && avatar.position.y < center.y - 0.2 && avatar.position.y > center.y - 5) {
+    // Anywhere inside the tunnel (even after a big frame skip) the fall takes over
+    const inside = Math.abs(avatar.position.x - center.x) < half + 1 && Math.abs(avatar.position.z - center.z) < half + 1;
+    const depth = center.y - avatar.position.y;
+    if (inside && ((entrance.group.userData.doorsOpen && depth > 0.2) || depth > 2) && depth < entrance.depth) {
       tunnelFall = { start: performance.now(), x: center.x, z: center.z, fromY: avatar.position.y, toY: center.y - 59.7 };
       flying = false;
       appendSystemMessage('🌊 Falling down the water tunnel...');
