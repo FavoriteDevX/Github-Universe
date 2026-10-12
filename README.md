@@ -137,3 +137,4 @@ This project is proudly supported and built in collaboration with:
 
 ## ⚖️ Disclaimer
 Company names and structures are stylized wordmark recreations for identification purposes. Keynotes are streamed directly from official Apple/Google YouTube embeds. All trademarks belong to their respective owners.
+
