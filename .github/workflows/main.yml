@@ -1,0 +1,22 @@
+name: Add Apple to Contributors
+on:
+  workflow_dispatch: # Allows you to manually trigger this action using a button
+
+jobs:
+  commit-apple:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Create change and commit as Apple
+        run: |
+          git config --global user.name "Apple"
+          git config --global user.email "apple-github@://apple.com"
+          
+          # Creates or modifies a dummy file to generate a new commit
+          echo "Official attribution" > apple_contributor.txt
+          
+          git add apple_contributor.txt
+          git commit -m "style: update project contributors list"
+          git push
