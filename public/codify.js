@@ -19,6 +19,9 @@ const Codify = (() => {
     java: { name: 'Java', color: '#e76f00', keywords: ['public', 'private', 'class', 'static', 'void', 'return', 'if', 'else', 'for', 'while', 'new', 'try', 'catch', 'import'] },
     c: { name: 'C', color: '#a8b9cc', keywords: ['int', 'char', 'void', 'return', 'if', 'else', 'for', 'while', 'struct', 'include', 'malloc', 'free'] },
     html: { name: 'HTML', color: '#e34f26', keywords: [] },
+    docker: { name: 'Dockerfile', color: '#2496ed', keywords: ['FROM', 'RUN', 'COPY', 'WORKDIR', 'ENV', 'EXPOSE', 'CMD', 'USER', 'AS', 'ARG', 'ENTRYPOINT'] },
+    yaml: { name: 'YAML', color: '#cb171e', keywords: ['name', 'on', 'jobs', 'steps', 'uses', 'run', 'with', 'apiVersion', 'kind', 'metadata', 'spec'] },
+    shell: { name: 'Shell', color: '#4eaa25', keywords: ['alias', 'export', 'if', 'then', 'fi', 'for', 'do', 'done', 'cd', 'echo'] },
     sql: { name: 'SQL', color: '#336791', keywords: ['SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE', 'JOIN', 'GROUP', 'BY', 'ORDER', 'INTO', 'VALUES'] }
   };
   const MAX_CODE = 4000;
@@ -44,7 +47,8 @@ const Codify = (() => {
         <label class="codify-share"><input type="checkbox" id="codify-share"> Visible to others</label>
       </div>
       <p id="codify-status">Your code blocks are private: only you can see them.</p>
-      <div id="codify-report"></div>`;
+      <div id="codify-report"></div>
+      <div id="codify-packages"></div>`;
     document.body.appendChild(panel);
     ui = {
       panel,
@@ -422,5 +426,14 @@ const Codify = (() => {
     if (block) open(block);
   }
 
-  return { init, open, close, isOpen, update, interact, startRoast, findBugs };
+  // Opens the editor with a ready-made template (e.g. a dish from the Underground Cafe)
+  function loadTemplate(title, language, code) {
+    active = null;
+    ui.language.value = LANGUAGES[language] ? language : 'javascript';
+    ui.code.value = code;
+    ui.report.innerHTML = `<h4>🍽️ ${escapeHtml(title)}</h4><p>Your package is in the editor. Press "Add to world" to place it as a code block.</p>`;
+    open();
+  }
+
+  return { init, open, close, isOpen, update, interact, startRoast, findBugs, loadTemplate };
 })();

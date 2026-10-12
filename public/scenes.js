@@ -225,6 +225,123 @@
       group.userData.label = 'Sky waterfall';
     },
 
+    // Tropical beach arena (Decentraland style): sandy island in the sea, a
+    // curved stone wall with red and yellow banners and torches, curved palm
+    // trees, glowing teal paths, a portal arch, a statue, a boardwalk pier,
+    // beach chairs and umbrellas
+    beachArena(group, { w, h }) {
+      const radius = w / 2;
+      const sand = new THREE.MeshStandardMaterial({ map: PropKit.kit.canvasTexture('beachSand', 512, 512, (ctx, cw, ch) => {
+        ctx.fillStyle = '#f2dca2'; ctx.fillRect(0, 0, cw, ch);
+        let seed = 9;
+        const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+        for (let i = 0; i < 4000; i++) { ctx.fillStyle = ['#e9cf8e', '#f7e6b5', '#dcc07c', '#fff1c9'][i % 4]; ctx.fillRect(random() * cw, random() * ch, 2, 2); }
+        for (let i = 0; i < 30; i++) { ctx.strokeStyle = 'rgba(200, 170, 110, 0.35)'; ctx.lineWidth = 3; ctx.beginPath(); const y = random() * ch; ctx.moveTo(0, y); ctx.bezierCurveTo(cw * 0.3, y + 10, cw * 0.6, y - 10, cw, y); ctx.stroke(); }
+      }), roughness: 1 });
+      sand.map.wrapS = sand.map.wrapT = THREE.RepeatWrapping;
+      sand.map.repeat.set(4, 4);
+      group.add(cylinder(radius * 0.82, radius * 0.86, 0.6, sand, 0, 0, 0, 64));
+      // Sea around the island with moving waves
+      const waveMap = PropKit.kit.canvasTexture('seaWaves', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#2bb3d6'; ctx.fillRect(0, 0, cw, ch);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; ctx.lineWidth = 3;
+        for (let y = 0; y < ch; y += 24) { ctx.beginPath(); for (let x = 0; x <= cw; x += 8) { const yy = y + Math.sin(x / 20) * 4; x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
+      });
+      const sea = repeated(waveMap, 6, 6);
+      const water = mesh(new THREE.RingGeometry(radius * 0.8, radius * 1.15, 64), new THREE.MeshStandardMaterial({ map: sea, transparent: true, opacity: 0.92, roughness: 0.1, metalness: 0.2 }), 0, -0.05, 0);
+      water.rotation.x = -Math.PI / 2;
+      water.receiveShadow = true;
+      group.add(water);
+      // Glowing teal paths: an inner ring and radial lines
+      const teal = glow('#63e6be', 1.2);
+      const ring = mesh(new THREE.RingGeometry(radius * 0.38, radius * 0.4, 64), teal, 0, 0.32, 0);
+      ring.rotation.x = -Math.PI / 2;
+      group.add(ring);
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const line = box(0.25, 0.03, radius * 0.4, teal, Math.cos(angle) * radius * 0.6, 0.32, Math.sin(angle) * radius * 0.6);
+        line.rotation.y = -angle + Math.PI / 2;
+        group.add(line);
+      }
+      // Curved stone wall (back half) with banners and torches
+      const stone = material('#a8a29a', { roughness: 0.9, flatShading: true });
+      const wallArc = Math.PI * 1.1;
+      group.add(mesh(new THREE.CylinderGeometry(radius * 0.74, radius * 0.74, 3, 48, 1, true, Math.PI - wallArc / 2, wallArc), new THREE.MeshStandardMaterial({ color: '#a8a29a', roughness: 0.9, side: THREE.DoubleSide }), 0, 1.8, 0));
+      const torches = [];
+      for (let i = 0; i <= 8; i++) {
+        const angle = Math.PI - wallArc / 2 + (i / 8) * wallArc;
+        const x = Math.sin(angle) * radius * 0.74;
+        const z = Math.cos(angle) * radius * 0.74;
+        group.add(box(1.2, 4.2, 1.2, stone, x, 2.4, z));
+        const flame = mesh(new THREE.ConeGeometry(0.3, 0.8, 6), glow('#ff922b', 2.4, { transparent: true, opacity: 0.9 }), x, 5, z);
+        flame.raycast = () => {};
+        group.add(flame);
+        torches.push(flame);
+        if (i < 8) {
+          const mid = angle + wallArc / 16;
+          const banner = box(1.2, 2.2, 0.08, material(i % 2 ? '#c92a2a' : '#f59f00', { roughness: 0.9 }), Math.sin(mid) * (radius * 0.74 - 0.3), 3.4, Math.cos(mid) * (radius * 0.74 - 0.3));
+          banner.rotation.y = mid + Math.PI;
+          group.add(banner);
+        }
+      }
+      // Curved palm trees
+      const palms = [[radius * 0.5, radius * 0.45], [-radius * 0.55, radius * 0.4], [radius * 0.6, -radius * 0.15], [-radius * 0.35, -radius * 0.55], [radius * 0.15, radius * 0.66]];
+      palms.forEach(([x, z], i) => {
+        const lean = new THREE.Vector3(i % 2 ? 1.6 : -1.4, 0, 0.8);
+        const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(x, 0.3, z), new THREE.Vector3(x + lean.x * 0.3, 3, z + lean.z * 0.3), new THREE.Vector3(x + lean.x, 6.5, z + lean.z)]);
+        group.add(mesh(new THREE.TubeGeometry(curve, 16, 0.22, 8, false), material('#8d6e4f', { roughness: 1 })));
+        const top = curve.getPoint(1);
+        for (let k = 0; k < 7; k++) {
+          const angle = (k / 7) * Math.PI * 2;
+          const leaf = mesh(new THREE.ConeGeometry(0.45, 3.2, 4), material(k % 2 ? '#2f9e44' : '#37b24d', { flatShading: true }), top.x + Math.cos(angle) * 1.2, top.y - 0.2, top.z + Math.sin(angle) * 1.2);
+          leaf.rotation.set(Math.sin(angle) * 1.2, 0, -Math.cos(angle) * 1.2);
+          leaf.scale.z = 0.25;
+          group.add(leaf);
+        }
+        [0.3, -0.3].forEach((dx) => group.add(sphere(0.22, material('#6d4c41'), top.x + dx, top.y - 0.5, top.z, 8)));
+      });
+      // Portal arch (golden frame with a glowing teal surface): back to Genesis Plaza
+      const portal = new THREE.Group();
+      portal.add(mesh(new THREE.TorusGeometry(2.2, 0.35, 10, 32, Math.PI), material('#e0b84c', { metalness: 0.6, roughness: 0.3 }), 0, 3, 0));
+      [-2.2, 2.2].forEach((x) => portal.add(box(0.7, 3, 0.7, material('#e0b84c', { metalness: 0.6 }), x, 1.5, 0)));
+      const surface = mesh(new THREE.CircleGeometry(2, 32, 0, Math.PI), glow('#66d9e8', 1.2, { transparent: true, opacity: 0.75, side: THREE.DoubleSide }), 0, 3, 0);
+      portal.add(surface);
+      portal.add(box(3.8, 3, 0.05, glow('#66d9e8', 1.2, { transparent: true, opacity: 0.75 }), 0, 1.5, 0));
+      portal.userData.label = 'Portal · back to Genesis Plaza';
+      portal.position.set(radius * 0.45, 0.3, -radius * 0.42);
+      portal.rotation.y = -0.7;
+      group.add(interactive(portal, 'jump', 'plaza'));
+      // Statue of a diver on a pedestal in the center
+      group.add(cylinder(1.4, 1.6, 1.2, stone, 0, 0.9, -radius * 0.2, 12));
+      const statue = new THREE.Group();
+      statue.add(cylinder(0.45, 0.35, 1.8, material('#5c6b73', { roughness: 0.5 }), 0, 1, 0, 12));
+      statue.add(sphere(0.38, material('#5c6b73'), 0, 2.2, 0, 16));
+      [-1, 1].forEach((side) => { const arm = cylinder(0.12, 0.1, 1.4, material('#5c6b73'), side * 0.55, 2.2, 0, 8); arm.rotation.z = side * -0.6; statue.add(arm); });
+      statue.position.set(0, 1.5, -radius * 0.2);
+      group.add(statue);
+      // Boardwalk pier into the sea
+      for (let i = 0; i < 12; i++) group.add(box(3, 0.15, 0.8, material(i % 2 ? '#a47148' : '#b5835a'), 0, 0.45, radius * 0.6 + i * 0.85));
+      [-1.4, 1.4].forEach((x) => { for (let i = 0; i < 4; i++) group.add(cylinder(0.12, 0.12, 1.4, material('#6d4c41'), x, -0.1, radius * 0.62 + i * 3, 6)); });
+      // Beach chairs (sit) and umbrellas
+      [[-radius * 0.3, radius * 0.2], [-radius * 0.15, radius * 0.3], [radius * 0.25, radius * 0.18]].forEach(([x, z], i) => {
+        const chair = new THREE.Group();
+        chair.add(box(0.9, 0.15, 1.8, material(['#ff6b6b', '#4dabf7', '#ffd43b'][i]), 0, 0.5, 0));
+        const back = box(0.9, 0.12, 1, material(['#ff6b6b', '#4dabf7', '#ffd43b'][i]), 0, 0.85, -0.85);
+        back.rotation.x = -0.9;
+        chair.add(back);
+        chair.position.set(x, 0.3, z);
+        group.add(interactive(chair, 'sit', 'Beach chair'));
+        group.add(cylinder(0.05, 0.05, 3, material('#f8f9fa'), x + 1.2, 1.8, z, 6));
+        group.add(mesh(new THREE.ConeGeometry(1.6, 0.7, 10), material(i % 2 ? '#ff8787' : '#ffffff'), x + 1.2, 3.3, z));
+      });
+      animate(group, (time) => {
+        sea.offset.set(time * 0.02, time * 0.03);
+        torches.forEach((flame, i) => { flame.scale.set(1, 0.8 + Math.sin(time * 11 + i) * 0.2, 1); });
+        surface.material.emissiveIntensity = 1 + Math.sin(time * 2) * 0.3;
+      });
+      group.userData.label = 'Tropical Beach';
+    },
+
     // Toki Land ground: lawn with autumn-leaf mats, blue puddles and paths
     tokiGround(group, { w, d }) {
       const texture = PropKit.kit.canvasTexture('tokiGround', 1024, 1024, (ctx, cw, ch) => {
@@ -840,7 +957,7 @@
   const rules = [
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
-    [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
+    [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/beach_arena/, 'beachArena'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
     [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));

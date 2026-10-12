@@ -80,9 +80,9 @@
   {
    "type": "giant_keyboard",
    "position": [
-    -25,
+    -36,
     1,
-    20
+    22
    ],
    "scale": [
     30,
@@ -95,9 +95,9 @@
   {
    "type": "cassette",
    "position": [
-    -2,
+    8,
     3,
-    0
+    -14
    ],
    "scale": [
     10,
@@ -170,9 +170,9 @@
   {
    "type": "ball_mouse",
    "position": [
-    5,
+    -12,
     1.5,
-    30
+    -10
    ],
    "scale": [
     4,
@@ -198,6 +198,21 @@
    "label": "Mini Hotel",
    "variant": "pod",
    "name": "Museum of Forgotten Tech Inn"
+  },
+  {
+   "type": "timeline_hall",
+   "position": [
+    0,
+    0,
+    20
+   ],
+   "scale": [
+    30,
+    10,
+    30
+   ],
+   "color": "#c9b79c",
+   "label": "Timeline Hall \u00b7 Forgotten Software & Hardware"
   }
  ]
 }

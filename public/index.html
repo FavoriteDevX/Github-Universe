@@ -515,6 +515,12 @@
     #codify-report h4 { margin: 6px 0; }
     #codify-report ul { margin: 0; padding-left: 18px; }
     #codify-report .codify-note { font-size: 11px; color: #6e7681; }
+    #codify-packages { max-height: 26vh; overflow: auto; font-size: 13px; }
+    #codify-packages h4 { margin: 6px 0; }
+    .codify-package { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid #30363d; }
+    .codify-package span { flex: 1; }
+    .codify-package small { display: block; color: #8b949e; font-family: Menlo, Consolas, monospace; }
+    .codify-package button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
 
     /* ---------- Clean Decentraland-style HUD ----------
        Only chat bubbles, a small chat field and the dock (bottom right) are on
@@ -546,10 +552,58 @@
       pointer-events: none;
     }
     #wallet-chip {
-      position: fixed; top: 46px; left: 12px; z-index: 20; padding: 4px 10px; border-radius: 10px;
-      background: rgba(22, 22, 32, 0.66); color: #ffd43b; font: 600 12px var(--font, 'Segoe UI', Arial, sans-serif); pointer-events: none;
+      position: fixed; top: 12px; right: 12px; z-index: 26; display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px;
+      border: 0; border-radius: 12px; background: rgba(22, 22, 32, 0.78); color: #fff; cursor: pointer;
+      font: 800 17px var(--font, 'Segoe UI', Arial, sans-serif); letter-spacing: 0.3px;
     }
+    #wallet-chip .mvc-icon { width: 28px; height: 28px; }
+    #wallet-chip .wallet-plus { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: #2b8a3e; font-size: 15px; }
+    #wallet-chip.bump { animation: walletBump 0.5s; }
+    @keyframes walletBump { 40% { transform: scale(1.15); } }
+    body.show-map #minimap-panel { top: 62px !important; }
+    .mvc-box { width: min(440px, 100%); }
+    .mvc-box header { display: flex; justify-content: space-between; align-items: center; }
+    .mvc-balance { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 14px; font-size: 34px; }
+    .mvc-balance .mvc-icon { width: 56px; height: 56px; }
+    #mvc-daily { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: #2b8a3e; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
+    .mvc-earn { list-style: none; padding: 0; margin: 0; }
+    .mvc-earn li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--panel-border); font-size: 13px; }
+    .mvc-earn b { color: #ffd43b; }
+    .mvc-note { font-size: 12px; color: var(--muted); }
     body.hide-ui #wallet-chip { display: none !important; }
+    /* Area title card ("The Hotel") */
+    #area-title { position: fixed; top: 34px; left: 50%; transform: translateX(-50%); z-index: 30; pointer-events: none; opacity: 0; text-align: center; color: #f1e3c8; font: 600 64px Georgia, 'Times New Roman', serif; text-shadow: 0 3px 16px #000a; }
+    #area-title span { display: inline-block; padding-bottom: 10px; border-bottom: 5px solid #f1e3c8; }
+    #area-title.show { animation: areaTitle 4s ease forwards; }
+    @keyframes areaTitle { 0% { opacity: 0; } 15% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+    /* Avatar customization (backpack) */
+    #avatar-screen { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(13, 27, 62, 0.82); backdrop-filter: blur(8px); padding: 16px; }
+    .avatar-card { display: flex; gap: 20px; width: min(920px, 100%); max-height: 92vh; overflow: auto; background: #10182b; color: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 20px 60px #0008; }
+    .avatar-preview { flex: 0 0 auto; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #2a3b6b, #10182b); border-radius: 14px; }
+    .avatar-preview canvas { width: 300px; height: 350px; }
+    .avatar-options { flex: 1; }
+    .avatar-options h2 { margin: 0 0 4px; }
+    .avatar-options p { margin: 0 0 12px; color: #a5b4d4; font-size: 13px; }
+    .avatar-row { margin-bottom: 12px; }
+    .avatar-row b { display: block; font-size: 13px; margin-bottom: 6px; color: #dbe4ff; }
+    .avatar-row div { display: flex; flex-wrap: wrap; gap: 6px; }
+    .avatar-row button { border: 2px solid transparent; background: #1f2b48; color: #fff; border-radius: 9px; padding: 7px 11px; cursor: pointer; font-size: 13px; }
+    .avatar-row button.swatch { width: 30px; height: 30px; padding: 0; border-radius: 50%; }
+    .avatar-row button.active { border-color: #4dabf7; box-shadow: 0 0 0 2px #4dabf733; }
+    #avatar-enter { margin-top: 8px; width: 100%; padding: 13px; border: 0; border-radius: 10px; background: #1877f2; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
+    @media (max-width: 720px) { .avatar-card { flex-direction: column; } .avatar-preview canvas { width: 220px; height: 256px; } }
+    /* Underground Cafe menu */
+    .cafe-box { width: min(880px, 100%); max-height: 86vh; overflow: auto; }
+    .cafe-box header { display: flex; align-items: center; gap: 12px; }
+    .cafe-box header b { flex: 1; }
+    #cafe-wallet { color: #ffd43b; font-weight: 600; }
+    .cafe-intro { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
+    #cafe-sections h3 { margin: 16px 0 6px; font-family: Georgia, serif; }
+    .cafe-item { display: flex; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--panel-border); }
+    .cafe-item div { flex: 1; }
+    .cafe-item p { margin: 3px 0; font-size: 13px; color: var(--text); opacity: 0.85; }
+    .cafe-item small { color: #74c0fc; }
+    .cafe-item button { background: #2b8a3e; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     /* Sleeping in a hotel bed: the screen fades to night */
     #sleep-overlay { position: fixed; inset: 0; z-index: 15; pointer-events: none; background: radial-gradient(circle, rgba(10, 12, 30, 0.6), rgba(5, 6, 15, 0.92)); opacity: 0; transition: opacity 1.5s; display: grid; place-items: center; color: #dbe4ff; font: 600 20px var(--font, 'Segoe UI', Arial, sans-serif); }
     body.sleeping #sleep-overlay { opacity: 1; }
@@ -589,12 +643,12 @@
     }
   </style>
   <!-- Three.js r128 vendored locally so the world renders without depending on an external CDN -->
-  <script src="vendor/three.min.js"></script>
-  <script src="vendor/OrbitControls.js"></script>
-  <script src="vendor/CSS3DRenderer.js"></script>
-  <script src="vendor/RoomEnvironment.js"></script>
+  <script defer src="vendor/three.min.js"></script>
+  <script defer src="vendor/OrbitControls.js"></script>
+  <script defer src="vendor/CSS3DRenderer.js"></script>
+  <script defer src="vendor/RoomEnvironment.js"></script>
   <!-- Socket.io client served by server.js; missing on static hosts, where the world runs in solo mode -->
-  <script src="/socket.io/socket.io.js"></script>
+  <script defer src="/socket.io/socket.io.js"></script>
 </head>
 <body>
   <div id="ui-overlay-container">
@@ -640,9 +694,29 @@
 
 
   <div id="location-chip">Genesis Plaza<small id="location-parcel"></small></div>
-  <div id="wallet-chip" title="Multiverse Coins (in-game only)">🪙 0 MVC</div>
+  <button id="wallet-chip" type="button" title="Multiverse Coins (in-game only) · click for more"><svg class="mvc-icon" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mvcGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e27a"/><stop offset="1" stop-color="#c9952c"/></linearGradient></defs><polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="url(#mvcGold)"/><polygon points="32,12 49,22 49,42 32,52 15,42 15,22" fill="#1f2228"/><text x="32" y="40" text-anchor="middle" font-family="Menlo,Consolas,monospace" font-weight="700" font-size="20" fill="url(#mvcGold)">{}</text></svg><b id="wallet-amount">0</b><span class="wallet-plus">+</span></button>
+  <div id="mvc-store" class="modal-overlay" role="dialog" aria-label="Multiverse Coins">
+    <div class="modal-box panel mvc-box">
+      <header><b>Multiverse Coins</b><button type="button" id="mvc-close" aria-label="Close">&times;</button></header>
+      <div class="mvc-balance"><svg class="mvc-icon" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mvcGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e27a"/><stop offset="1" stop-color="#c9952c"/></linearGradient></defs><polygon points="32,3 57,17.5 57,46.5 32,61 7,46.5 7,17.5" fill="url(#mvcGold)"/><polygon points="32,12 49,22 49,42 32,52 15,42 15,22" fill="#1f2228"/><text x="32" y="40" text-anchor="middle" font-family="Menlo,Consolas,monospace" font-weight="700" font-size="20" fill="url(#mvcGold)">{}</text></svg><b id="mvc-balance">0</b></div>
+      <button type="button" id="mvc-daily">🎁 Claim daily bonus (+50 MVC)</button>
+      <h4>Earn more MVC</h4>
+      <ul class="mvc-earn">
+        <li><span>Ship a commit from a laptop (E · type · commit)</span><b>+3</b></li>
+        <li><span>Open a golden chest</span><b>+5</b></li>
+        <li><span>Reach a falling supply drop first</span><b>+25</b></li>
+        <li><span>Conquer the Gravity Flip tower (Gamer District)</span><b>+50</b></li>
+        <li><span>Daily bonus (every 20 hours)</span><b>+50</b></li>
+        <li><span>Receive coins from a friend (/pay)</span><b>any</b></li>
+      </ul>
+      <h4>Spend them on</h4>
+      <p class="mvc-note">Land parcels (250) · Underground Cafe dishes and drinks (15–40) · tips to other devs with /pay.</p>
+      <p class="mvc-note">MVC are in-game coins with no real value: they cannot be bought, sold or cashed out.</p>
+    </div>
+  </div>
   <nav id="dock" aria-label="Menu">
     <button type="button" data-toggle="show-profile" data-label="Profile & status">👤</button>
+    <button type="button" data-action="avatar" data-label="Customize your cursor">👕</button>
     <button type="button" data-toggle="show-places" data-label="Places (jump in)">📍</button>
     <button type="button" data-toggle="show-map" data-label="Minimap">🗺️</button>
     <button type="button" data-action="metro" data-label="Metro (N)">🚇</button>
@@ -650,6 +724,7 @@
     <button type="button" data-action="inventory" data-label="Inventory (I)">🎒</button>
     <button type="button" data-action="invite" data-label="Invite peers">🔗</button>
     <button type="button" data-action="lobby" data-label="New private lobby">🔒</button>
+    <button type="button" data-action="sound" data-label="Sound effects">🔊</button>
     <button type="button" data-toggle="show-help" data-label="Controls">❓</button>
   </nav>
   <div id="interact-prompt"></div>
@@ -711,7 +786,7 @@
         <button type="button" data-mode="signup" class="active">Create account</button>
         <button type="button" data-mode="login">Log in</button>
       </div>
-      <form id="auth-form" autocomplete="on">
+      <form id="auth-form" autocomplete="on" onsubmit="return false">
         <label class="auth-field"><span>Username</span><input id="auth-username" name="username" autocomplete="username" maxlength="16" required placeholder="e.g. octo_dev"></label>
         <label class="auth-field"><span>Password</span><input id="auth-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="At least 8 characters"></label>
         <label class="auth-field" id="auth-confirm-row"><span>Confirm password</span><input id="auth-confirm" type="password" autocomplete="new-password" maxlength="128" placeholder="Type it again"></label>
@@ -732,25 +807,28 @@
     <ul id="inventory-list"></ul>
   </section>
 
-  <script src="props.js"></script>
-  <script src="brands.js"></script>
-  <script src="video.js"></script>
-  <script src="landmarks.js"></script>
-  <script src="museum.js"></script>
-  <script src="plaza.js"></script>
-  <script src="scenes.js"></script>
-  <script src="games.js"></script>
-  <script src="city.js"></script>
-  <script src="loot.js"></script>
-  <script src="interactions.js"></script>
-  <script src="techsquare.js"></script>
-  <script src="vehicles.js"></script>
-  <script src="equalizer.js"></script>
-  <script src="festival.js"></script>
-  <script src="codify.js"></script>
-  <script src="hotels.js"></script>
-  <script src="metro.js"></script>
-  <script src="auth.js"></script>
-  <script src="main.js"></script>
+  <script defer src="props.js"></script>
+  <script defer src="brands.js"></script>
+  <script defer src="video.js"></script>
+  <script defer src="landmarks.js"></script>
+  <script defer src="museum.js"></script>
+  <script defer src="plaza.js"></script>
+  <script defer src="scenes.js"></script>
+  <script defer src="games.js"></script>
+  <script defer src="city.js"></script>
+  <script defer src="loot.js"></script>
+  <script defer src="interactions.js"></script>
+  <script defer src="techsquare.js"></script>
+  <script defer src="vehicles.js"></script>
+  <script defer src="equalizer.js"></script>
+  <script defer src="festival.js"></script>
+  <script defer src="codify.js"></script>
+  <script defer src="cafe.js"></script>
+  <script defer src="sound.js"></script>
+  <script defer src="avatar.js"></script>
+  <script defer src="hotels.js"></script>
+  <script defer src="metro.js"></script>
+  <script defer src="auth.js"></script>
+  <script defer src="main.js"></script>
 </body>
 </html>

@@ -29,6 +29,7 @@ const City = (() => {
   let streetLampHeads;
   let nightWindowMaterials = [];
   let lampHalos = null;
+  let grassMaterialForLawns = null;
   const glowStones = [];
 
   function seededRandom(seed) {
@@ -213,9 +214,25 @@ const City = (() => {
       hole.closePath();
       shape.holes.push(hole);
     });
+    // Like Decentraland, Genesis City is mostly stone pavements; lawns are patches
+    const pavers = repeated(PropKit.kit.cobbleTexture('#cfc6b8'), 1, 1);
+    pavers.repeat.set(1 / 8, 1 / 8);
+    const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: pavers, roughness: 0.95 }));
+    // Real grass only on the outskirts, past the city
     const texture = repeated(grassTexture, 1, 1);
     texture.repeat.set(1 / 10, 1 / 10);
-    const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
+    const outskirts = new THREE.Shape();
+    outskirts.moveTo(-edge, -edge); outskirts.lineTo(edge, -edge); outskirts.lineTo(edge, edge); outskirts.lineTo(-edge, edge); outskirts.closePath();
+    const cityEdge = new THREE.Path();
+    cityEdge.absarc(0, 0, 400, 0, Math.PI * 2, true);
+    outskirts.holes.push(cityEdge);
+    const lawnRing = new THREE.Mesh(new THREE.ShapeGeometry(outskirts, 64), new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
+    lawnRing.rotation.x = -Math.PI / 2;
+    lawnRing.position.y = GROUND_LEVEL + 0.012;
+    lawnRing.receiveShadow = true;
+    lawnRing.raycast = () => {};
+    scene.add(lawnRing);
+    grassMaterialForLawns = new THREE.MeshStandardMaterial({ map: texture, roughness: 1 });
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = GROUND_LEVEL;
     ground.receiveShadow = true;
@@ -531,6 +548,7 @@ const City = (() => {
     const kiosks = [];
     const midrises = [];
     const spots = [];
+    const lawns = [];
     const STEP = 21;
     // Landmarks scattered around Genesis Plaza (like Decentraland's art and ad
     // installations): each finds a free spot away from scenes and paths
@@ -548,6 +566,7 @@ const City = (() => {
       { type: 'column_hall', scale: [20, 10, 14], color: '#cdb4db', label: 'Gallery of Open Source', radius: 190, angle: 2.0, face: true },
       { type: 'light_pavilion', scale: [24, 16, 24], label: 'Pavilion of Light', radius: 140, angle: 1.55, face: true },
       { type: 'mini_hotel', scale: [10, 6, 10], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
+      { type: 'lodge_hotel', scale: [20, 7, 16], label: 'The Hotel', radius: 205, angle: 3.3, face: true },
       { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
       { type: 'promenade', scale: [14, 1, 54], color: '#b9b4d6', radius: 150, angle: 3.9, face: true },
       { type: 'promenade', scale: [14, 1, 54], color: '#d6c7b4', radius: 165, angle: 0.15, face: true },
@@ -574,6 +593,7 @@ const City = (() => {
         if (radius < 110 || radius > 360 || insideDistrict(x, z, 6) || nearPath(x, z, 5) || placedLandmarks.some((spot) => Math.hypot(spot.x - x, spot.z - z) < spot.size + 7)) { random(); continue; }
         const roll = random();
         if (roll < 0.42) {
+          lawns.push({ x, z, size: 7 + random() * 4 });
           const count = 3 + Math.floor(random() * 5);
           for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * 12, z: z + (random() - 0.5) * 12, size: 0.8 + random() * 0.8, shade: random() });
         } else if (roll < 0.56) houses.push({ x, z, width: 6 + random() * 3, depth: 6 + random() * 3, height: 3.5 + random() * 2, hue: random(), roof: random(), turn: random() * Math.PI });
@@ -755,6 +775,18 @@ const City = (() => {
       }
       pois.add(spotGroup);
     });
+    // Round lawns under the tree groups (the rest of the city is paved)
+    if (lawns.length && grassMaterialForLawns) {
+      const lawnMesh = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2), grassMaterialForLawns, lawns.length);
+      const lawnMatrix = new THREE.Matrix4();
+      lawns.forEach(({ x, z, size }, index) => {
+        lawnMatrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.015, z), new THREE.Quaternion(), new THREE.Vector3(size, 1, size));
+        lawnMesh.setMatrixAt(index, lawnMatrix);
+      });
+      lawnMesh.receiveShadow = true;
+      lawnMesh.raycast = () => {};
+      scene.add(lawnMesh);
+    }
     placedLandmarks.forEach(({ x, z, landmark }) => {
       if (!landmark) return;
       const block = PropKit.buildBlock({ type: landmark.type, position: [x, GROUND_LEVEL, z], scale: landmark.scale, color: landmark.color, label: landmark.label, seed: landmark.seed, variant: landmark.variant, name: landmark.label });

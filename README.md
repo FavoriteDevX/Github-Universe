@@ -35,9 +35,16 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **Codify**: press **C** (or use the dock) to open a code editor on the right. Pick a language, write code and press **Add to world**: a soft spinning terminal block floats in front of you with your code above it, updating live as you type. Blocks are **private** (only you see them) unless you tick **Visible to others**, then the devs in your lobby see the block and its code in real time. E on your block edits it again.
 - **Fry your Code**: at the Genesis Plaza **Firepit** (a real campfire with logs, embers, layered flames, sparks and smoke) press E: your code block goes on a stick and roasts over the fire while bugs pop out of it. It is a playful bug finder (unbalanced brackets, `==`, `var`, leftover `console.log`/TODOs, hardcoded secrets, bare `except:`, infinite loops, `DELETE` without `WHERE`, `unwrap()`... plus the browser's own JavaScript parser for syntax errors), with a roast report in the Codify panel.
 - **Roblox-style seats everywhere**: E sits on benches, sofas, stools, theatre and amphitheater seats, HQ chairs, campfire benches, picnic tables and more.
-- **Events Explorer**: the spawn is a round plaza in front of the square pool, ringed by walls of **Top Rated** scenes, **Events** (the Worlds) and live **Dev News**, with JUMP IN cards, a diving board into the pool and a floating golden arrow. Paths start there and lead to every district, and the districts are linked to each other by winding paths.
+- **Spawn hub & Events Explorer**: the spawn faces a large square pool (14 m, reflective rippling water, tiled walls and caustics) inside a game-lobby style hub: low terraces with blue neon trims and water channels, octagonal tree planters, star pads that jump to the Worlds, a card table, a giant Connect Four, a gazebo lounge and canopy tents. Around the pool, ringed by walls of **Top Rated** scenes, **Events** (the Worlds) and live **Dev News**, with JUMP IN cards, a diving board into the pool and a floating golden arrow. Paths start there and lead to every district, and the districts are linked to each other by winding paths.
 - **Multiverse Hotel & mini hotels**: an architectural hotel district (giant neon "M" letters around a glass tower, red swirling lobby, spiral stairs, floating beds, teal lounge) plus mini capsule and neon-cube hotels in Genesis City and in several Worlds. **E on a bed at night** sets your spawn point (`/bed`); when half of the online devs are asleep the night is skipped for everyone, like Minecraft.
 - **In-game economy (not real money)**: Multiverse Coins (**MVC**) are earned with commits (+3), chests (+5), supply drops (+25) and the Gravity Flip reward (+50), and spent on **land parcels** (250 MVC) marked by "PARCEL FOR SALE" signs around Genesis City; bought parcels show the owner. `/pay` sends coins to another dev. There is no cryptocurrency, wallet or blockchain: MVC have no real value and cannot be bought or sold.
+- **Avatar customization**: before entering (and anytime with the 👕 button) dress your cursor like a Decentraland backpack: cursor color, classic pixel "deal with it" shades, round glasses, neon visor or heart shades, a jacket cut to the shape of the arrow (leather, puffer, varsity, hoodie, tuxedo) and a cap, beanie, top hat, crown, headphones or halo. Saved on your account and visible to everyone.
+- **Underground Cafe menu**: E at the cafe menu board orders Italian-style "dishes" with Multiverse Coins. Every dish is a real package of code or tools (Carbonara Docker = a production Dockerfile, Risotto di GitHub = a GitHub Actions CI workflow, Gnocchi Kubernetes = a Deployment + Service, Pizza VS Code = editor settings, Panna Cotta Blockchain = an educational hash chain...): it is served on the counter, **downloaded as a file to your computer**, opened in Codify and kept in Codify → My packages. Cocktails (Python Negroni, Aperol Script, Terminal Espresso Martini, AWS Cloud Sour, Linux Mint Julep) also give a short buff.
+- **Coin indicator & daily bonus**: the top-right coin shows your MVC; click it for the daily bonus and the ways to earn more.
+- **Sound effects (optional)**: synthesized footsteps that change with the ground (stone, grass, wood, an echoing cave), jump and landing, coins, teleports and crickets at night. Toggle with 🔊 or `/sound`.
+- **Timeline Hall (Museum)**: a building inside a building: lit frames from 1969 to 2005 (ARPANET, Windows 1.0, the first website, Mosaic, Windows 95, personal homepages, the late-90s Apple site, Winamp, Google beta, instant messengers, Mac OS 9, the office assistant, the Blue Screen of Death, Thefacebook, YouTube; illustrated recreations) around the white **Memorable Mentions** vault with hardware nobody uses anymore.
+- **The Hotel**: a cozy lodge (dark wood, green wallpaper, a crackling fireplace, warm sconces, rooms with beds) with a title card when you walk in, in the Multiverse Hotel district and in Genesis City.
+- **Stone pavements**: like Decentraland, Genesis City is mostly paved with stone, with round lawns under the trees and real grass only on the outskirts.
 - **Sky and edge of the world**: Minecraft-style blocky clouds at 150 m that you can fly through (the view gets hazier the higher you go and turns white inside a cloud); past the neighborhoods the land empties out gradually, a dark treeline and rolling hills close the horizon, and an invisible wall stops you at the last coordinate (±640 m).
 - **Night lights**: path lamps glow with soft halos at night and glowing stones float over pedestals along the paths.
 - **More around the plaza**: Decentraland-style ad cube towers and a floating LED cube, supertrees with glowing bulbs, the Hall of Builders (pink colonnade), a marble statue, a kinetic sculpture, the Pavilion of Light, open promenades with planters, the **Cotton Cloud Shop** in the center of the plaza and a mini plaza with a fountain and a floating message cube at every cowork.
@@ -93,6 +100,7 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/sethome` / `/home` | Save your current spot and come back to it later (stored in your browser) |
 | `/metro [place]` (also `/train`) | Open the metro map, or ride the train straight to a place |
 | `/bed` | Go back to the last bed you slept in (your spawn point) |
+| `/sound [on\|off]` | Turn the sound effects on or off |
 
 ### Economy (in-game coins only)
 | Command | Action |
@@ -212,7 +220,7 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `house` | **Hacker House** | A two-story house with stairs, a sofa and a kitchen |
 | `sandbox` | **Sandbox Voxels** | A castle tower, a voxel bridge, an NFT showcase and a quest NPC |
 | `retro` | **Retro Contributions** | A full year of contributions as 3D voxels |
-| `beach` | **Tropical Beach** | Palm trees, beach chairs and umbrellas by the water |
+| `beach` | **Tropical Beach** | A sandy island in an animated sea: a curved stone wall with red and yellow banners and torches, curved palm trees, glowing teal paths, a golden portal arch back to the plaza, a statue, a boardwalk pier, beach chairs and umbrellas |
 | `zen` | **Zen Temple** | A floating island with cherry trees and a meditation altar; its waterfall pours all the way down to a plaza on the ground with a splash pond, benches and an elevator back up |
 
 ### Worlds (enter with the side menu or `/world <key>`)
@@ -265,7 +273,10 @@ github-multiverse/
     ├── vehicles.js      # Cyber Garage: hover cars and light cycles, riding and neon trails
     ├── festival.js      # Soundwave Festival: LED gate, stage, lasers, sound waves, dancing crowd
     ├── codify.js        # Codify editor, code blocks in the world (private/shared), Fry your Code bug finder
-    ├── hotels.js        # Multiverse Hotel and mini hotels (beds to sleep at night)
+    ├── hotels.js        # Multiverse Hotel, mini hotels and The Hotel lodge (beds to sleep at night)
+    ├── cafe.js          # Underground Cafe menu: dishes that are code packages (maps/cafe_menu.json)
+    ├── avatar.js        # Cursor customization: color, eyewear, jackets, hats
+    ├── sound.js         # Synthesized sound effects (footsteps, jump, coins...)
     ├── interactions.js  # E-actions: laptops, seats, coffee, arcade, fishing, parkour, emotes
     ├── landmarks.js     # Silicon Valley headquarters, highways, traffic, Caltrain, billboards
     ├── museum.js        # Museum exhibits, Hall of Internet History, Minimal Art Gallery

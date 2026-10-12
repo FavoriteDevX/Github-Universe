@@ -227,6 +227,126 @@
     group.userData.label = (data && data.name) || 'Mini Hotel';
   }
 
+  // Big title card shown when you walk into a place ("The Hotel")
+  let titleCard = null;
+  function showTitle(text) {
+    if (!titleCard) {
+      titleCard = document.createElement('div');
+      titleCard.id = 'area-title';
+      document.body.appendChild(titleCard);
+    }
+    titleCard.innerHTML = `<span>${text}</span>`;
+    titleCard.classList.remove('show');
+    void titleCard.offsetWidth;
+    titleCard.classList.add('show');
+  }
+
+  // Cozy lodge hotel: dark wood, green wallpaper, a brick fireplace with a
+  // real fire, warm wall sconces, reception, notice board and a corridor of rooms
+  function lodgeHotel(group, { w, h, d, data }) {
+    const wood = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.plankTexture('#5a3a24'), w / 4, 1), roughness: 0.8 });
+    const darkWood = material('#3b2414', { roughness: 0.8 });
+    const wallpaper = new THREE.MeshStandardMaterial({ map: canvasTexture('lodgeWallpaper', 128, 128, (ctx, cw, ch) => {
+      ctx.fillStyle = '#1f3b2c'; ctx.fillRect(0, 0, cw, ch);
+      ctx.strokeStyle = '#2b4d3a'; ctx.lineWidth = 3;
+      for (let x = 0; x < cw; x += 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke(); }
+    }), roughness: 0.9, side: THREE.DoubleSide });
+    wallpaper.map.wrapS = wallpaper.map.wrapT = THREE.RepeatWrapping;
+    wallpaper.map.repeat.set(w / 3, h / 3);
+    // Floor, ceiling and walls (entrance on the front, +z)
+    group.add(box(w, 0.3, d, wood, 0, 0.15, 0));
+    group.add(box(w, 0.3, d, darkWood, 0, h, 0));
+    group.add(box(w, h, 0.4, wallpaper, 0, h / 2, -d / 2));
+    [-1, 1].forEach((side) => group.add(box(0.4, h, d, wallpaper, side * w / 2, h / 2, 0)));
+    [-1, 1].forEach((side) => group.add(box(w / 2 - 1.6, h, 0.4, wallpaper, side * (w / 4 + 0.8), h / 2, d / 2)));
+    group.add(box(3.2, h - 3.4, 0.4, wallpaper, 0, 3.4 + (h - 3.4) / 2, d / 2));
+    // Wainscoting (wood panels on the lower walls) and ceiling beams
+    group.add(box(w - 0.9, 1.4, 0.1, darkWood, 0, 0.9, -d / 2 + 0.25));
+    [-1, 1].forEach((side) => group.add(box(0.1, 1.4, d - 0.9, darkWood, side * (w / 2 - 0.25), 0.9, 0)));
+    for (let i = 0; i < 5; i++) group.add(box(w, 0.35, 0.35, darkWood, 0, h - 0.3, -d / 2 + (i + 0.5) * (d / 5)));
+    // Gabled roof outside
+    const roof = mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, h * 0.7, 4), material('#3b2414', { roughness: 1 }), 0, h + h * 0.35, 0);
+    roof.rotation.y = Math.PI / 4;
+    roof.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d));
+    group.add(roof);
+    // Brick fireplace with a fire on the left wall
+    const brick = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.brickTexture('#7a3b2e'), 2, 2), roughness: 0.9 });
+    group.add(box(1.4, h, 4, brick, -w / 2 + 0.9, h / 2, -d * 0.15));
+    group.add(box(0.6, 1.6, 2.2, material('#120b08'), -w / 2 + 1.4, 1.1, -d * 0.15));
+    group.add(box(0.9, 0.25, 4.4, darkWood, -w / 2 + 1.5, 2.2, -d * 0.15));
+    const flames = [];
+    [['#ffd43b', 0.9, 1.2], ['#ff922b', 1.2, 1.5], ['#e8590c', 0.7, 0.9]].forEach(([color, width, height], i) => {
+      const flame = mesh(new THREE.ConeGeometry(width / 2, height, 8), glow(color, 2.2, { transparent: true, opacity: 0.85 }), -w / 2 + 1.5, 0.3 + height / 2, -d * 0.15 + (i - 1) * 0.4);
+      flame.raycast = () => {};
+      group.add(flame);
+      flames.push(flame);
+    });
+    const fireLight = new THREE.PointLight('#ff9a3c', 1.4, 14, 2);
+    fireLight.position.set(-w / 2 + 2.2, 1.4, -d * 0.15);
+    group.add(fireLight);
+    // Warm wall sconces along the walls
+    const sconces = [];
+    for (let i = 0; i < 6; i++) {
+      const side = i % 2 ? 1 : -1;
+      const z = -d / 2 + 2 + Math.floor(i / 2) * ((d - 4) / 2);
+      const sconce = box(0.25, 0.3, 0.6, glow('#ffe8a3', 2.2), side * (w / 2 - 0.35), h * 0.62, z);
+      group.add(sconce);
+      sconces.push(sconce);
+    }
+    const lampLight = new THREE.PointLight('#ffd8a8', 0.8, 18, 2);
+    lampLight.position.set(w * 0.2, h - 1, 0);
+    group.add(lampLight);
+    // Reception desk, notice board, rug and armchairs by the fire
+    group.add(box(4, 1.2, 1.2, darkWood, w * 0.25, 0.75, -d / 2 + 2.4));
+    group.add(box(4.2, 0.1, 1.4, material('#2b1a10'), w * 0.25, 1.4, -d / 2 + 2.4));
+    group.add(box(0.5, 0.3, 0.3, glow('#ffd43b', 1), w * 0.25 + 1.2, 1.6, -d / 2 + 2.4));
+    group.add(box(3, 2, 0.1, material('#6d4c41'), w / 2 - 0.3, 2.6, d * 0.1));
+    group.children[group.children.length - 1].rotation.y = -Math.PI / 2;
+    for (let i = 0; i < 6; i++) {
+      const note = box(0.5, 0.6, 0.02, material('#f1ece4'), w / 2 - 0.36, 2.2 + (i % 2) * 0.8, d * 0.1 - 1.1 + Math.floor(i / 2) * 0.9);
+      note.rotation.set(0, -Math.PI / 2, (i - 2.5) * 0.08);
+      group.add(note);
+    }
+    const rug = box(5, 0.05, 3.5, material('#7b1e1e', { roughness: 1 }), -w / 2 + 5, 0.33, -d * 0.15);
+    rug.castShadow = false;
+    group.add(rug);
+    [-1, 1].forEach((side) => {
+      const chair = new THREE.Group();
+      chair.add(box(1.2, 0.5, 1.1, material('#4a2c1a'), 0, 0.55, 0));
+      chair.add(box(1.2, 1, 0.25, material('#4a2c1a'), 0, 1.1, -0.45));
+      chair.position.set(-w / 2 + 5, 0.3, -d * 0.15 + side * 1.6);
+      chair.rotation.y = -Math.PI / 2;
+      group.add(interactive(chair, 'sit', 'Armchair by the fire'));
+    });
+    // Corridor of rooms along the back half with beds (E to sleep)
+    const rooms = Math.max(2, Math.floor(w / 6) - 1);
+    for (let i = 0; i < rooms; i++) {
+      const x = -w / 2 + 4 + i * ((w - 6) / rooms) + 1;
+      const hotelBed = bed('#f1ece4', ['#7b1e1e', '#1f3b2c', '#1c2a5a'][i % 3]);
+      hotelBed.position.set(x, 0.3, d / 2 - 3.6);
+      hotelBed.rotation.y = Math.PI;
+      group.add(hotelBed);
+      group.add(box(0.15, h * 0.6, 3, darkWood, x + (w - 6) / rooms / 2, h * 0.3, d / 2 - 3.4));
+      group.add(box(0.35, 0.35, 0.35, glow('#ffe8a3', 1.6), x, 1.1, d / 2 - 1.4));
+    }
+    const titleText = (data && data.title) || 'The Hotel';
+    let inside = false;
+    const center = new THREE.Vector3();
+    animate(group, (time) => {
+      flames.forEach((flame, i) => { flame.scale.set(1, 0.85 + Math.sin(time * (9 + i * 3)) * 0.15, 1); });
+      fireLight.intensity = 1.3 + Math.sin(time * 12) * 0.2 + Math.sin(time * 27) * 0.1;
+      sconces.forEach((sconce, i) => { sconce.material.emissiveIntensity = 2 + Math.sin(time * 3 + i) * 0.15; });
+      if (typeof avatar === 'undefined') return;
+      group.getWorldPosition(center);
+      const local = avatar.position.clone().sub(center).applyAxisAngle(new THREE.Vector3(0, 1, 0), -group.rotation.y);
+      const nowInside = Math.abs(local.x) < w / 2 && Math.abs(local.z) < d / 2 && local.y > -1 && local.y < h;
+      if (nowInside && !inside) showTitle(titleText);
+      inside = nowInside;
+    });
+    group.userData.label = titleText;
+  }
+
+  PropKit.registerBuilder(/lodge_hotel/, 'lodgeHotel', lodgeHotel);
   PropKit.registerBuilder(/grand_hotel/, 'grandHotel', grandHotel);
   PropKit.registerBuilder(/mini_hotel/, 'miniHotel', miniHotel);
 })();

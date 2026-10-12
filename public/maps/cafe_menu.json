@@ -1,0 +1,205 @@
+{
+ "currency": "MVC",
+ "sections": [
+  {
+   "title": "Pasta",
+   "items": [
+    {
+     "id": "carbonara-docker",
+     "name": "Carbonara Docker",
+     "price": 35,
+     "language": "docker",
+     "description": "Handmade spaghetti wrapped in egg-yolk cream, Pecorino Romano and crispy guanciale, served inside a crunchy, isolated Parmesan basket.",
+     "package": "A production-ready Dockerfile (multi-stage, non-root user) for a Node.js app.",
+     "template": "# Dockerfile: multi-stage build for a Node.js app\nFROM node:20-alpine AS deps\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --omit=dev\n\nFROM node:20-alpine\nWORKDIR /app\nENV NODE_ENV=production\nCOPY --from=deps /app/node_modules ./node_modules\nCOPY . .\nUSER node\nEXPOSE 3000\nCMD [\"node\", \"server.js\"]",
+     "filename": "Dockerfile"
+    },
+    {
+     "id": "risotto-github",
+     "name": "Risotto di GitHub",
+     "price": 40,
+     "language": "yaml",
+     "description": "Creamy Italian saffron risotto with squid and shrimp, finished with a grilled lobster tail standing upright like a fork.",
+     "package": "A GitHub Actions CI workflow: install, lint and test on every push and pull request.",
+     "template": "# .github/workflows/ci.yml\nname: CI\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: npm\n      - run: npm ci\n      - run: npm run lint --if-present\n      - run: npm test",
+     "filename": "ci.yml"
+    },
+    {
+     "id": "lasagna-stackoverflow",
+     "name": "Lasagna StackOverflow",
+     "price": 35,
+     "language": "javascript",
+     "description": "Stacked layers of fresh pasta, slow-cooked short-rib ragù and truffled béchamel, piled all the way to the limit of the structure.",
+     "package": "A debugging checklist plus a safe recursion helper that never overflows the stack.",
+     "template": "// Debugging checklist: reproduce, isolate, read the stack trace, fix, add a test\n// Safe recursion: a trampoline turns deep recursion into a loop\nconst trampoline = (fn) => (...args) => {\n  let result = fn(...args);\n  while (typeof result === 'function') result = result();\n  return result;\n};\n\nconst sumTo = trampoline(function sum(n, acc = 0) {\n  return n === 0 ? acc : () => sum(n - 1, acc + n);\n});\n\nconsole.log(sumTo(1000000)); // no stack overflow",
+     "filename": "safe-recursion.js"
+    },
+    {
+     "id": "gnocchi-kubernetes",
+     "name": "Gnocchi Kubernetes",
+     "price": 40,
+     "language": "yaml",
+     "description": "Handmade purple-potato gnocchi floating in harmony in a warm cluster of sweet Gorgonzola fondue.",
+     "package": "A Kubernetes Deployment + Service with 3 replicas, probes and resource limits.",
+     "template": "# deployment.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: multiverse-app\nspec:\n  replicas: 3\n  selector:\n    matchLabels: { app: multiverse-app }\n  template:\n    metadata:\n      labels: { app: multiverse-app }\n    spec:\n      containers:\n        - name: app\n          image: ghcr.io/you/multiverse-app:latest\n          ports: [{ containerPort: 3000 }]\n          readinessProbe: { httpGet: { path: /health, port: 3000 } }\n          resources:\n            limits: { cpu: 500m, memory: 256Mi }\n---\napiVersion: v1\nkind: Service\nmetadata: { name: multiverse-app }\nspec:\n  selector: { app: multiverse-app }\n  ports: [{ port: 80, targetPort: 3000 }]",
+     "filename": "deployment.yaml"
+    },
+    {
+     "id": "ravioli-git-push",
+     "name": "Ravioli Git Push",
+     "price": 30,
+     "language": "shell",
+     "description": "Fresh pasta filled with creamy burrata and Sicilian lemon zest, with a rustic pomodoro that bursts with flavor at the first cut.",
+     "package": "Handy git aliases and a safe push routine.",
+     "template": "# ~/.gitconfig aliases\n[alias]\n  st = status -sb\n  co = checkout\n  lg = log --oneline --graph --decorate -20\n  amend = commit --amend --no-edit\n  pushf = push --force-with-lease\n  undo = reset --soft HEAD~1\n\n# Safe push routine\n# git fetch && git rebase origin/main && npm test && git push",
+     "filename": "gitconfig-aliases.txt"
+    },
+    {
+     "id": "fettuccine-jenkins",
+     "name": "Fettuccine Jenkins",
+     "price": 35,
+     "language": "javascript",
+     "description": "Classic Alfredo fettuccine served with strips of grilled filet mignon, continuously integrated into the dish right at the table.",
+     "package": "A declarative Jenkinsfile pipeline: build, test and deploy stages.",
+     "template": "// Jenkinsfile\npipeline {\n  agent any\n  stages {\n    stage('Install') { steps { sh 'npm ci' } }\n    stage('Test')    { steps { sh 'npm test' } }\n    stage('Build')   { steps { sh 'npm run build' } }\n    stage('Deploy') {\n      when { branch 'main' }\n      steps { sh './scripts/deploy.sh' }\n    }\n  }\n  post { failure { echo 'Pipeline failed: check the logs' } }\n}",
+     "filename": "Jenkinsfile"
+    }
+   ]
+  },
+  {
+   "title": "Gourmet Pizzas",
+   "items": [
+    {
+     "id": "pizza-vscode",
+     "name": "Pizza VS Code",
+     "price": 35,
+     "language": "javascript",
+     "description": "Naturally leavened dough with pomodoro and buffalo mozzarella, left open for you to add your own \"plugins\" (gourmet toppings of your choice).",
+     "package": "A VS Code settings.json and a list of must-have extensions.",
+     "template": "// .vscode/settings.json\n{\n  \"editor.formatOnSave\": true,\n  \"editor.minimap.enabled\": false,\n  \"editor.bracketPairColorization.enabled\": true,\n  \"files.trimTrailingWhitespace\": true,\n  \"terminal.integrated.fontSize\": 13\n}\n// Plugins (toppings): ESLint, Prettier, GitLens, Error Lens, Docker",
+     "filename": "vscode-settings.json"
+    },
+    {
+     "id": "pizza-postman",
+     "name": "Pizza Postman API",
+     "price": 35,
+     "language": "javascript",
+     "description": "Artisan pizza split into slices with 4 fixed gourmet toppings (Truffle, Parma, Fig & Gorgonzola, Funghi), testing multiple flavors at once.",
+     "package": "A tiny API test suite: four requests, four assertions.",
+     "template": "// api.test.js: four slices, four checks (Node 18+, no dependencies)\nconst base = 'http://localhost:3000';\nconst slices = [\n  ['GET', '/health', 200],\n  ['GET', '/api/users', 200],\n  ['POST', '/api/login', 400],\n  ['GET', '/does-not-exist', 404]\n];\nfor (const [method, path, expected] of slices) {\n  const response = await fetch(base + path, { method });\n  console.log(response.status === expected ? 'PASS' : 'FAIL', method, path, response.status);\n}",
+     "filename": "api.test.mjs"
+    }
+   ]
+  },
+  {
+   "title": "Desserts",
+   "items": [
+    {
+     "id": "tiramisu-stack-trace",
+     "name": "Tiramisù Stack Trace",
+     "price": 25,
+     "language": "javascript",
+     "description": "The classic Italian dessert with perfectly visible stacked layers of espresso-soaked savoiardi, mascarpone cream and pure cocoa dusted in lines that look like an error log.",
+     "package": "Error handling done right: custom errors with causes and a readable stack.",
+     "template": "class AppError extends Error {\n  constructor(message, { cause, code } = {}) {\n    super(message, { cause });\n    this.name = 'AppError';\n    this.code = code;\n  }\n}\n\ntry {\n  JSON.parse('{ broken json');\n} catch (error) {\n  const wrapped = new AppError('Could not read the config', { cause: error, code: 'CONFIG_PARSE' });\n  console.error(wrapped.stack);\n  console.error('Caused by:', wrapped.cause.message);\n}",
+     "filename": "app-error.js"
+    },
+    {
+     "id": "panna-cotta-blockchain",
+     "name": "Panna Cotta Blockchain",
+     "price": 25,
+     "language": "javascript",
+     "description": "Vanilla-bean panna cotta blocks laid out in a geometric sequence, linked and chained together by a glossy red-berry coulis and threads of clear caramel.",
+     "package": "An educational hash chain in a few lines (no cryptocurrency involved).",
+     "template": "// A toy hash chain: each block stores the hash of the previous one\nconst { createHash } = require('crypto');\nconst hash = (data) => createHash('sha256').update(data).digest('hex');\n\nconst chain = [{ index: 0, data: 'genesis', prev: '0', hash: hash('genesis') }];\nfunction addBlock(data) {\n  const prev = chain[chain.length - 1];\n  const block = { index: prev.index + 1, data, prev: prev.hash };\n  block.hash = hash(block.index + block.data + block.prev);\n  chain.push(block);\n}\naddBlock('vanilla');\naddBlock('berries');\nconsole.log(chain);",
+     "filename": "hash-chain.js"
+    },
+    {
+     "id": "gelato-backend",
+     "name": "Back-End Gelato",
+     "price": 20,
+     "language": "javascript",
+     "description": "Artisan Italian gelato of intense 80% dark Belgian chocolate with toasted Piedmont hazelnuts and a subtle touch of Maldon salt to balance the base.",
+     "package": "A minimal Express back-end with JSON routes and error handling.",
+     "template": "const express = require('express');\nconst app = express();\napp.use(express.json());\n\napp.get('/health', (req, res) => res.json({ ok: true }));\napp.post('/api/echo', (req, res) => res.json({ youSent: req.body }));\n\napp.use((err, req, res, next) => {\n  console.error(err);\n  res.status(500).json({ error: 'Something went wrong' });\n});\n\napp.listen(3000, () => console.log('Back-end on http://localhost:3000'));",
+     "filename": "server.js"
+    },
+    {
+     "id": "cannoli-frontend",
+     "name": "Front-End Cannoli",
+     "price": 20,
+     "language": "html",
+     "description": "Ultra-crispy fried pastry tubes filled with sweet ricotta cream and chopped pistachio, finished with candied orange zest and powdered sugar for a flawless look.",
+     "package": "A polished, accessible card component in HTML + CSS.",
+     "template": "<article class=\"card\">\n  <img src=\"cannoli.jpg\" alt=\"Three cannoli on a plate\">\n  <h2>Front-End Cannoli</h2>\n  <p>Crispy outside, sweet inside.</p>\n  <button type=\"button\">Order</button>\n</article>\n<style>\n  .card { max-width: 320px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px #0002; font-family: system-ui; }\n  .card img { width: 100%; display: block; }\n  .card h2, .card p { margin: 12px 16px; }\n  .card button { margin: 0 16px 16px; padding: 10px 16px; border: 0; border-radius: 8px; background: #1877f2; color: #fff; }\n  .card button:focus-visible { outline: 3px solid #ffd43b; }\n</style>",
+     "filename": "card.html"
+    }
+   ]
+  },
+  {
+   "title": "Drinks & Cocktails",
+   "items": [
+    {
+     "id": "python-negroni",
+     "name": "Python Negroni",
+     "price": 18,
+     "language": "python",
+     "buff": "jump",
+     "buffSeconds": 30,
+     "description": "Gin infused with exotic botanicals, Vermouth Rosso, Campari and an orange peel hand-twisted into the shape of a snake inside the glass.",
+     "package": "A clean Python script template with argparse and logging. Bonus: you jump higher for 30s.",
+     "template": "#!/usr/bin/env python3\n\"\"\"Small CLI tool template.\"\"\"\nimport argparse\nimport logging\n\nlogging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(description='Python Negroni CLI')\n    parser.add_argument('name', help='who to greet')\n    args = parser.parse_args()\n    logging.info('Hello, %s!', args.name)\n\nif __name__ == '__main__':\n    main()",
+     "filename": "cli.py"
+    },
+    {
+     "id": "aperol-script",
+     "name": "Aperol Script",
+     "price": 15,
+     "language": "javascript",
+     "buff": "speed",
+     "buffSeconds": 30,
+     "description": "The traditional Aperol Spritz modified with a hibiscus syrup infusion and Italian Prosecco, subtly changing the color and dynamism of the drink.",
+     "package": "Useful JavaScript utilities: debounce, throttle and sleep. Bonus: you run faster for 30s.",
+     "template": "export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\n\nexport function debounce(fn, wait = 300) {\n  let timer;\n  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), wait); };\n}\n\nexport function throttle(fn, wait = 300) {\n  let last = 0;\n  return (...args) => { const now = Date.now(); if (now - last >= wait) { last = now; fn(...args); } };\n}",
+     "filename": "utils.js"
+    },
+    {
+     "id": "terminal-espresso-martini",
+     "name": "Terminal Espresso Martini",
+     "price": 20,
+     "language": "shell",
+     "buff": "speed",
+     "buffSeconds": 45,
+     "description": "Concentrated Italian espresso, premium vodka and dark cocoa liqueur, served in a matte black glass with a smoky dry-ice effect.",
+     "package": "Terminal productivity: shell aliases and functions. Bonus: you run faster for 45s.",
+     "template": "# ~/.bashrc or ~/.zshrc\nalias ll='ls -lah'\nalias gs='git status -sb'\nalias serve='python3 -m http.server 8000'\nmkcd() { mkdir -p \"$1\" && cd \"$1\"; }\nport() { lsof -i :\"$1\"; }\n# Search history fast: Ctrl+R\n# Jump back: cd -",
+     "filename": "shell-aliases.sh"
+    },
+    {
+     "id": "aws-cloud-sour",
+     "name": "AWS Cloud Sour",
+     "price": 20,
+     "language": "javascript",
+     "buff": "jetpack",
+     "buffSeconds": 20,
+     "description": "A tart base of Sicilian lemon, Italian grappa and sugar syrup, finished with a dense, airy molecular foam that looks like a cloud.",
+     "package": "A serverless function handler template (Node.js). Bonus: Jetpack for 20s, float like a cloud.",
+     "template": "// handler.js: serverless HTTP function\nexport const handler = async (event) => {\n  const name = event.queryStringParameters?.name ?? 'cloud dev';\n  return {\n    statusCode: 200,\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ message: `Hello, ${name}!`, at: new Date().toISOString() })\n  };\n};",
+     "filename": "handler.mjs"
+    },
+    {
+     "id": "linux-mint-julep",
+     "name": "Linux Mint Julep",
+     "price": 18,
+     "language": "shell",
+     "buff": "lens",
+     "buffSeconds": 60,
+     "description": "A twist on the classic with grappa, Amaretto liqueur, brown sugar and plenty of fresh muddled mint leaves.",
+     "package": "Linux one-liners every dev should know. Bonus: Debugger Lens for 60s.",
+     "template": "# Linux one-liners\ndu -sh * | sort -h            # biggest folders here\nfind . -name '*.log' -mtime +7 -delete   # clean old logs\ngrep -rn 'TODO' src/          # find TODOs\ntail -f /var/log/syslog       # follow the system log\nss -tulpn                     # who listens on which port\nhtop                          # live processes",
+     "filename": "linux-one-liners.sh"
+    }
+   ]
+  }
+ ]
+}

@@ -406,7 +406,7 @@
   Object.assign(builders, {
     // Round Welcome Hall inspired by Decentraland's: wooden floor, glass waterfall
     // tube with a "Welcome" ring, curved mezzanine, hanging lamps, cafe tables
-    welcomeHall(group, { w, h, label }) {
+    welcomeHall(group, { w, h, label, data }) {
       const radius = w / 2;
       const wood = texturedMaterial(plankTexture('#b07a45'), 10, 10);
       const wall = new THREE.MeshStandardMaterial({ map: repeated(plankTexture('#8a5a33'), 16, 3), roughness: 0.8, side: THREE.DoubleSide });
@@ -442,6 +442,7 @@
       // Central glass tube with falling water and the welcome ring sign
       const tube = cylinder(3.2, 3.2, h - 0.3, material('#cfe8ff', { transparent: true, opacity: 0.25, roughness: 0.05, side: THREE.DoubleSide }), 0, h / 2, 0, 32);
       tube.castShadow = false;
+      if (data && data.openCenter) tube.raycast = () => {}; // walk through it (underground landing spot)
       group.add(tube);
       const rainTexture = PropKit.kit.canvasTexture('hallRain', 128, 256, (ctx, cw, ch) => {
         ctx.clearRect(0, 0, cw, ch);
@@ -451,6 +452,7 @@
       const rainMap = repeated(rainTexture, 4, 2);
       const rain = cylinder(2.9, 2.9, h - 0.4, new THREE.MeshBasicMaterial({ map: rainMap, transparent: true, depthWrite: false, side: THREE.DoubleSide }), 0, h / 2, 0, 24);
       rain.castShadow = false;
+      rain.raycast = () => {};
       group.add(rain);
       animate(rain, (time) => { rainMap.offset.y = time * 1.2; });
       group.add(cylinder(3.6, 3.8, 0.6, glow('#ffb703', 0.4), 0, 0.4, 0, 32));
@@ -657,12 +659,53 @@
       // Rim around the opening
       [[0, size / 2 + 0.5, size + 2, 1], [0, -size / 2 - 0.5, size + 2, 1], [size / 2 + 0.5, 0, 1, size], [-size / 2 - 0.5, 0, 1, size]].forEach(([x, z, rw, rd]) => group.add(box(rw, 0.5, rd, stone, x, 0.25, z)));
       // Water surface (not solid) and glowing edge
-      const water = box(size, 0.1, size, material('#2ec4f2', { transparent: true, opacity: 0.55, roughness: 0.05, metalness: 0.2, emissive: '#1ea0d6', emissiveIntensity: 0.25 }), 0, -0.2, 0);
+      // Realistic water: reflective surface with animated ripples (normal map),
+      // tiled pool walls and caustic light dancing on the submerged doors
+      const ripples = PropKit.kit.canvasTexture('poolRipples', 256, 256, (ctx, cw, ch) => {
+        // Normal map: soft bumps encoded as RGB slopes
+        const image = ctx.createImageData(cw, ch);
+        for (let y = 0; y < ch; y++) {
+          for (let x = 0; x < cw; x++) {
+            const nx = Math.sin((x / cw) * Math.PI * 6) * 0.5 + Math.sin(((x + y) / cw) * Math.PI * 10) * 0.3;
+            const ny = Math.cos((y / ch) * Math.PI * 8) * 0.5 + Math.sin(((x - y) / ch) * Math.PI * 7) * 0.3;
+            const index = (y * cw + x) * 4;
+            image.data[index] = 128 + nx * 60;
+            image.data[index + 1] = 128 + ny * 60;
+            image.data[index + 2] = 255;
+            image.data[index + 3] = 255;
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+      });
+      const normalMap = repeated(ripples, size / 6, size / 6);
+      const waterMaterial = new THREE.MeshStandardMaterial({ color: '#1fa2c6', transparent: true, opacity: 0.72, roughness: 0.04, metalness: 0.25, normalMap, normalScale: new THREE.Vector2(0.6, 0.6), envMapIntensity: 1.4 });
+      const water = box(size, 0.1, size, waterMaterial, 0, -0.25, 0);
       water.castShadow = false;
       water.raycast = () => {};
       group.add(water);
+      const tiles = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.gridTexture('#e3f6fb', '#9fd8e6', 8), size / 2, 1), roughness: 0.3 });
+      [[0, size / 2, size, 0.1, 0], [0, -size / 2, size, 0.1, 0], [size / 2, 0, size, 0.1, Math.PI / 2], [-size / 2, 0, size, 0.1, Math.PI / 2]].forEach(([x, z, tw, td, rotation]) => {
+        const wall = box(tw, 1.3, td, tiles, x, -0.75, z);
+        wall.rotation.y = rotation;
+        group.add(wall);
+      });
+      const caustics = PropKit.kit.canvasTexture('poolCaustics', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.strokeStyle = 'rgba(190, 240, 255, 0.85)';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 26; i++) {
+          ctx.beginPath();
+          const x = (i * 71) % cw;
+          const y = (i * 43) % ch;
+          ctx.moveTo(x, y);
+          ctx.bezierCurveTo(x + 30, y - 20, x + 50, y + 30, x + 80, y + 5);
+          ctx.stroke();
+        }
+      });
+      const causticMap = repeated(caustics, size / 5, size / 5);
       // Two submerged doors that slide apart
-      const doorMaterial = material('#37474f', { metalness: 0.7, roughness: 0.3 });
+      const doorMaterial = new THREE.MeshStandardMaterial({ color: '#3d6f84', metalness: 0.4, roughness: 0.35, emissive: '#bfefff', emissiveMap: causticMap, emissiveIntensity: 0.6 });
       const doors = [-1, 1].map((side) => {
         const door = box(size / 2, 0.3, size, doorMaterial, side * size / 4, -1.4, 0);
         door.userData.side = side;
@@ -690,6 +733,8 @@
       group.add(shaft);
       animate(group, (time) => {
         bubbleMap.offset.y = -time * 0.6;
+        normalMap.offset.set(time * 0.03, time * 0.02);
+        causticMap.offset.set(Math.sin(time * 0.4) * 0.2, time * 0.05);
         const avatarPosition = typeof avatar !== 'undefined' ? avatar.position : null;
         const center = group.getWorldPosition(new THREE.Vector3());
         const near = avatarPosition && Math.hypot(avatarPosition.x - center.x, avatarPosition.z - center.z) < 10;
@@ -713,7 +758,7 @@
     // a cozy bar/cafe social area, an elevator back to the surface
     undergroundHall(group, { w, h, label }) {
       const radius = w / 2;
-      builders.welcomeHall(group, { w, h, label: label || 'Welcome to the Underground' });
+      builders.welcomeHall(group, { w, h, label: label || 'Welcome to the Underground', data: { openCenter: true } });
       const rock = new THREE.MeshStandardMaterial({ color: '#5d4a3a', roughness: 1, flatShading: true, side: THREE.DoubleSide });
       // Rock wall with an opening at +x where the history corridor starts
       const gap = 2 * Math.asin(5.5 / (radius + 4));
@@ -726,13 +771,13 @@
       const ceiling = new THREE.Shape();
       ceiling.absarc(0, 0, radius + 4, 0, Math.PI * 2, false);
       const opening = new THREE.Path();
-      opening.moveTo(-4, -4); opening.lineTo(4, -4); opening.lineTo(4, 4); opening.lineTo(-4, 4); opening.closePath();
+      opening.moveTo(-7.2, -7.2); opening.lineTo(7.2, -7.2); opening.lineTo(7.2, 7.2); opening.lineTo(-7.2, 7.2); opening.closePath();
       ceiling.holes.push(opening);
       const roof = mesh(new THREE.ShapeGeometry(ceiling, 24), rock, 0, h + 2, 0);
       roof.rotation.x = Math.PI / 2;
       group.add(roof);
       // Glowing light where the tunnel enters
-      const skylight = box(8.4, 0.2, 8.4, glow('#bfeaff', 1.2), 0, h + 1.9, 0);
+      const skylight = box(14.4, 0.2, 14.4, glow('#bfeaff', 1.2), 0, h + 1.9, 0);
       skylight.raycast = () => {};
       group.add(skylight);
       // Warm hanging lamps all around the cave
@@ -754,7 +799,10 @@
         group.add(PropKit.kit.interactive(stool, 'sit', 'Cafe stool'));
       }
       const menu = facedBox(5, 2.4, 0.15, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 40px Georgia, serif' }) }), radius * 0.45 + 3, 4, radius * 0.3 - 6.5);
-      group.add(menu);
+      group.add(PropKit.kit.interactive(menu, 'cafe_menu', 'Underground Cafe menu'));
+      const orderSign = textSprite('🍝 Order here (E) · dishes are code packages', { width: 7, background: 'rgba(43, 27, 18, 0.9)' });
+      orderSign.position.set(radius * 0.45 + 3, 6, radius * 0.3 - 6.3);
+      group.add(orderSign);
       // Elevator back to Genesis Plaza
       const elevator = new THREE.Group();
       elevator.add(cylinder(1.6, 1.6, 0.3, glow('#1877f2', 0.8), 0, 0.45, 0, 24));
@@ -1104,6 +1152,149 @@
     });
     return fire;
   }
+
+  // Star-shaped floor pad texture (teleport pads of the spawn hub)
+  function starPadTexture(color) {
+    return PropKit.kit.canvasTexture(`starpad|${color}`, 256, 256, (ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#f1f3f5';
+      ctx.beginPath(); ctx.moveTo(w * 0.1, h * 0.25); ctx.lineTo(w * 0.9, h * 0.15); ctx.lineTo(w * 0.85, h * 0.85); ctx.lineTo(w * 0.15, h * 0.8); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 8; ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+        const radius = i % 2 ? w * 0.13 : w * 0.3;
+        const x = w / 2 + Math.cos(angle) * radius;
+        const y = h / 2 + Math.sin(angle) * radius;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath(); ctx.fill();
+    });
+  }
+
+  Object.assign(builders, {
+    // Spawn hub around the square pool, organized like a modern game lobby:
+    // low octagonal terraces with blue neon trims and water channels, octagonal
+    // tree planters, hedges, star teleport pads and four activity corners
+    // (card table, giant Connect Four, gazebo lounge, canopy tents)
+    spawnHub(group, { w }) {
+      const radius = w / 2;
+      const terraceStone = material('#e9ecf2', { roughness: 0.6 });
+      const trim = glow('#4dabf7', 1.4);
+      const water = material('#4dabf7', { roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.85, emissive: '#1c7ed6', emissiveIntensity: 0.25 });
+      // Octagonal terrace ring with openings towards the spawn (south), the plaza (east) and the path (west)
+      const ringRadius = radius * 0.72; // outside the Events Explorer walls
+      for (let k = 0; k < 8; k++) {
+        const angle = (k * Math.PI) / 4;
+        if (k === 0 || k === 2 || k === 4) continue;
+        const side = 2 * ringRadius * Math.tan(Math.PI / 8);
+        const segment = new THREE.Group();
+        segment.add(box(side, 0.5, 3, terraceStone, 0, 0.25, 0));
+        segment.add(box(side, 0.08, 0.12, trim, 0, 0.52, -1.5));
+        segment.add(box(side, 0.08, 0.12, trim, 0, 0.52, 1.5));
+        // Water channel just outside the terrace
+        const channel = box(side, 0.1, 1.2, water, 0, 0.08, 2.2);
+        channel.raycast = () => {};
+        segment.add(channel);
+        // Hedge along the terrace
+        for (let i = -2; i <= 2; i++) {
+          const hedge = sphere(0.7, material('#2f9e44', { roughness: 1, flatShading: true }), i * (side / 5), 1, 0.6, 8);
+          hedge.scale.set(1.2, 0.8, 0.9);
+          segment.add(hedge);
+        }
+        segment.position.set(Math.cos(angle) * ringRadius, 0, Math.sin(angle) * ringRadius);
+        segment.rotation.y = -angle - Math.PI / 2;
+        group.add(segment);
+      }
+      // Octagonal raised planters with big trees at the diagonals
+      [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4].forEach((angle) => {
+        const x = Math.cos(angle) * radius * 0.96;
+        const z = Math.sin(angle) * radius * 0.96;
+        group.add(cylinder(2.6, 2.8, 1, material('#3b5bdb', { roughness: 0.5 }), x, 0.5, z, 8));
+        group.add(cylinder(2.7, 2.7, 0.1, trim, x, 1.02, z, 8));
+        group.add(cylinder(2.3, 2.3, 0.15, material('#5c940d'), x, 1.05, z, 8));
+        group.add(cylinder(0.45, 0.65, 6, material('#6d4c41'), x, 4, z, 10));
+        [[0, 7.6, 0, 2.6], [1.4, 6.6, 0.8, 1.8], [-1.3, 6.8, -0.6, 1.9]].forEach(([dx, y, dz, r]) => group.add(mesh(new THREE.IcosahedronGeometry(r, 1), material('#37b24d', { flatShading: true }), x + dx, y, z + dz)));
+      });
+      // Star teleport pads to the Worlds (E to jump in)
+      const worlds = (window.MULTIVERSE_WORLDS || []).filter((world) => world.world).slice(0, 4);
+      worlds.forEach((world, index) => {
+        const angle = Math.PI * 0.3 + index * 0.13 + (index > 1 ? Math.PI * 0.4 - 0.26 : 0);
+        const pad = mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshStandardMaterial({ map: starPadTexture(world.color || '#1877f2'), transparent: true, roughness: 0.6 }), Math.cos(angle) * radius * 0.5, 0.06, Math.sin(angle) * radius * 0.5);
+        pad.rotation.x = -Math.PI / 2;
+        pad.receiveShadow = true;
+        pad.userData.label = `${world.name} — JUMP IN`;
+        group.add(PropKit.kit.interactive(pad, 'jump', world.key));
+      });
+      // Corner 1 (south-east): green card table with chairs
+      const table = new THREE.Group();
+      table.add(box(4.4, 0.15, 2, material('#2b8a3e', { roughness: 0.9 }), 0, 0.95, 0));
+      table.add(box(4.6, 0.12, 2.2, material('#f1f3f5'), 0, 0.85, 0));
+      table.add(box(0.4, 0.8, 1.2, material('#f1f3f5'), 0, 0.4, 0));
+      [-1.5, 0, 1.5].forEach((dx) => [-1, 1].forEach((side) => {
+        const chair = new THREE.Group();
+        chair.add(box(0.8, 0.12, 0.8, material('#8ce99a'), 0, 0.6, 0));
+        chair.add(box(0.8, 0.9, 0.12, material('#8ce99a', { transparent: true, opacity: 0.85 }), 0, 1.05, side * 0.4));
+        chair.add(box(0.1, 0.6, 0.1, material('#dee2e6'), 0, 0.3, 0));
+        chair.position.set(dx, 0, side * 1.6);
+        table.add(PropKit.kit.interactive(chair, 'sit', 'Card table chair'));
+      }));
+      table.position.set(radius * 0.8, 0, radius * 0.46);
+      table.rotation.y = -Math.PI / 6;
+      group.add(table);
+      // Corner 2 (south-west): giant Connect Four
+      const game = new THREE.Group();
+      const frame = material('#1c7ed6', { roughness: 0.4 });
+      game.add(box(5, 0.3, 0.6, frame, 0, 0.15, 0));
+      [-2.4, 2.4].forEach((x) => game.add(box(0.3, 4.4, 0.6, frame, x, 2.2, 0)));
+      game.add(box(5, 0.3, 0.6, frame, 0, 4.3, 0));
+      for (let column = 0; column < 7; column++) {
+        for (let row = 0; row < 6; row++) {
+          const filled = (column * 3 + row * 5) % 7 < 3 && row < 4 - (column % 3);
+          if (!filled) continue;
+          const disc = cylinder(0.28, 0.28, 0.3, material((column + row) % 2 ? '#fa5252' : '#fcc419'), -1.95 + column * 0.65, 0.6 + row * 0.62, 0, 16);
+          disc.rotation.x = Math.PI / 2;
+          game.add(disc);
+        }
+      }
+      game.userData = { label: 'Giant Connect Four', info: 'Line up four discs of your color: a classic for waiting in the lobby with friends.' };
+      game.position.set(-radius * 0.32, 0, radius * 0.87);
+      game.rotation.y = 0.35;
+      group.add(PropKit.kit.interactive(game, 'inspect', 'Giant Connect Four'));
+      // Corner 3 (north-east): gazebo lounge with sofas
+      const gazebo = new THREE.Group();
+      [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]].forEach(([x, z]) => gazebo.add(cylinder(0.12, 0.12, 3.2, material('#5c3d2e'), x, 1.6, z, 8)));
+      const roof = mesh(new THREE.ConeGeometry(3.6, 1.6, 4), material('#1c2a5a', { roughness: 0.7 }), 0, 4, 0);
+      roof.rotation.y = Math.PI / 4;
+      gazebo.add(roof);
+      [[-1.2, 0], [1.2, 0]].forEach(([x], i) => {
+        const sofa = new THREE.Group();
+        sofa.add(box(1.8, 0.5, 1, material('#96f2d7'), 0, 0.35, 0));
+        sofa.add(box(1.8, 0.7, 0.25, material('#96f2d7'), 0, 0.8, -0.45));
+        sofa.position.set(x, 0, 0);
+        sofa.rotation.y = i ? -Math.PI / 2 : Math.PI / 2;
+        gazebo.add(PropKit.kit.interactive(sofa, 'sit', 'Gazebo sofa'));
+      });
+      gazebo.add(box(0.8, 0.5, 0.8, material('#ffd43b'), 0, 0.25, 0.9));
+      gazebo.position.set(radius * 0.8, 0, -radius * 0.46);
+      group.add(gazebo);
+      // Corner 4 (north-west): canopy tents (red, white, navy) as little booths
+      ['#e03131', '#f8f9fa', '#1c2a5a'].forEach((color, i) => {
+        const tent = new THREE.Group();
+        tent.add(mesh(new THREE.CylinderGeometry(0.1, 2.4, 1.6, 4, 1), material(color, { roughness: 0.8, side: THREE.DoubleSide }), 0, 3, 0)).children[0].rotation.y = Math.PI / 4;
+        [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6]].forEach(([x, z]) => tent.add(cylinder(0.06, 0.06, 2.2, material('#495057'), x, 1.1, z, 6)));
+        tent.add(box(2.4, 0.9, 0.8, material('#f1f3f5'), 0, 0.45, 1));
+        tent.position.set([-23, -24, -21][i], 0, [-11.5, -6, -0.5][i] * (radius / 26) - (i === 2 ? 0 : 0));
+        group.add(tent);
+      });
+      // Game Portal sign
+      const portalSign = textSprite('GAME PORTAL · star pads jump to the Worlds', { width: 6, background: 'rgba(43, 138, 62, 0.92)' });
+      portalSign.position.set(radius * 0.3, 2.2, radius * 0.48);
+      group.add(portalSign);
+      group.userData.label = 'Genesis spawn hub';
+    }
+  });
 
   // Messages shown on the floating cube screens of the cowork plazas
   const COWORK_MESSAGES = ['THE WORLD IS YOURS', 'SHIP IT', 'CODE TOGETHER', 'HELLO, WORLD', 'MERGE WITH LOVE', 'IT WORKS ON MY MACHINE', 'GOOD FIRST ISSUE', 'GIT PUSH DREAMS'];
@@ -1493,7 +1684,7 @@
       const disc = new THREE.Shape();
       disc.absarc(0, 0, radius + 1.5, 0, Math.PI * 2, false);
       const opening = new THREE.Path();
-      opening.moveTo(-4.6, -4.6); opening.lineTo(4.6, -4.6); opening.lineTo(4.6, 4.6); opening.lineTo(-4.6, 4.6); opening.closePath();
+      opening.moveTo(-8.1, -8.1); opening.lineTo(8.1, -8.1); opening.lineTo(8.1, 8.1); opening.lineTo(-8.1, 8.1); opening.closePath();
       disc.holes.push(opening);
       const pavement = mesh(new THREE.ShapeGeometry(disc, 64), new THREE.MeshStandardMaterial({ map: repeated(cobbleTexture('#e0995e'), 1 / 6, 1 / 6), roughness: 0.85 }), 0, 0.03, 0);
       pavement.rotation.x = -Math.PI / 2;
@@ -1501,7 +1692,7 @@
       pavement.receiveShadow = true;
       group.add(pavement);
       // Glowing ring around the pool
-      const poolGlow = mesh(new THREE.TorusGeometry(6.2, 0.18, 8, 64), glow('#ffd166', 2), 0, 0.12, 0);
+      const poolGlow = mesh(new THREE.TorusGeometry(10.6, 0.18, 8, 64), glow('#ffd166', 2), 0, 0.12, 0);
       poolGlow.rotation.x = Math.PI / 2;
       group.add(poolGlow);
       const places = (window.MULTIVERSE_WORLDS || []);
@@ -1546,10 +1737,10 @@
       ramp.rotation.x = Math.atan2(1.6, 4.2);
       board.add(ramp);
       [-0.8, 0.8].forEach((x) => board.add(cylinder(0.05, 0.05, 1.1, material('#ced4da', { metalness: 0.8 }), x, 2.2, 1.5, 6)));
-      board.position.set(0, 0, 4.2);
+      board.position.set(0, 0, 8.6);
       group.add(board);
       const sign = textSprite('DIVING ALLOWED ⤵', { width: 4, background: 'rgba(17, 17, 17, 0.9)' });
-      sign.position.set(2.4, 2.6, 6.5);
+      sign.position.set(2.6, 2.6, 11);
       group.add(sign);
       // Floating golden arrow pointing down into the pool
       const pointer = mesh(new THREE.ConeGeometry(1.4, 1.8, 3), glow('#ffc94d', 1.8), 0, 9, 0);
@@ -1562,7 +1753,7 @@
 
   const rules = [
     [/ad_cube_stack/, 'adCubeStack'], [/led_cube_kiosk/, 'ledCubeKiosk'], [/supertree/, 'supertree'], [/column_hall/, 'columnHall'],
-    [/marble_statue/, 'marbleStatue'], [/kinetic_sculpture/, 'kineticSculpture'], [/cloud_store/, 'cloudStore'], [/light_pavilion/, 'lightPavilion'], [/promenade/, 'promenade'], [/news_ring/, 'newsRing'], [/cowork_plaza/, 'coworkPlaza'],
+    [/marble_statue/, 'marbleStatue'], [/kinetic_sculpture/, 'kineticSculpture'], [/cloud_store/, 'cloudStore'], [/light_pavilion/, 'lightPavilion'], [/promenade/, 'promenade'], [/news_ring/, 'newsRing'], [/cowork_plaza/, 'coworkPlaza'], [/spawn_hub/, 'spawnHub'],
     [/plaza_floor/, 'plazaFloor'], [/^fountain/, 'fountain'], [/theatre/, 'theatre'], [/round_tree/, 'roundTree'],
     [/lamp_post/, 'lampPost'], [/^bench/, 'bench'], [/flower_bed/, 'flowerBed'], [/^shop_/, 'shop'],
     [/neon_tower|aetheria/, 'neonTower'], [/casino|vegas/, 'casino'], [/arch_gate|plaza_gate/, 'archGate'],

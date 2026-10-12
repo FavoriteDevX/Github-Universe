@@ -75,6 +75,7 @@ function fixBug(bug) {
     codeblock: 'Press E to edit your code block',
     land: 'Press E to buy this parcel (250 MVC)',
     bed: 'Press E to sleep (skips the night, sets your spawn point)',
+    cafe_menu: 'Press E to see the menu and order',
     roast: 'Press E to Fry your Code 🔥',
     sit: 'Press E to sit',
     coffee: 'Press E for a coffee (run faster)',
@@ -95,6 +96,7 @@ function fixBug(bug) {
   // Actions
   // --------------------------------------------------------------------------
   function interact(object) {
+    if (window.Sound) Sound.play('interact');
     const { type, label } = object.userData.interactable;
     switch (type) {
       case 'laptop': openWork(object); break;
@@ -116,6 +118,7 @@ function fixBug(bug) {
       case 'codeblock': Codify.interact(object); break;
       case 'land': hooks.buyLand(object.userData.parcel); break;
       case 'bed': hooks.sleep(object); break;
+      case 'cafe_menu': Cafe.open(); break;
       case 'roast': Codify.startRoast(object); break;
       case 'link': {
         const url = object.userData.url;

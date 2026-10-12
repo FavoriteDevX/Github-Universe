@@ -20,7 +20,7 @@
     [
      -62,
      22,
-     8
+     14
     ]
    ]
   },
@@ -310,9 +310,9 @@
   {
    "type": "pond",
    "position": [
-    -46,
+    -40,
     0,
-    50
+    59
    ],
    "scale": [
     26,
@@ -470,9 +470,9 @@
   {
    "type": "round_tree",
    "position": [
-    -49.8,
+    -36,
     3.5,
-    15.0
+    -6
    ],
    "scale": [
     4,
@@ -944,9 +944,9 @@
     22
    ],
    "scale": [
-    8,
+    14,
     1,
-    8
+    14
    ],
    "color": "#2ec4f2",
    "label": "Underground entrance",
@@ -1272,6 +1272,21 @@
    ],
    "color": "#ffb703",
    "label": "Events Explorer"
+  },
+  {
+   "type": "spawn_hub",
+   "position": [
+    -62,
+    0,
+    22
+   ],
+   "scale": [
+    52,
+    1,
+    52
+   ],
+   "color": "#e9ecf2",
+   "label": "Genesis spawn hub"
   }
  ]
 }

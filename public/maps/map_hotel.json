@@ -147,6 +147,22 @@
     0.4
    ],
    "color": "#fff3c4"
+  },
+  {
+   "type": "lodge_hotel",
+   "position": [
+    40,
+    0,
+    -36
+   ],
+   "scale": [
+    22,
+    7,
+    18
+   ],
+   "color": "#5a3a24",
+   "label": "The Hotel",
+   "title": "The Hotel"
   }
  ]
 }

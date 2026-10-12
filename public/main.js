@@ -150,7 +150,11 @@ async function loadUniverse() {
   worldRegistry = await (await fetch('maps/worlds.json')).json();
   window.MULTIVERSE_WORLDS = worldRegistry; // used by the Events Wall to build its JUMP IN cards
   const maps = await Promise.all(worldRegistry.map((world) => fetch(`maps/${world.file}`).then((response) => response.json())));
-  worldRegistry.forEach((world, index) => {
+  // Build one district per frame so the welcome screen stays responsive while
+  // the world is assembled behind it
+  const nextFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
+  for (let index = 0; index < worldRegistry.length; index++) {
+    const world = worldRegistry[index];
     try {
       const district = City.addDistrict(world, maps[index]);
       registerPlaces(district);
@@ -158,7 +162,8 @@ async function loadUniverse() {
       console.error(`Could not build ${world.file}:`, error);
       appendSystemMessage(`Could not build ${world.name}.`);
     }
-  });
+    await nextFrame();
+  }
   City.finalize();
   renderWorldList();
 }
@@ -226,6 +231,7 @@ function renderWorldList() {
 // ============================================================================
 // Teleports the avatar (with a short white fade, like Decentraland's jump-in)
 function flyTo(target, view, announce) {
+  Sound.play('teleport');
   lastPositionBeforeTeleport = avatar.position.clone();
   avatar.position.set(target.x, 0, target.z);
   avatar.position.y = groundHeightAt(target.x, target.z, Math.max(target.y, 0) + 80);
@@ -381,6 +387,7 @@ function updateAvatar(deltaSeconds) {
     avatar.grounded = false;
   } else if (keysPressed.has(' ') && avatar.grounded) {
     avatar.velocityY = JUMP_SPEED * Math.sqrt(lootModifiers.jump);
+    Sound.play('jump');
     avatar.grounded = false;
   }
   if (!flying) {
@@ -462,6 +469,8 @@ function create3DMousePointerMesh(hexagonalColor) {
   pointerGroup.add(ringMesh);
 
   pointerGroup.userData.arrowPivot = arrowPivot;
+  pointerGroup.userData.arrowMesh = arrowMesh;
+  pointerGroup.userData.ring = ringMesh;
   pointerGroup.scale.setScalar(1.1);
   pointerGroup.traverse((node) => { node.raycast = () => {}; });
   return pointerGroup;
@@ -508,6 +517,36 @@ function buildWearable(item, color) {
   return group;
 }
 
+// Avatar look (color, eyewear, jacket, hat) from the customization screen
+let localLook = (() => { try { return Avatar.sanitize(JSON.parse(localStorage.getItem('multiverse-look'))); } catch (error) { return Avatar.sanitize(null); } })();
+function applyLook(record, look) {
+  if (!record || !look) return;
+  const clean = Avatar.sanitize(look);
+  const { arrowPivot, arrowMesh, ring } = record.mesh.userData;
+  arrowMesh.material.color.set(clean.color);
+  arrowMesh.material.emissive.set(clean.color);
+  ring.material.color.set(clean.color);
+  if (record.outfit) arrowPivot.remove(record.outfit);
+  record.outfit = Avatar.buildOutfit(clean);
+  arrowPivot.add(record.outfit);
+}
+
+function lookPreviewCursor(look) {
+  const cursor = create3DMousePointerMesh(look.color);
+  applyLook({ mesh: cursor }, look);
+  return cursor;
+}
+
+function openAvatarCustomizer() {
+  Avatar.openCustomizer(localLook, (look) => {
+    localLook = look;
+    try { localStorage.setItem('multiverse-look', JSON.stringify(look)); } catch (error) { /* storage blocked */ }
+    applyLook(localCursor, look);
+    if (socket && socket.connected) socket.emit('set_avatar', look);
+    appendSystemMessage('👕 Looking good! Change your outfit anytime with the 👕 button.');
+  }, lookPreviewCursor);
+}
+
 function setCursorWearable(record, item) {
   if (record.wearable) record.mesh.userData.arrowPivot.remove(record.wearable);
   record.wearable = item ? buildWearable(item) : null;
@@ -544,6 +583,7 @@ function restyleLocalCursor(devTag, color) {
   localCursor.mesh.position.copy(position);
   localCursor.target.copy(position);
   setCursorWearable(localCursor, localWearable);
+  applyLook(localCursor, localLook);
 }
 
 function instantiateNetworkPeerCursor(peerData) {
@@ -553,6 +593,7 @@ function instantiateNetworkPeerCursor(peerData) {
   record.mesh.position.set(peerData.position.x, peerData.position.y, peerData.position.z);
   record.target.copy(record.mesh.position);
   setCursorWearable(record, peerData.wearable || null);
+  if (peerData.avatar) applyLook(record, peerData.avatar);
   remoteMeshPointers[peerData.id] = record;
   updateOnlineCounter();
 }
@@ -632,20 +673,34 @@ function bindInputEvents() {
   // Dock (bottom right): opens the panels that are hidden to keep the view clean
   document.querySelectorAll('#dock button').forEach((button) => {
     button.addEventListener('click', () => {
+      Sound.play('click');
+      if (button.dataset.action === 'sound') { const on = Sound.setEnabled(!Sound.isEnabled()); button.textContent = on ? '🔊' : '🔇'; appendSystemMessage(on ? '🔊 Sound effects on.' : '🔇 Sound effects off.'); return; }
       const toggle = button.dataset.toggle;
       if (toggle) { button.classList.toggle('active', document.body.classList.toggle(toggle)); return; }
       const action = button.dataset.action;
       if (action === 'metro') Metro.open();
+      if (action === 'avatar') openAvatarCustomizer();
       if (action === 'codify') Codify.open();
       if (action === 'inventory') LootSystem.toggleInventory();
       if (action === 'invite') document.getElementById('invite-button').click();
       if (action === 'lobby') document.getElementById('lobby-button').click();
     });
   });
+  // Coin indicator (top right) opens the Multiverse Coins panel
+  const store = document.getElementById('mvc-store');
+  document.getElementById('wallet-chip').addEventListener('click', () => { Sound.play('click'); store.style.display = 'flex'; });
+  document.getElementById('mvc-close').addEventListener('click', () => { store.style.display = 'none'; });
+  store.addEventListener('click', (event) => { if (event.target === store) store.style.display = 'none'; });
+  document.getElementById('mvc-daily').addEventListener('click', () => {
+    if (socket && socket.connected) socket.emit('daily_bonus');
+    else appendSystemMessage('The daily bonus needs the multiplayer server.');
+  });
   ui.chatInput.addEventListener('focus', () => { document.body.classList.add('chat-active'); ui.chatLog.scrollTop = ui.chatLog.scrollHeight; });
   ui.chatInput.addEventListener('blur', () => document.body.classList.remove('chat-active'));
 
+  window.addEventListener('pointerdown', () => Sound.unlock(), { once: true });
   window.addEventListener('keydown', (event) => {
+    Sound.unlock();
     if (document.activeElement === ui.chatInput) {
       if (event.key === 'Escape') ui.chatInput.blur();
       return;
@@ -661,7 +716,7 @@ function bindInputEvents() {
     if (Interactions.isBusy()) { Interactions.handleKey(event); return; }
     // Shift+U: hide every overlay and keep only the scenery (screenshot mode)
     if (event.key === 'U') { document.body.classList.toggle('hide-ui'); return; }
-    if (event.key === 'Escape') { closeInfoCard(); closeStream(); }
+    if (event.key === 'Escape') { closeInfoCard(); closeStream(); Cafe.close(); document.getElementById('mvc-store').style.display = 'none'; }
     if (event.key.toLowerCase() === 'm') { setViewMode(viewMode === 'map' ? 'explore' : 'map'); return; }
     if (event.key.toLowerCase() === 'v') { appendSystemMessage(VideoScreens.toggleSound() ? '🔊 Video screens: sound ON (press V to mute).' : '🔇 Video screens muted (press V for sound).'); return; }
     if (event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey) { if (Codify.isOpen()) Codify.close(); else Codify.open(); event.preventDefault(); return; }
@@ -1082,6 +1137,12 @@ function interpretChatCommand(inputBuffer) {
       else appendSystemMessage('You have no bed yet. Sleep in a hotel bed (Multiverse Hotel or the mini hotels) to set your spawn point.');
       break;
     }
+    case 'sound': {
+      const on = args[0] ? args[0] !== 'off' : !Sound.isEnabled();
+      Sound.setEnabled(on);
+      appendSystemMessage(on ? '🔊 Sound effects on.' : '🔇 Sound effects off.');
+      break;
+    }
     case 'balance':
     case 'wallet':
       appendSystemMessage(`🪙 You have ${wallet} MVC (Multiverse Coins: in-game only, no real value). Earn them with commits, chests and supply drops; spend them on land parcels.`);
@@ -1242,8 +1303,12 @@ function setConnectionStatus(state, label) {
 }
 
 function updateWalletChip() {
+  const amount = document.getElementById('wallet-amount');
+  if (amount) amount.textContent = wallet.toLocaleString('en-US');
+  const balance = document.getElementById('mvc-balance');
+  if (balance) balance.textContent = wallet.toLocaleString('en-US');
   const chip = document.getElementById('wallet-chip');
-  if (chip) chip.textContent = `🪙 ${wallet} MVC`;
+  if (chip) { chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
 }
 
 function updateOnlineCounter() {
@@ -1294,7 +1359,7 @@ function setupNetwork(session) {
   socket.on('wallet', ({ coins, earned, spent, reason } = {}) => {
     wallet = coins;
     updateWalletChip();
-    if (earned) appendSystemMessage(`🪙 +${earned} MVC (${reason}). Balance: ${coins} MVC.`);
+    if (earned) { appendSystemMessage(`🪙 +${earned} MVC (${reason}). Balance: ${coins} MVC.`); Sound.play('coin'); }
     if (spent) appendSystemMessage(`🪙 -${spent} MVC (${reason}). Balance: ${coins} MVC.`);
   });
   socket.on('lands', (lands) => City.setLandOwners(lands));
@@ -1304,6 +1369,9 @@ function setupNetwork(session) {
     clearRemotePeers();
     // An outdated server.js would assign a random "Dev_" name: keep the account name
     registerLocalDeveloper({ ...assignedIdentity, devTag: /^Dev_/.test(assignedIdentity.devTag || '') || !assignedIdentity.devTag ? session.username : assignedIdentity.devTag });
+    // The account's saved look wins; a look chosen before connecting is uploaded
+    if (assignedIdentity.avatar) { localLook = Avatar.sanitize(assignedIdentity.avatar); applyLook(localCursor, localLook); }
+    else socket.emit('set_avatar', localLook);
     lastEmittedPosition.set(Infinity, Infinity, Infinity);
     emitCursor(true);
     if (localWearable) socket.emit('set_wearable', localWearable);
@@ -1339,6 +1407,7 @@ function setupNetwork(session) {
       peer.domElement.textContent = update.devTag;
     }
     if ('wearable' in update) setCursorWearable(peer, update.wearable);
+    if (update.avatar) applyLook(peer, update.avatar);
     if ('vehicle' in update) Vehicles.setRemote(update.id, peer, update.vehicle);
   });
   socket.on('chat_message', displayChatMessage);
@@ -1394,6 +1463,14 @@ function animate() {
 
   PropKit.animatedObjects.forEach((object) => object.userData.animate(elapsed));
   Codify.update(elapsed);
+  {
+    // Footsteps: stone in Genesis Plaza and on paths, an echo underground, grass elsewhere
+    const here = City.districtAt(avatar.position.x, avatar.position.z);
+    const surface = avatar.position.y < -20 ? 'cave' : here && ['plaza', 'techsquare', 'festival', 'apple', 'hotel'].includes(here.world.key) ? 'stone' : here && ['lobby', 'house', 'arcade', 'gallery'].includes(here.world.key) ? 'wood' : 'grass';
+    const ticks = currentTicks();
+    Sound.update(deltaSeconds, { moving: avatar.moving && viewMode === 'explore', grounded: avatar.grounded || flying, running: keysPressed.has('shift'), surface, night: ticks > 13000 && ticks < 23000 && avatar.position.y > -20 });
+  }
+  Cafe.update(elapsed);
   LootSystem.update(elapsed, deltaSeconds);
   Interactions.update(avatar.position, !!avatar.moving);
   // District titles fade out when the camera gets close, so they never block the view
@@ -1593,9 +1670,29 @@ const universeReady = loadUniverse()
 Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   if (Auth.hasServer) socket = io({ auth: { token: session.token, lobby: lobbyId } });
   setupNetwork(session);
+  // First time on this browser: customize the cursor before entering (Decentraland-style)
+  let customized = false;
+  try { customized = !!localStorage.getItem('multiverse-look'); } catch (error) { customized = false; }
+  if (!customized) openAvatarCustomizer();
   LootSystem.init(lootHooks());
   Interactions.init(interactionHooks());
   TechSquare.init(socket, scene, appendSystemMessage);
+  Cafe.init({
+    scene,
+    socket,
+    system: appendSystemMessage,
+    wallet: () => wallet,
+    buff: (name, seconds) => LootSystem.addBuff(name, seconds),
+    emote: (type) => playLocalEmote(type),
+    releaseKeys: () => keysPressed.clear(),
+    spotInFront: (distance) => {
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      return avatar.position.clone().add(forward.multiplyScalar(distance));
+    }
+  });
   Codify.init({
     scene,
     socket,

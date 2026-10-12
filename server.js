@@ -199,6 +199,16 @@ function spawnSupplyDrop() {
 }
 setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
 
+// Underground Cafe menu (prices are read here so the client cannot change them)
+const cafeMenu = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'cafe_menu.json'), 'utf8'));
+const cafeItems = new Map(cafeMenu.sections.flatMap((section) => section.items).map((item) => [item.id, item]));
+const AVATAR_OPTIONS = {
+  color: ['#c7ceea', '#b5ead7', '#ffdac1', '#ff9aa2', '#e2f0cb', '#a0c4ff', '#ffd166', '#f1f3f5', '#2b2d42', '#ff70a6'],
+  eyes: ['none', 'pixel', 'round', 'visor', 'heart'],
+  body: ['none', 'leather', 'puffer', 'varsity', 'hoodie', 'tuxedo'],
+  head: ['none', 'cap', 'beanie', 'tophat', 'crown', 'headphones', 'halo'],
+  bodyColor: ['#212529', '#c92a2a', '#1864ab', '#2b8a3e', '#f08c00', '#862e9c', '#f8f9fa']
+};
 const sharedCodeBlocks = new Map(); // Codify blocks their owners chose to share
 const VEHICLES = new Set(['rosso', 'wedge', 'volt', 'cyberwedge', 'cycle', 'cycleRed']);
 const EMOTES = new Set(['wave', 'dance', 'cheer', 'clap', 'sit', 'think', 'ship', 'coffee']);
@@ -270,7 +280,8 @@ io.on('connection', (socket) => {
     id: socket.id,
     devTag: developerTag,
     position: { x: 0, y: 1, z: 0 },
-    color: getRandomPastelColor(),
+    color: (account.avatar && account.avatar.color) || getRandomPastelColor(),
+    avatar: account.avatar || null,
     wearable: null
   };
 
@@ -316,6 +327,19 @@ io.on('connection', (socket) => {
 
   socket.on('set_nick', () => {
     socket.emit('system_message', 'Your name is your account username. Create a new account to use another name.');
+  });
+
+  // Avatar customization (cursor color, eyewear, jacket, hat), saved on the account
+  socket.on('set_avatar', (look = {}) => {
+    const dev = developer();
+    if (!dev || typeof look !== 'object') return;
+    const clean = {};
+    Object.entries(AVATAR_OPTIONS).forEach(([key, allowed]) => { clean[key] = allowed.includes(look[key]) ? look[key] : allowed[0]; });
+    account.avatar = clean;
+    dev.avatar = clean;
+    dev.color = clean.color;
+    saveAccounts();
+    io.to(room).emit('peer_updated', { id: socket.id, devTag: dev.devTag, avatar: clean, color: clean.color });
   });
 
   socket.on('set_wearable', (item) => {
@@ -465,6 +489,36 @@ io.on('connection', (socket) => {
   });
 
   // Vehicles from the Hypercar Showroom, shown to everyone in the lobby
+  socket.emit('packages', account.packages || []);
+  socket.on('daily_bonus', () => {
+    const now = Date.now();
+    const wait = 20 * 60 * 60 * 1000 - (now - (account.lastDaily || 0));
+    if (wait > 0) { socket.emit('system_message', `🎁 Daily bonus already claimed. Come back in ${Math.ceil(wait / 3600000)} h.`); return; }
+    account.lastDaily = now;
+    account.coins = walletOf(account) + 50;
+    saveAccounts();
+    socket.emit('wallet', { coins: account.coins, earned: 50, reason: 'daily bonus' });
+  });
+
+  // Underground Cafe: order dishes (code & tool packages) and drinks with MVC
+  socket.on('cafe_order', ({ id } = {}) => {
+    const dev = developer();
+    const item = cafeItems.get(id);
+    if (!dev || !item) return;
+    const now = Date.now();
+    if (now - (dev.lastOrderAt || 0) < 1500) return;
+    dev.lastOrderAt = now;
+    if (walletOf(account) < item.price) { socket.emit('system_message', `🍽️ ${item.name} costs ${item.price} MVC and you have ${account.coins}. Earn coins with commits, chests and supply drops.`); return; }
+    account.coins -= item.price;
+    saveAccounts();
+    socket.emit('wallet', { coins: account.coins, spent: item.price, reason: item.name });
+    account.packages = [...new Set([...(account.packages || []), item.id])];
+    saveAccounts();
+    socket.emit('cafe_served', { id: item.id });
+    socket.emit('packages', account.packages);
+    socket.to(room).emit('system_message', `🍽️ ${dev.devTag} ordered a ${item.name} at the Underground Cafe.`);
+  });
+
   // Hotels: sleep in a bed at night; when at least half of the online devs are
   // asleep the night is skipped for everyone (like Minecraft)
   socket.on('sleep', (sleeping) => {
