@@ -241,101 +241,178 @@
     titleCard.classList.add('show');
   }
 
-  // Cozy lodge hotel: dark wood, green wallpaper, a brick fireplace with a
-  // real fire, warm wall sconces, reception, notice board and a corridor of rooms
+  // ---------------------------------------------------------------------------
+  // The Hotel: a two-floor log cabin (like Roblox horror cabins) with green
+  // wallpaper, a stone chimney fireplace, a mezzanine with stairs and rooms,
+  // pendant lamps and cobwebs; a back door to a fenced backyard with pine
+  // trees, a concrete bunker and a round hatch that leads down to a maze of
+  // metal ventilation ducts. The right path ends at a vent that drops you in
+  // the Genesis Plaza Underground.
+  // ---------------------------------------------------------------------------
+  const textures = {};
+  function woodTexture(base) {
+    return textures[`wood${base}`] || (textures[`wood${base}`] = repeated(PropKit.kit.plankTexture(base), 1, 1));
+  }
+  function stoneTexture() {
+    return textures.stone || (textures.stone = canvasTexture('chimneyStone', 256, 256, (ctx, cw, ch) => {
+      ctx.fillStyle = '#3d3a37'; ctx.fillRect(0, 0, cw, ch);
+      let seed = 3;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = ['#5a5652', '#4a4744', '#66615c'][i % 3];
+        ctx.beginPath(); ctx.ellipse(random() * cw, random() * ch, 18 + random() * 22, 12 + random() * 14, random() * 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }));
+  }
+  function metalTexture() {
+    return textures.metal || (textures.metal = canvasTexture('ductMetal', 256, 256, (ctx, cw, ch) => {
+      const gradient = ctx.createLinearGradient(0, 0, cw, ch);
+      gradient.addColorStop(0, '#9aa3ab'); gradient.addColorStop(1, '#7d868e');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, cw, ch);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      for (let y = 0; y < ch; y += 3) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y + (y % 7)); ctx.stroke(); }
+      ctx.strokeStyle = '#5c646b'; ctx.lineWidth = 4; ctx.strokeRect(2, 2, cw - 4, ch - 4);
+      ctx.fillStyle = '#4b5258';
+      [[12, 12], [cw - 12, 12], [12, ch - 12], [cw - 12, ch - 12], [cw / 2, 12], [cw / 2, ch - 12]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill(); });
+    }));
+  }
+  function cobwebTexture() {
+    return textures.web || (textures.web = canvasTexture('cobweb', 128, 128, (ctx, cw, ch) => {
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.strokeStyle = 'rgba(240, 240, 240, 0.8)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 7; i++) { const angle = (i / 6) * Math.PI / 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(angle) * cw, Math.sin(angle) * ch); ctx.stroke(); }
+      for (let r = 20; r < cw; r += 20) { ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI / 2); ctx.stroke(); }
+    }));
+  }
+
   function lodgeHotel(group, { w, h, d, data }) {
-    const wood = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.plankTexture('#5a3a24'), w / 4, 1), roughness: 0.8 });
-    const darkWood = material('#3b2414', { roughness: 0.8 });
+    const floorH = h / 2;
+    const plank = new THREE.MeshStandardMaterial({ map: woodTexture('#9c7a3c'), roughness: 0.8 });
+    plank.map.repeat.set(w / 4, d / 4);
+    const darkWood = material('#4a2c17', { roughness: 0.8 });
+    const logWall = new THREE.MeshStandardMaterial({ map: canvasTexture('logWall', 256, 256, (ctx, cw, ch) => {
+      for (let y = 0; y < ch; y += 32) {
+        const gradient = ctx.createLinearGradient(0, y, 0, y + 32);
+        gradient.addColorStop(0, '#8a6a43'); gradient.addColorStop(0.5, '#b08b5c'); gradient.addColorStop(1, '#6e5233');
+        ctx.fillStyle = gradient; ctx.fillRect(0, y, cw, 32);
+      }
+    }), roughness: 0.9, side: THREE.DoubleSide });
+    logWall.map.wrapS = logWall.map.wrapT = THREE.RepeatWrapping;
+    logWall.map.repeat.set(w / 6, h / 4);
     const wallpaper = new THREE.MeshStandardMaterial({ map: canvasTexture('lodgeWallpaper', 128, 128, (ctx, cw, ch) => {
       ctx.fillStyle = '#1f3b2c'; ctx.fillRect(0, 0, cw, ch);
       ctx.strokeStyle = '#2b4d3a'; ctx.lineWidth = 3;
       for (let x = 0; x < cw; x += 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke(); }
     }), roughness: 0.9, side: THREE.DoubleSide });
     wallpaper.map.wrapS = wallpaper.map.wrapT = THREE.RepeatWrapping;
-    wallpaper.map.repeat.set(w / 3, h / 3);
-    // Floor, ceiling and walls (entrance on the front, +z)
-    group.add(box(w, 0.3, d, wood, 0, 0.15, 0));
-    group.add(box(w, 0.3, d, darkWood, 0, h, 0));
-    group.add(box(w, h, 0.4, wallpaper, 0, h / 2, -d / 2));
-    [-1, 1].forEach((side) => group.add(box(0.4, h, d, wallpaper, side * w / 2, h / 2, 0)));
-    [-1, 1].forEach((side) => group.add(box(w / 2 - 1.6, h, 0.4, wallpaper, side * (w / 4 + 0.8), h / 2, d / 2)));
-    group.add(box(3.2, h - 3.4, 0.4, wallpaper, 0, 3.4 + (h - 3.4) / 2, d / 2));
-    // Wainscoting (wood panels on the lower walls) and ceiling beams
-    group.add(box(w - 0.9, 1.4, 0.1, darkWood, 0, 0.9, -d / 2 + 0.25));
-    [-1, 1].forEach((side) => group.add(box(0.1, 1.4, d - 0.9, darkWood, side * (w / 2 - 0.25), 0.9, 0)));
-    for (let i = 0; i < 5; i++) group.add(box(w, 0.35, 0.35, darkWood, 0, h - 0.3, -d / 2 + (i + 0.5) * (d / 5)));
-    // Gabled roof outside
-    const roof = mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.75, h * 0.7, 4), material('#3b2414', { roughness: 1 }), 0, h + h * 0.35, 0);
+    wallpaper.map.repeat.set(w / 3, floorH / 3);
+    // Floor, outer log walls (doors front +z and back -z), green wallpaper on the ground floor
+    group.add(box(w, 0.3, d, plank, 0, 0.15, 0));
+    [-1, 1].forEach((side) => {
+      group.add(box(0.5, h, d, logWall, side * w / 2, h / 2, 0));
+      group.add(box(0.05, floorH - 0.3, d - 1, wallpaper, side * (w / 2 - 0.3), floorH / 2 + 0.15, 0));
+      [-1, 1].forEach((face) => {
+        group.add(box(w / 2 - 1.6, h, 0.5, logWall, side * (w / 4 + 0.8), h / 2, face * d / 2));
+      });
+    });
+    [-1, 1].forEach((face) => group.add(box(3.2, h - 3.4, 0.5, logWall, 0, 3.4 + (h - 3.4) / 2, face * d / 2)));
+    // Gabled roof with exposed beams inside
+    const roof = mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.78, h * 0.55, 4), material('#3b2414', { roughness: 1 }), 0, h + h * 0.27, 0);
     roof.rotation.y = Math.PI / 4;
     roof.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d));
     group.add(roof);
-    // Brick fireplace with a fire on the left wall
-    const brick = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.brickTexture('#7a3b2e'), 2, 2), roughness: 0.9 });
-    group.add(box(1.4, h, 4, brick, -w / 2 + 0.9, h / 2, -d * 0.15));
-    group.add(box(0.6, 1.6, 2.2, material('#120b08'), -w / 2 + 1.4, 1.1, -d * 0.15));
-    group.add(box(0.9, 0.25, 4.4, darkWood, -w / 2 + 1.5, 2.2, -d * 0.15));
+    group.add(box(w, 0.3, d, darkWood, 0, h, 0));
+    for (let i = 0; i < 4; i++) {
+      const beam = box(0.4, 0.4, d, darkWood, -w / 2 + (i + 0.5) * (w / 4), h - 0.5, 0);
+      group.add(beam);
+    }
+    // Mezzanine (upper floor) along the back half, with railing, rooms and doors
+    const mezzanineDepth = d * 0.42;
+    group.add(box(w - 1, 0.35, mezzanineDepth, plank, 0, floorH, -d / 2 + mezzanineDepth / 2 + 0.25));
+    const railZ = -d / 2 + mezzanineDepth + 0.25;
+    group.add(box(w - 6, 0.12, 0.12, darkWood, 2.5, floorH + 1.1, railZ));
+    for (let x = -w / 2 + 5; x <= w / 2 - 1; x += 1.1) group.add(box(0.08, 1.1, 0.08, darkWood, x, floorH + 0.55, railZ));
+    // Staircase from the ground floor (left side) up to the mezzanine
+    const steps = 12;
+    for (let i = 0; i < steps; i++) {
+      group.add(box(2.4, 0.3, 0.9, plank, -w / 2 + 2, 0.3 + (i + 1) * (floorH / steps) - 0.15, railZ + 6 - i * 0.62));
+    }
+    const handrail = box(0.1, 0.1, 7.6, darkWood, -w / 2 + 3.25, floorH / 2 + 1.1, railZ + 2.6);
+    handrail.rotation.x = Math.atan2(floorH, 7.4);
+    group.add(handrail);
+    // Rooms upstairs: doors and beds
+    const rooms = Math.max(2, Math.floor(w / 7));
+    for (let i = 0; i < rooms; i++) {
+      const x = -w / 2 + 6 + i * ((w - 8) / rooms);
+      group.add(box(1.6, 2.6, 0.12, material('#b4561f', { roughness: 0.6 }), x, floorH + 1.45, -d / 2 + 0.4));
+      group.add(sphere(0.07, material('#ffd43b', { metalness: 0.8 }), x + 0.55, floorH + 1.4, -d / 2 + 0.5, 8));
+      const hotelBed = bed('#f1ece4', ['#7b1e1e', '#1f3b2c', '#1c2a5a'][i % 3]);
+      hotelBed.position.set(x, floorH + 0.2, -d / 2 + 2.6);
+      hotelBed.scale.setScalar(0.85);
+      group.add(hotelBed);
+    }
+    // Ground-floor doors (decor) and a cabinet
+    [[-w / 4, 'left'], [w / 4, 'right']].forEach(([x]) => group.add(box(1.6, 2.6, 0.12, material('#b4561f', { roughness: 0.6 }), x, 1.45, -d / 2 + mezzanineDepth + 0.35)));
+    group.add(box(2.2, 1.1, 0.8, material('#e9ecef', { roughness: 0.6 }), -w / 2 + 4.6, 0.85, railZ + 1.2));
+    // Stone chimney fireplace in the middle of the room, up to the roof
+    const stone = new THREE.MeshStandardMaterial({ map: stoneTexture(), roughness: 1 });
+    stone.map.wrapS = stone.map.wrapT = THREE.RepeatWrapping;
+    stone.map.repeat.set(1, h / 3);
+    group.add(box(2.6, h, 2.2, stone, w * 0.12, h / 2, -d * 0.02));
+    group.add(box(1.6, 1.4, 0.4, material('#120b08'), w * 0.12, 1, -d * 0.02 + 1.05));
+    group.add(box(2.8, 0.2, 0.5, darkWood, w * 0.12, 1.9, -d * 0.02 + 1.2));
     const flames = [];
-    [['#ffd43b', 0.9, 1.2], ['#ff922b', 1.2, 1.5], ['#e8590c', 0.7, 0.9]].forEach(([color, width, height], i) => {
-      const flame = mesh(new THREE.ConeGeometry(width / 2, height, 8), glow(color, 2.2, { transparent: true, opacity: 0.85 }), -w / 2 + 1.5, 0.3 + height / 2, -d * 0.15 + (i - 1) * 0.4);
+    [['#ffd43b', 0.5, 0.8], ['#ff922b', 0.7, 1], ['#e8590c', 0.4, 0.6]].forEach(([color, width, height], i) => {
+      const flame = mesh(new THREE.ConeGeometry(width / 2, height, 8), glow(color, 2.2, { transparent: true, opacity: 0.85 }), w * 0.12 + (i - 1) * 0.3, 0.4 + height / 2, -d * 0.02 + 1.05);
       flame.raycast = () => {};
       group.add(flame);
       flames.push(flame);
     });
     const fireLight = new THREE.PointLight('#ff9a3c', 1.4, 14, 2);
-    fireLight.position.set(-w / 2 + 2.2, 1.4, -d * 0.15);
+    fireLight.position.set(w * 0.12, 1.4, -d * 0.02 + 2);
     group.add(fireLight);
-    // Warm wall sconces along the walls
-    const sconces = [];
-    for (let i = 0; i < 6; i++) {
-      const side = i % 2 ? 1 : -1;
-      const z = -d / 2 + 2 + Math.floor(i / 2) * ((d - 4) / 2);
-      const sconce = box(0.25, 0.3, 0.6, glow('#ffe8a3', 2.2), side * (w / 2 - 0.35), h * 0.62, z);
-      group.add(sconce);
-      sconces.push(sconce);
-    }
-    const lampLight = new THREE.PointLight('#ffd8a8', 0.8, 18, 2);
-    lampLight.position.set(w * 0.2, h - 1, 0);
-    group.add(lampLight);
-    // Reception desk, notice board, rug and armchairs by the fire
-    group.add(box(4, 1.2, 1.2, darkWood, w * 0.25, 0.75, -d / 2 + 2.4));
-    group.add(box(4.2, 0.1, 1.4, material('#2b1a10'), w * 0.25, 1.4, -d / 2 + 2.4));
-    group.add(box(0.5, 0.3, 0.3, glow('#ffd43b', 1), w * 0.25 + 1.2, 1.6, -d / 2 + 2.4));
-    group.add(box(3, 2, 0.1, material('#6d4c41'), w / 2 - 0.3, 2.6, d * 0.1));
-    group.children[group.children.length - 1].rotation.y = -Math.PI / 2;
-    for (let i = 0; i < 6; i++) {
-      const note = box(0.5, 0.6, 0.02, material('#f1ece4'), w / 2 - 0.36, 2.2 + (i % 2) * 0.8, d * 0.1 - 1.1 + Math.floor(i / 2) * 0.9);
-      note.rotation.set(0, -Math.PI / 2, (i - 2.5) * 0.08);
-      group.add(note);
-    }
-    const rug = box(5, 0.05, 3.5, material('#7b1e1e', { roughness: 1 }), -w / 2 + 5, 0.33, -d * 0.15);
-    rug.castShadow = false;
-    group.add(rug);
+    // Sofas facing the fire, a rug
+    group.add(box(4, 0.05, 3, material('#7b1e1e', { roughness: 1 }), w * 0.12, 0.33, d * 0.2));
     [-1, 1].forEach((side) => {
-      const chair = new THREE.Group();
-      chair.add(box(1.2, 0.5, 1.1, material('#4a2c1a'), 0, 0.55, 0));
-      chair.add(box(1.2, 1, 0.25, material('#4a2c1a'), 0, 1.1, -0.45));
-      chair.position.set(-w / 2 + 5, 0.3, -d * 0.15 + side * 1.6);
-      chair.rotation.y = -Math.PI / 2;
-      group.add(interactive(chair, 'sit', 'Armchair by the fire'));
+      const sofa = new THREE.Group();
+      sofa.add(box(2.6, 0.55, 1.1, material('#5c5a45', { roughness: 1 }), 0, 0.55, 0));
+      sofa.add(box(2.6, 0.9, 0.3, material('#5c5a45', { roughness: 1 }), 0, 1, 0.45));
+      sofa.position.set(w * 0.12 + side * 2.4, 0.3, d * 0.28);
+      sofa.rotation.y = side * 0.5;
+      group.add(interactive(sofa, 'sit', 'Cabin sofa'));
     });
-    // Corridor of rooms along the back half with beds (E to sleep)
-    const rooms = Math.max(2, Math.floor(w / 6) - 1);
-    for (let i = 0; i < rooms; i++) {
-      const x = -w / 2 + 4 + i * ((w - 6) / rooms) + 1;
-      const hotelBed = bed('#f1ece4', ['#7b1e1e', '#1f3b2c', '#1c2a5a'][i % 3]);
-      hotelBed.position.set(x, 0.3, d / 2 - 3.6);
-      hotelBed.rotation.y = Math.PI;
-      group.add(hotelBed);
-      group.add(box(0.15, h * 0.6, 3, darkWood, x + (w - 6) / rooms / 2, h * 0.3, d / 2 - 3.4));
-      group.add(box(0.35, 0.35, 0.35, glow('#ffe8a3', 1.6), x, 1.1, d / 2 - 1.4));
-    }
+    // Pendant lamps with warm light
+    const lamps = [];
+    [[-w * 0.2, 0], [w * 0.3, d * 0.15], [w * 0.05, -d * 0.3]].forEach(([x, z]) => {
+      group.add(cylinder(0.02, 0.02, 1.5, darkWood, x, h - 1.3, z, 4));
+      const shade = mesh(new THREE.ConeGeometry(0.6, 0.5, 16, 1, true), material('#c9a227', { side: THREE.DoubleSide, metalness: 0.4 }), x, h - 2.1, z);
+      group.add(shade);
+      const bulb = sphere(0.18, glow('#fff3bf', 2.5), x, h - 2.25, z, 10);
+      group.add(bulb);
+      lamps.push(bulb);
+    });
+    const lampLight = new THREE.PointLight('#ffd8a8', 0.9, 22, 2);
+    lampLight.position.set(0, h - 2.5, 0);
+    group.add(lampLight);
+    // Cobwebs in the upper corners
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+      const web = mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: cobwebTexture(), transparent: true, side: THREE.DoubleSide, depthWrite: false }), sx * (w / 2 - 1.3), h - 1.3, sz * (d / 2 - 1.3));
+      web.rotation.y = Math.atan2(sx, sz) + Math.PI;
+      web.scale.x = sx;
+      web.raycast = () => {};
+      group.add(web);
+    });
+    const exitSign = textSprite('Back door → backyard', { width: 4, background: 'rgba(43, 138, 62, 0.9)' });
+    exitSign.position.set(0, 3.6, -d / 2 + 0.6);
+    group.add(exitSign);
+    if (data && data.backyard !== false) buildBackyard(group, { w, d });
     const titleText = (data && data.title) || 'The Hotel';
     let inside = false;
     const center = new THREE.Vector3();
     animate(group, (time) => {
       flames.forEach((flame, i) => { flame.scale.set(1, 0.85 + Math.sin(time * (9 + i * 3)) * 0.15, 1); });
       fireLight.intensity = 1.3 + Math.sin(time * 12) * 0.2 + Math.sin(time * 27) * 0.1;
-      sconces.forEach((sconce, i) => { sconce.material.emissiveIntensity = 2 + Math.sin(time * 3 + i) * 0.15; });
+      lamps.forEach((bulb, i) => { bulb.material.emissiveIntensity = 2.3 + Math.sin(time * 2 + i) * 0.2; });
       if (typeof avatar === 'undefined') return;
       group.getWorldPosition(center);
       const local = avatar.position.clone().sub(center).applyAxisAngle(new THREE.Vector3(0, 1, 0), -group.rotation.y);
@@ -344,6 +421,163 @@
       inside = nowInside;
     });
     group.userData.label = titleText;
+  }
+
+  // Backyard: wooden fence, pine trees, a concrete bunker gate and the hatch
+  function buildBackyard(group, { w, d }) {
+    const yardDepth = 22;
+    const zBack = -d / 2;
+    const centerZ = zBack - yardDepth / 2;
+    const grass = box(w + 6, 0.2, yardDepth, material('#2f6b2a', { roughness: 1 }), 0, 0.1, centerZ);
+    grass.castShadow = false;
+    group.add(grass);
+    // Wooden fence around the yard (open towards the cabin)
+    const fenceWood = material('#a0603a', { roughness: 0.9 });
+    const fenceSide = (length, x, z, alongX) => {
+      for (let t = -length / 2; t <= length / 2; t += 0.45) group.add(box(0.3, 2 + ((t * 7) % 0.4), 0.1, fenceWood, alongX ? x + t : x, 1, alongX ? z : z + t));
+      group.add(box(alongX ? length : 0.1, 0.12, alongX ? 0.1 : length, fenceWood, x, 1.5, z));
+    };
+    fenceSide(w + 6, 0, zBack - yardDepth, true);
+    fenceSide(yardDepth, -(w / 2 + 3), centerZ, false);
+    fenceSide(yardDepth, w / 2 + 3, centerZ, false);
+    // Pine trees beyond the fence
+    for (let i = 0; i < 10; i++) {
+      const x = -w / 2 - 2 + (i / 9) * (w + 4);
+      const z = zBack - yardDepth - 3 - (i % 3) * 2;
+      group.add(cylinder(0.25, 0.35, 2, material('#4a2c17'), x, 1, z, 6));
+      [0, 1, 2].forEach((k) => group.add(mesh(new THREE.ConeGeometry(2.2 - k * 0.6, 3, 7), material(k % 2 ? '#3b6b2f' : '#2f5a26', { flatShading: true }), x, 3 + k * 1.6, z)));
+    }
+    // Lamp post with a warm lantern
+    group.add(cylinder(0.12, 0.15, 4, material('#3b2414'), -w / 2 + 1, 2, zBack - 2, 6));
+    group.add(box(0.5, 0.6, 0.5, glow('#ffe066', 1.8), -w / 2 + 1, 4.2, zBack - 2));
+    // Concrete bunker gate: two windows with red buttons and a boarded door
+    const concrete = material('#8f9499', { roughness: 0.9 });
+    const bunker = new THREE.Group();
+    bunker.add(box(10, 4, 3, concrete, 0, 2, 0));
+    bunker.add(box(10.4, 0.6, 3.4, material('#5c6066'), 0, 4.2, 0));
+    [-3, 3].forEach((x) => {
+      bunker.add(box(2.6, 1, 0.1, material('#1b1d21'), x, 2.8, 1.52));
+      bunker.add(sphere(0.25, glow('#ff2b2b', 2.2), x, 1.6, 1.6, 10));
+    });
+    bunker.add(box(1.8, 3, 0.1, material('#2b2d33'), 0, 1.5, 1.52));
+    [0.6, -0.6].forEach((tilt) => { const plankBoard = box(2.6, 0.3, 0.12, material('#8a5a33'), 0, 1.6, 1.62); plankBoard.rotation.z = tilt; bunker.add(plankBoard); });
+    bunker.add(sphere(0.15, glow('#be4bdb', 2), 0, 2.9, 1.65, 8));
+    bunker.position.set(w / 2 - 5, 0, zBack - yardDepth + 2.5);
+    group.add(bunker);
+    // The hatch: a concrete frame, a round lid and a red light; E to go down
+    const hatch = new THREE.Group();
+    hatch.add(box(4.4, 0.5, 4.4, concrete, 0, 0.25, 0));
+    hatch.add(box(3, 0.1, 3, material('#3a1d1d'), 0, 0.52, 0));
+    [-1, 1].forEach((side) => { const flap = box(0.8, 1.2, 2.6, material('#8b2525'), side * 2.4, 0.7, 0); flap.rotation.z = side * -0.4; hatch.add(flap); });
+    const lid = cylinder(1.3, 1.3, 0.15, material('#c5c9cd', { metalness: 0.6, roughness: 0.3 }), 0, 1.6, -1.4, 24);
+    lid.rotation.x = Math.PI / 2.4;
+    hatch.add(lid);
+    const redLight = box(0.4, 0.15, 0.4, glow('#ff1a1a', 3), 0, 0.6, 0.4);
+    hatch.add(redLight);
+    hatch.position.set(-w / 4, 0, zBack - yardDepth / 2 - 2);
+    hatch.userData.label = 'Hatch · down to the ventilation ducts';
+    // Maze lives 30 m below the yard; the hatch drops you at its entrance
+    const mazeOrigin = new THREE.Vector3(-w / 4, -30, zBack - yardDepth / 2 - 2);
+    hatch.userData.destination = new THREE.Vector3(mazeOrigin.x, mazeOrigin.y + 0.4, mazeOrigin.z);
+    group.add(interactive(hatch, 'warp', 'Down the hatch: the ventilation ducts'));
+    const hatchSign = textSprite('⚠ Hatch (E) · ventilation ducts', { width: 5, background: 'rgba(139, 37, 37, 0.92)' });
+    hatchSign.position.set(-w / 4, 3, zBack - yardDepth / 2 - 2);
+    group.add(hatchSign);
+    buildDuctMaze(group, mazeOrigin);
+  }
+
+  // A not-too-hard maze of metal ventilation ducts (7 x 7 cells, generated
+  // with a seeded depth-first search plus a few extra openings). The far
+  // corner has a vent that drops you into the Genesis Plaza Underground.
+  function buildDuctMaze(group, origin) {
+    const size = 7;
+    const cell = 4;
+    const height = 3;
+    let seed = 42;
+    const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const walls = { h: [], v: [] }; // h[x][y]: wall south of (x,y); v[x][y]: wall east of (x,y)
+    for (let x = 0; x < size; x++) { walls.h[x] = []; walls.v[x] = []; for (let y = 0; y < size; y++) { walls.h[x][y] = true; walls.v[x][y] = true; } }
+    const visited = new Set(['3,0']);
+    const stack = [[3, 0]];
+    while (stack.length) {
+      const [x, y] = stack[stack.length - 1];
+      const options = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy, dx, dy]).filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < size && ny < size && !visited.has(`${nx},${ny}`));
+      if (!options.length) { stack.pop(); continue; }
+      const [nx, ny, dx, dy] = options[Math.floor(random() * options.length)];
+      if (dx === 1) walls.v[x][y] = false;
+      if (dx === -1) walls.v[nx][ny] = false;
+      if (dy === 1) walls.h[x][y] = false;
+      if (dy === -1) walls.h[nx][ny] = false;
+      visited.add(`${nx},${ny}`);
+      stack.push([nx, ny]);
+    }
+    // A few extra openings make it easier (loops instead of only dead ends)
+    for (let i = 0; i < 8; i++) {
+      const x = Math.floor(random() * (size - 1));
+      const y = Math.floor(random() * (size - 1));
+      if (random() < 0.5) walls.v[x][y] = false; else walls.h[x][y] = false;
+    }
+    const maze = new THREE.Group();
+    maze.position.copy(origin);
+    const metal = new THREE.MeshStandardMaterial({ map: metalTexture(), roughness: 0.4, metalness: 0.6 });
+    const floorMetal = new THREE.MeshStandardMaterial({ map: repeated(metalTexture(), size, size), roughness: 0.5, metalness: 0.6 });
+    // Cell (3, 0) is at the origin; x grows to the right, y grows away (-z)
+    const cx = (x) => (x - 3) * cell;
+    const cz = (y) => -y * cell;
+    const spanX = size * cell;
+    maze.add(box(spanX, 0.3, spanX, floorMetal, cx(3), -0.15, cz(3)));
+    maze.add(box(spanX, 0.3, spanX, metal, cx(3), height + 0.15, cz(3)));
+    // Outer walls
+    maze.add(box(spanX, height, 0.3, metal, cx(3), height / 2, cz(0) + cell / 2));
+    maze.add(box(spanX, height, 0.3, metal, cx(3), height / 2, cz(size - 1) - cell / 2));
+    maze.add(box(0.3, height, spanX, metal, cx(0) - cell / 2, height / 2, cz(3)));
+    maze.add(box(0.3, height, spanX, metal, cx(size - 1) + cell / 2, height / 2, cz(3)));
+    for (let x = 0; x < size; x++) {
+      for (let y = 0; y < size; y++) {
+        if (x < size - 1 && walls.v[x][y]) maze.add(box(0.3, height, cell, metal, cx(x) + cell / 2, height / 2, cz(y)));
+        if (y < size - 1 && walls.h[x][y]) maze.add(box(cell, height, 0.3, metal, cx(x), height / 2, cz(y) - cell / 2));
+        // Dim light strips along the ceiling, some flickering
+        if ((x + y) % 2 === 0) maze.add(box(1.4, 0.06, 0.2, glow((x * y) % 5 === 0 ? '#ff6b6b' : '#c5f6fa', 1.2), cx(x), height - 0.05, cz(y)));
+      }
+    }
+    // Fans at a few dead ends
+    const fans = [];
+    [[0, 6], [6, 0], [1, 3]].forEach(([x, y]) => {
+      const fan = new THREE.Group();
+      for (let i = 0; i < 4; i++) { const blade = box(1.6, 0.05, 0.4, material('#5c646b', { metalness: 0.7 }), 0, 0, 0); blade.rotation.y = (i / 4) * Math.PI; fan.add(blade); }
+      fan.position.set(cx(x), height - 0.4, cz(y));
+      maze.add(fan);
+      fans.push(fan);
+    });
+    // Ladder back up at the entrance
+    const ladder = new THREE.Group();
+    for (let i = 0; i < 6; i++) ladder.add(box(1, 0.08, 0.08, material('#ced4da', { metalness: 0.8 }), 0, 0.4 + i * 0.45, 0));
+    ladder.position.set(cx(3), 0, cz(0) + cell / 2 - 0.3);
+    ladder.userData.destination = new THREE.Vector3(0, 30.6, 3.2);
+    maze.add(interactive(ladder, 'warp', 'Ladder back up to the backyard'));
+    // Exit vent at the far corner
+    const exitCell = [6, 6];
+    const vent = box(2.4, 0.1, 2.4, glow('#74c0fc', 1.4), cx(exitCell[0]), 0.08, cz(exitCell[1]));
+    maze.add(vent);
+    const exitSign = textSprite('↓ Vent to the Genesis Plaza Underground', { width: 5, background: 'rgba(24, 119, 242, 0.92)' });
+    exitSign.position.set(cx(exitCell[0]), 2.3, cz(exitCell[1]));
+    maze.add(exitSign);
+    const startSign = textSprite('Find the blue vent · follow the light strips', { width: 3.2, background: 'rgba(17, 17, 17, 0.85)' });
+    startSign.position.set(cx(3), 2.6, cz(0) - 1.6);
+    maze.add(startSign);
+    group.add(maze);
+    const ventWorld = new THREE.Vector3();
+    animate(maze, (time) => {
+      fans.forEach((fan, i) => { fan.rotation.y = time * (3 + i); });
+      if (typeof avatar === 'undefined') return;
+      vent.getWorldPosition(ventWorld);
+      if (Math.abs(avatar.position.x - ventWorld.x) < 1.2 && Math.abs(avatar.position.z - ventWorld.z) < 1.2 && Math.abs(avatar.position.y - ventWorld.y) < 1.5) {
+        // Drop into the Genesis Plaza Underground (next to the history corridor)
+        avatar.position.set(-46, -59.4, 22);
+        avatar.velocityY = 0;
+        showTitle('Genesis Plaza Underground');
+      }
+    });
   }
 
   PropKit.registerBuilder(/lodge_hotel/, 'lodgeHotel', lodgeHotel);

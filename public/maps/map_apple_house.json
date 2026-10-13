@@ -33,6 +33,21 @@
    "label": "House of MAC - Apple Store"
   },
   {
+   "type": "mac_flagship",
+   "position": [
+    0,
+    0,
+    -4
+   ],
+   "scale": [
+    34,
+    29,
+    26
+   ],
+   "color": "#d8c7ad",
+   "label": "House of MAC"
+  },
+  {
    "type": "macos_interactive_terminal",
    "position": [
     0,
@@ -61,34 +76,6 @@
    ],
    "color": "#ff3b30",
    "label": "Live Music Virtual Stage"
-  },
-  {
-   "type": "glass_facade_pillar_left",
-   "position": [
-    -17,
-    6,
-    -4
-   ],
-   "scale": [
-    1,
-    12,
-    10
-   ],
-   "color": "#a2aaad"
-  },
-  {
-   "type": "glass_facade_pillar_right",
-   "position": [
-    17,
-    6,
-    -4
-   ],
-   "scale": [
-    1,
-    12,
-    10
-   ],
-   "color": "#a2aaad"
   },
   {
    "type": "apple_billboard",

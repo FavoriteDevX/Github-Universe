@@ -566,7 +566,9 @@ const City = (() => {
       { type: 'column_hall', scale: [20, 10, 14], color: '#cdb4db', label: 'Gallery of Open Source', radius: 190, angle: 2.0, face: true },
       { type: 'light_pavilion', scale: [24, 16, 24], label: 'Pavilion of Light', radius: 140, angle: 1.55, face: true },
       { type: 'mini_hotel', scale: [10, 6, 10], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
-      { type: 'lodge_hotel', scale: [20, 7, 16], label: 'The Hotel', radius: 205, angle: 3.3, face: true },
+      { type: 'lodge_hotel', scale: [20, 10, 16], label: 'The Hotel', radius: 215, angle: 3.3, face: true, reserve: 34 },
+      { type: 'forest_garden', scale: [30, 1, 30], label: 'Multiverse Forest', radius: 175, angle: 1.05, face: true },
+      { type: 'forest_garden', scale: [26, 1, 26], label: 'Multiverse Forest II', radius: 240, angle: 4.75, face: true },
       { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
       { type: 'promenade', scale: [14, 1, 54], color: '#b9b4d6', radius: 150, angle: 3.9, face: true },
       { type: 'promenade', scale: [14, 1, 54], color: '#d6c7b4', radius: 165, angle: 0.15, face: true },
@@ -574,7 +576,7 @@ const City = (() => {
     ];
     const placedLandmarks = coworkSpots.map(({ x, z }) => ({ x, z, size: 13, landmark: null }));
     LANDMARKS.forEach((landmark) => {
-      const size = Math.max(landmark.scale[0], landmark.scale[2]) / 2 + 3;
+      const size = landmark.reserve || Math.max(landmark.scale[0], landmark.scale[2]) / 2 + 3;
       for (let attempt = 0; attempt < 60; attempt++) {
         const angle = landmark.angle + attempt * 0.13;
         const radius = landmark.radius + (attempt % 5) * 12;
@@ -1242,8 +1244,16 @@ const City = (() => {
   }
 
   // Called once every district is loaded
-  function finalize() {
+  let groundBuilt = false;
+  // The ground can be laid as soon as Genesis Plaza exists (it needs the pool hole)
+  function prepareGround() {
+    if (groundBuilt) return;
+    groundBuilt = true;
     buildGround();
+  }
+
+  function finalize() {
+    prepareGround();
     buildPaths();
     buildNeighborhoods();
     buildOutskirts();
@@ -1252,7 +1262,7 @@ const City = (() => {
   }
 
   return {
-    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, paths, setLandOwners,
+    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, paths, setLandOwners, prepareGround,
     landOwner: (parcel) => (landOwners[parcel] ? landOwners[parcel].owner : null),
     get landOwners() { return landOwners; },
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,

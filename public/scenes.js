@@ -764,6 +764,108 @@
       VideoScreens.register(screen, w, h * 0.55, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
     },
 
+    // House of MAC flagship (like the corner stores of Decentraland's fashion
+    // street): a two-story stone base with LED shop windows showing the Mac ads
+    // (assets/ads), neon signs, and on top an open black steel frame with giant
+    // glowing logos; a dark reflective sidewalk with neon lines in front
+    macFlagship(group, { w, h, d }) {
+      const baseH = 11;
+      const stoneFacade = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.brickTexture('#d8c7ad'), w / 4, baseH / 3), roughness: 0.85 });
+      const dark = material('#15161b', { roughness: 0.4, metalness: 0.5 });
+      // Base walls with openings: big LED windows and the glass entrance (front, +z)
+      const windowMaterials = [];
+      const ads = ['macbook-air.jpg', 'macbook-neo.jpg', 'm1.jpg', 'macos.jpg', 'mac-apps.jpg', 'macbook-air.jpg'];
+      const fallback = [['Mac', 'Apple personal computers'], ['MacBook Neo', 'Big value for small business.'], ['Apple M1', 'Small chip. Giant leap.'], ['macOS', 'Apple desktop operating system'], ['Xcode', 'Apple developer tools'], ['Swift', 'Programming language by Apple']];
+      const adWindow = (index, ww, wh, x, y, z, rotation) => {
+        const [title, tagline] = fallback[index % fallback.length];
+        const face = new THREE.MeshBasicMaterial({ map: productBoard(title, tagline, '#000000', '#ffffff') });
+        windowMaterials.push(face);
+        const panel = box(ww, wh, 0.2, [dark, dark, dark, dark, face, dark], x, y, z);
+        panel.rotation.y = rotation;
+        group.add(panel);
+        loadAd(ads[index % ads.length], (texture) => { face.map = texture; face.needsUpdate = true; });
+        const frame = box(ww + 0.3, wh + 0.3, 0.1, glow('#b197fc', 1.1), x - Math.sin(rotation) * 0.12, y, z - Math.cos(rotation) * 0.12);
+        frame.rotation.y = rotation;
+        group.add(frame);
+      };
+      // Front wall pieces around the entrance and two LED windows
+      group.add(box(w, baseH - 8.5, 0.6, stoneFacade, 0, 8.5 + (baseH - 8.5) / 2, d / 2));
+      [-1, 1].forEach((side) => {
+        group.add(box(1.2, 8.5, 0.6, stoneFacade, side * (w / 2 - 0.6), 4.25, d / 2));
+        group.add(box(1.2, 8.5, 0.6, stoneFacade, side * 4.2, 4.25, d / 2));
+        adWindow(side < 0 ? 0 : 1, w / 2 - 6.6, 6.5, side * (w / 4 + 1.8), 4.4, d / 2 + 0.35, 0);
+      });
+      // Side and back walls with LED windows
+      [-1, 1].forEach((side) => {
+        group.add(box(0.6, baseH, d, stoneFacade, side * w / 2, baseH / 2, 0));
+        for (let i = 0; i < 2; i++) adWindow(2 + i + (side > 0 ? 2 : 0), d * 0.36, 5.5, side * (w / 2 + 0.35), 4.6, -d / 2 + d * 0.28 + i * d * 0.45, side * Math.PI / 2);
+      });
+      group.add(box(w, baseH, 0.6, stoneFacade, 0, baseH / 2, -d / 2));
+      // Dark cornice band with a white light strip and the roof slab
+      group.add(box(w + 1, 1.2, d + 1, dark, 0, baseH - 0.6, 0));
+      group.add(box(w + 1.05, 0.12, d + 1.05, glow('#f8f9fa', 1.2), 0, baseH - 1.25, 0));
+      // Neon signs on the cornice
+      const neon = (text, color) => PropKit.kit.canvasTexture(`neon|${text}|${color}`, 1024, 256, (ctx, cw, ch) => {
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.font = 'bold 150px Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 30;
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = color;
+        ctx.strokeText(text, cw / 2, ch / 2);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.strokeText(text, cw / 2, ch / 2);
+      });
+      [['House of MAC', '#da77f2', -w * 0.22], ['Mac', '#74c0fc', w * 0.28]].forEach(([text, color, x]) => {
+        const sign = mesh(new THREE.PlaneGeometry(text.length > 4 ? 12 : 6, 3), new THREE.MeshBasicMaterial({ map: neon(text, color), transparent: true, depthWrite: false }), x, baseH + 1.4, d / 2 + 0.7);
+        sign.raycast = () => {};
+        group.add(sign);
+      });
+      // Open steel frame on top with floors and giant glowing logos
+      const steel = material('#101114', { metalness: 0.7, roughness: 0.4 });
+      const frameH = h - baseH;
+      const floors = 3;
+      const columnsX = 5;
+      const columnsZ = 4;
+      for (let i = 0; i < columnsX; i++) {
+        for (let j = 0; j < columnsZ; j++) {
+          if (i > 0 && i < columnsX - 1 && j > 0 && j < columnsZ - 1) continue;
+          group.add(box(0.6, frameH, 0.6, steel, -w / 2 + (i / (columnsX - 1)) * w, baseH + frameH / 2, -d / 2 + (j / (columnsZ - 1)) * d));
+        }
+      }
+      for (let f = 1; f <= floors; f++) {
+        const y = baseH + (f / floors) * frameH;
+        [-1, 1].forEach((side) => {
+          group.add(box(w + 0.6, 0.5, 0.5, steel, 0, y, side * d / 2));
+          group.add(box(0.5, 0.5, d + 0.6, steel, side * w / 2, y, 0));
+        });
+        if (f < floors) group.add(box(w - 0.6, 0.3, d - 0.6, material('#2a2b31', { roughness: 0.8 }), 0, y - 0.1, 0));
+      }
+      // Giant glowing logos inside the frame, one per floor, facing the street
+      const logoPanel = (name, slug, y) => {
+        const texture = BrandLogos.billboardTexture(name, { background: '#000000', foreground: '#ffffff', width: 512, height: 512, layout: 'logo', logoSlug: slug });
+        const panel = mesh(new THREE.PlaneGeometry(frameH / floors - 1, frameH / floors - 1), new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false }), 0, y, d / 2 - 1.5);
+        panel.raycast = () => {};
+        group.add(panel);
+        return panel;
+      };
+      const logos = [logoPanel('Apple', 'apple', baseH + frameH * (2.5 / floors)), logoPanel('macOS', 'macos', baseH + frameH * (1.5 / floors)), logoPanel('Xcode', 'xcode', baseH + frameH * (0.5 / floors))];
+      // Dark reflective sidewalk with neon lines in front of the store
+      const sidewalk = box(w + 8, 0.1, 10, material('#1b1c22', { metalness: 0.7, roughness: 0.08 }), 0, 0.05, d / 2 + 5.5);
+      sidewalk.castShadow = false;
+      group.add(sidewalk);
+      [[0, 0.12, d / 2 + 1, w + 8, 0.12], [0, 0.12, d / 2 + 10.4, w + 8, 0.12]].forEach(([x, y, z, lw, ld]) => group.add(box(lw, 0.05, ld, glow('#f06595', 2), x, y, z)));
+      const diagonal = box(0.15, 0.05, 12, glow('#f06595', 2), w * 0.3, 0.12, d / 2 + 5.5);
+      diagonal.rotation.y = 0.7;
+      group.add(diagonal);
+      animate(group, (time) => { logos.forEach((logo, i) => { logo.material.opacity = 0.75 + Math.sin(time * 1.5 + i) * 0.25; }); });
+      group.userData.label = 'House of MAC';
+    },
+
     // Freestanding ad boards (official product logo + name). When the ad banner
     // image exists in public/assets/ads/ (block "image"), the board shows it,
     // resized to the banner's aspect ratio.
@@ -958,7 +1060,7 @@
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
     [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/beach_arena/, 'beachArena'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
-    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
+    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/mac_flagship/, 'macFlagship'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();

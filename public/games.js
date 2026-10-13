@@ -8,10 +8,17 @@ const GameSystems = (() => {
 
   const DECOR_ITEMS = ['tree', 'lamp', 'banner', 'fountain', 'duck', 'flag', 'neon', 'bench'];
   const WEARABLES = ['hoodie', 'mug', 'cap', 'headphones', 'none'];
-  // Official keynote recordings from Apple's own YouTube channel, played through YouTube's embed player
+  // Keynote recordings played through YouTube's embed player: Apple's WWDCs,
+  // OpenAI DevDays and GitHub Universe opening keynotes (newest first)
   const KEYNOTE_PLAYLIST = [
+    { videoId: 'Fls_onRviPM', title: 'OpenAI DevDay 2026 Keynote', subtitle: 'OpenAI - Sept 29, 2026' },
+    { videoId: 'P6Va0_KILi4', title: 'GitHub Universe 2025 Keynote', subtitle: 'GitHub - Oct 28, 2025' },
+    { videoId: 'hS1YqcewH0c', title: 'OpenAI DevDay 2025 Keynote', subtitle: 'OpenAI - Oct 6, 2025' },
     { videoId: '0_DjDdfqtUE', title: 'WWDC 2025 Keynote', subtitle: 'Apple - June 9, 2025' },
+    { videoId: 'dSf8QOjazrQ', title: 'GitHub Universe 2024 Keynote', subtitle: 'GitHub - Oct 29, 2024' },
     { videoId: 'RXeOiIDNNek', title: 'WWDC 2024 Keynote', subtitle: 'Apple - June 10, 2024' },
+    { videoId: 'NrQkdDVupQE', title: 'GitHub Universe 2023 Keynote', subtitle: 'GitHub - Nov 8, 2023' },
+    { videoId: 'U9mJuUkhUzk', title: 'OpenAI DevDay 2023 Keynote', subtitle: 'OpenAI - Nov 6, 2023' },
     { videoId: 'GYkq9Rgoj8E', title: 'WWDC 2023 Keynote', subtitle: 'Apple - June 5, 2023' },
     { videoId: 'q5D55G7Ejs8', title: 'WWDC 2022 Keynote', subtitle: 'Apple - June 6, 2022' },
     { videoId: '0TD96VTf0Xs', title: 'WWDC 2021 Keynote', subtitle: 'Apple - June 7, 2021' },
@@ -874,7 +881,7 @@ const GameSystems = (() => {
       }
       if (stream) hooks.system(`Live stream set on the Keynote screen: ${stream.title}. Type /watch.`);
     },
-    trees(trees) { state.trees = trees; renderPlantedTrees(); }
+    trees(trees) { state.trees = trees; window.multiverseTreeCount = trees.length; renderPlantedTrees(); }
   };
 
   // Local simulation used only in solo mode (no server)

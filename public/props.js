@@ -19,10 +19,33 @@ const PropKit = (() => {
   // Materials, geometry helpers and canvas textures (cached and shared)
   // --------------------------------------------------------------------------
   const materialCache = new Map();
+  // A very soft grain on flat-colored surfaces so they read as painted
+  // plaster/plastic instead of perfectly flat CG color
+  let grainTexture = null;
+  function grain() {
+    if (!grainTexture) {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      const image = ctx.createImageData(128, 128);
+      for (let i = 0; i < image.data.length; i += 4) {
+        const value = 238 + Math.floor(Math.random() * 17);
+        image.data[i] = image.data[i + 1] = image.data[i + 2] = value;
+        image.data[i + 3] = 255;
+      }
+      ctx.putImageData(image, 0, 0);
+      grainTexture = new THREE.CanvasTexture(canvas);
+      grainTexture.wrapS = grainTexture.wrapT = THREE.RepeatWrapping;
+      grainTexture.repeat.set(3, 3);
+    }
+    return grainTexture;
+  }
+
   function material(color, options = {}) {
     const key = `${color}|${JSON.stringify(options)}`;
     if (!materialCache.has(key)) {
-      materialCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, ...options }));
+      const flat = !options.map && !options.transparent && !options.emissive && !options.flatShading;
+      materialCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, ...(flat ? { map: grain() } : {}), ...options }));
     }
     return materialCache.get(key);
   }
@@ -45,7 +68,51 @@ const PropKit = (() => {
     return result;
   }
 
-  const box = (w, h, d, boxMaterial, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), boxMaterial, x, y, z);
+  // Every box in the world has softly rounded edges (Decentraland-like, less
+  // "blocky"). The geometry keeps BoxGeometry's 6 material groups and per-face
+  // UVs, so textured faces still work; geometries are cached by size.
+  const roundedBoxCache = new Map();
+  function roundedBoxGeometry(w, h, d) {
+    const minDim = Math.min(w, h, d);
+    if (minDim < 0.06) return new THREE.BoxGeometry(w, h, d);
+    const key = `${w.toFixed(3)}|${h.toFixed(3)}|${d.toFixed(3)}`;
+    if (roundedBoxCache.has(key)) return roundedBoxCache.get(key);
+    const r = Math.min(0.18, Math.max(0.02, minDim * 0.16));
+    const geometry = new THREE.BoxGeometry(1, 1, 1, 6, 6, 6);
+    const position = geometry.attributes.position;
+    const normal = geometry.attributes.normal;
+    const half = [w / 2, h / 2, d / 2];
+    const v = new THREE.Vector3();
+    const inner = new THREE.Vector3();
+    for (let i = 0; i < position.count; i++) {
+      const coords = [position.getX(i), position.getY(i), position.getZ(i)].map((c, axis) => {
+        // Remap so the outer third of each axis becomes the rounded band
+        const a = Math.abs(c);
+        const mapped = a <= 1 / 3 ? a * 3 * (half[axis] - r) : (half[axis] - r) + (a - 1 / 3) * 6 * r;
+        return Math.sign(c) * mapped;
+      });
+      v.set(coords[0], coords[1], coords[2]);
+      inner.set(
+        THREE.MathUtils.clamp(v.x, -(half[0] - r), half[0] - r),
+        THREE.MathUtils.clamp(v.y, -(half[1] - r), half[1] - r),
+        THREE.MathUtils.clamp(v.z, -(half[2] - r), half[2] - r)
+      );
+      const n = v.clone().sub(inner);
+      if (n.lengthSq() < 1e-10) n.set(normal.getX(i), normal.getY(i), normal.getZ(i));
+      n.normalize();
+      v.copy(inner).addScaledVector(n, r);
+      position.setXYZ(i, v.x, v.y, v.z);
+      normal.setXYZ(i, n.x, n.y, n.z);
+    }
+    position.needsUpdate = true;
+    normal.needsUpdate = true;
+    geometry.computeBoundingSphere();
+    geometry.computeBoundingBox();
+    roundedBoxCache.set(key, geometry);
+    return geometry;
+  }
+
+  const box = (w, h, d, boxMaterial, x, y, z) => mesh(roundedBoxGeometry(w, h, d), boxMaterial, x, y, z);
   const cylinder = (radiusTop, radiusBottom, h, cylinderMaterial, x, y, z, segments = 16) =>
     mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, h, segments), cylinderMaterial, x, y, z);
   const sphere = (radius, sphereMaterial, x, y, z, segments = 12) =>
@@ -492,7 +559,7 @@ const PropKit = (() => {
   // A box whose front face (+z) shows a texture
   function facedBox(w, h, d, bodyMaterial, frontMaterial, x, y, z) {
     const materials = [bodyMaterial, bodyMaterial, bodyMaterial, bodyMaterial, frontMaterial, bodyMaterial];
-    return mesh(new THREE.BoxGeometry(w, h, d), materials, x, y, z);
+    return mesh(roundedBoxGeometry(w, h, d), materials, x, y, z);
   }
 
   // Invisible spot you can sit on (E) for seats drawn as merged or instanced meshes
@@ -1402,7 +1469,7 @@ const PropKit = (() => {
   }
 
   const kit = {
-    material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, seat,
+    material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, seat, roundedBoxGeometry,
     labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture,
     cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive
   };

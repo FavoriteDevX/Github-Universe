@@ -150,10 +150,11 @@ async function loadUniverse() {
   worldRegistry = await (await fetch('maps/worlds.json')).json();
   window.MULTIVERSE_WORLDS = worldRegistry; // used by the Events Wall to build its JUMP IN cards
   const maps = await Promise.all(worldRegistry.map((world) => fetch(`maps/${world.file}`).then((response) => response.json())));
-  // Build one district per frame so the welcome screen stays responsive while
-  // the world is assembled behind it
+  // Genesis Plaza is built first so devs can enter right away; the rest of the
+  // world is assembled district by district in the background (one per frame)
   const nextFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
-  for (let index = 0; index < worldRegistry.length; index++) {
+  const order = worldRegistry.map((world, index) => index).sort((a, b) => (worldRegistry[a].key === 'plaza' ? -1 : worldRegistry[b].key === 'plaza' ? 1 : 0));
+  for (const index of order) {
     const world = worldRegistry[index];
     try {
       const district = City.addDistrict(world, maps[index]);
@@ -162,11 +163,17 @@ async function loadUniverse() {
       console.error(`Could not build ${world.file}:`, error);
       appendSystemMessage(`Could not build ${world.name}.`);
     }
+    if (world.key === 'plaza') { City.prepareGround(); resolvePlazaReady(); }
     await nextFrame();
   }
   City.finalize();
   renderWorldList();
+  worldFullyLoaded = true;
 }
+
+let resolvePlazaReady = () => {};
+const plazaReady = new Promise((resolve) => { resolvePlazaReady = resolve; });
+let worldFullyLoaded = false;
 
 function registerPlaces(district) {
   const { world, layout } = district;
@@ -1657,15 +1664,20 @@ function launchConfetti() {
 // BOOT: the world renders behind the welcome screen while the dev signs in
 // ============================================================================
 initEngine();
-const universeReady = loadUniverse()
+loadUniverse()
   .then(() => {
-    const requested = findPlace(location.hash.slice(1) || 'plaza') || places[0];
-    flyTo(placeLanding(requested), null);
+    // A deep link (#apple) to a place built later: go there once everything is loaded
+    const hash = location.hash.slice(1);
+    if (hash && hash !== 'plaza' && findPlace(hash)) flyTo(placeLanding(findPlace(hash)), null);
   })
   .catch((error) => {
     console.error('Could not load the universe:', error);
     appendSystemMessage('Could not load maps/worlds.json.');
   });
+const universeReady = plazaReady.then(() => {
+  const plaza = findPlace('plaza') || places[0];
+  if (plaza) flyTo(placeLanding(plaza), null);
+});
 
 Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   if (Auth.hasServer) socket = io({ auth: { token: session.token, lobby: lobbyId } });

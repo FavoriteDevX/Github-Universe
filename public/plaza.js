@@ -1296,6 +1296,107 @@
     }
   });
 
+  const GREEN_TIPS = [
+    ['Measure first', 'Profile CPU and energy before optimizing: the biggest wins are rarely where you guess.'],
+    ['Cache, don\'t recompute', 'Every repeated computation burns energy. Memoize and cache results.'],
+    ['Lazy-load assets', 'Load images and scripts only when they are needed: less data, less power.'],
+    ['Pick green regions', 'Run workloads in cloud regions powered by renewable energy.'],
+    ['Delete unused data', 'Old logs, backups and buckets keep disks spinning. Clean them up.'],
+    ['Dark mode on OLED', 'Dark pixels use less power on OLED screens.']
+  ];
+
+  Object.assign(builders, {
+    // Multiverse Forest: a garden enclosed by hedges with a giant tree in the
+    // middle, a screen counting the trees planted by devs, green-coding boards
+    // on posts, flower beds and benches
+    forestGarden(group, { w }) {
+      const half = w / 2;
+      const lawn = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.canvasTexture('forestLawn', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#5f9e3f'; ctx.fillRect(0, 0, cw, ch);
+        for (let i = 0; i < 900; i++) { ctx.fillStyle = ['#6aad48', '#558f37', '#73b852'][i % 3]; ctx.fillRect((i * 37) % cw, (i * 91) % ch, 3, 5); }
+      }), w / 8, w / 8), roughness: 1 });
+      const ground = box(w, 0.25, w, lawn, 0, 0.12, 0);
+      ground.castShadow = false;
+      group.add(ground);
+      // Hedge walls with an opening on each side
+      const hedge = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.canvasTexture('hedgeLeaves', 128, 128, (ctx, cw, ch) => {
+        ctx.fillStyle = '#2f6b2a'; ctx.fillRect(0, 0, cw, ch);
+        for (let i = 0; i < 400; i++) { ctx.fillStyle = ['#3d8035', '#285c24', '#4a9441'][i % 3]; ctx.beginPath(); ctx.arc((i * 29) % cw, (i * 53) % ch, 3 + (i % 3), 0, Math.PI * 2); ctx.fill(); }
+      }), 6, 1), roughness: 1 });
+      [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(([sx, sz]) => {
+        [-1, 1].forEach((part) => {
+          const length = half - 3;
+          const x = sx ? sx * half : part * (3 + length / 2);
+          const z = sz ? sz * half : part * (3 + length / 2);
+          group.add(box(sx ? 1.4 : length, 2, sx ? length : 1.4, hedge, x, 1, z));
+        });
+      });
+      // Giant tree with a dark round base
+      const base = cylinder(5, 5, 0.1, material('#2b3a2e', { roughness: 1 }), 0, 0.28, 0, 40);
+      base.castShadow = false;
+      group.add(base);
+      group.add(cylinder(1.1, 1.8, 9, material('#7a4a2b', { roughness: 1 }), 0, 4.6, 0, 10));
+      [[2.5, 8, 0.6, 0.9], [-2.2, 7.6, -1, -0.8], [0.4, 8.6, 2.2, 0.3]].forEach(([x, y, z, tilt]) => {
+        const branch = cylinder(0.35, 0.55, 5, material('#7a4a2b'), x * 0.6, y, z * 0.6, 8);
+        branch.rotation.set(z * 0.25, 0, -tilt);
+        group.add(branch);
+      });
+      [[0, 13, 0, 5], [4, 11.5, 1, 3.5], [-4, 11.8, -1, 3.6], [1, 11, -4, 3.2], [-1, 11, 4, 3.4]].forEach(([x, y, z, r]) => group.add(mesh(new THREE.IcosahedronGeometry(r, 0), material('#3f8f3a', { flatShading: true }), x, y, z)));
+      // Screen counting the trees planted by devs
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 320;
+      const texture = new THREE.CanvasTexture(canvas);
+      const screen = box(6, 3.8, 0.2, [material('#111'), material('#111'), material('#111'), material('#111'), new THREE.MeshBasicMaterial({ map: texture }), material('#111')], 0, 4.6, 2.4);
+      group.add(screen);
+      const drawScreen = () => {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0f1a14'; ctx.fillRect(0, 0, 512, 320);
+        ctx.fillStyle = '#f8f9fa'; ctx.fillRect(60, 40, 392, 150);
+        ctx.fillStyle = '#2b8a3e'; ctx.font = 'bold 30px Segoe UI, Arial, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('MULTIVERSE FOREST', 256, 85);
+        ctx.fillStyle = '#1d1d1f'; ctx.font = 'bold 56px Segoe UI, Arial, sans-serif';
+        ctx.fillText(`${window.multiverseTreeCount || 0} trees`, 256, 150);
+        ctx.fillStyle = '#c3fae8'; ctx.font = '22px Segoe UI, Arial, sans-serif';
+        ctx.fillText('planted by devs in the Green-Tech Sandbox', 256, 240);
+        ctx.fillText('Plant yours: /world greentech then /plant', 256, 275);
+        texture.needsUpdate = true;
+      };
+      drawScreen();
+      setInterval(drawScreen, 5000);
+      // Green-coding boards on posts around the garden
+      GREEN_TIPS.forEach(([title, info], index) => {
+        const angle = (index / GREEN_TIPS.length) * Math.PI * 2 + 0.3;
+        const x = Math.cos(angle) * (half - 4.5);
+        const z = Math.sin(angle) * (half - 4.5);
+        const board = new THREE.Group();
+        board.add(box(0.15, 2, 0.15, material('#5d4037'), 0, 1, 0));
+        const panel = box(3.2, 1.6, 0.12, [material('#6741d9'), material('#6741d9'), material('#6741d9'), material('#6741d9'), new THREE.MeshBasicMaterial({ map: labelTexture(title, { bg: '#5f3dc4', fg: '#ffffff', width: 512, height: 256, font: 'bold 52px Segoe UI, Arial, sans-serif' }) }), material('#6741d9')], 0, 2.6, 0);
+        panel.rotation.x = -0.25;
+        board.add(panel);
+        board.position.set(x, 0.25, z);
+        board.rotation.y = Math.atan2(-x, -z);
+        board.userData = { label: title, info };
+        group.add(PropKit.kit.interactive(board, 'inspect', title));
+      });
+      // Flower beds and benches
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const x = Math.cos(angle) * half * 0.55;
+        const z = Math.sin(angle) * half * 0.55;
+        for (let f = 0; f < 10; f++) group.add(sphere(0.25, material(['#ff6b6b', '#ffd43b', '#f783ac', '#ffffff', '#b197fc'][f % 5]), x + Math.cos(f) * 1.2, 0.45, z + Math.sin(f) * 1.2, 6));
+        const bench = new THREE.Group();
+        bench.add(box(2.2, 0.15, 0.6, material('#a47148'), 0, 0.55, 0));
+        bench.add(box(2.2, 0.6, 0.12, material('#a47148'), 0, 0.9, -0.28));
+        [-0.9, 0.9].forEach((dx) => bench.add(box(0.12, 0.5, 0.5, material('#495057'), dx, 0.25, 0)));
+        bench.position.set(x * 1.35, 0.25, z * 1.35);
+        bench.rotation.y = Math.atan2(-x, -z);
+        group.add(PropKit.kit.interactive(bench, 'sit', 'Forest bench'));
+      }
+      group.userData.label = 'Multiverse Forest';
+    }
+  });
+
   // Messages shown on the floating cube screens of the cowork plazas
   const COWORK_MESSAGES = ['THE WORLD IS YOURS', 'SHIP IT', 'CODE TOGETHER', 'HELLO, WORLD', 'MERGE WITH LOVE', 'IT WORKS ON MY MACHINE', 'GOOD FIRST ISSUE', 'GIT PUSH DREAMS'];
   function messageTexture(text) {
@@ -1753,7 +1854,7 @@
 
   const rules = [
     [/ad_cube_stack/, 'adCubeStack'], [/led_cube_kiosk/, 'ledCubeKiosk'], [/supertree/, 'supertree'], [/column_hall/, 'columnHall'],
-    [/marble_statue/, 'marbleStatue'], [/kinetic_sculpture/, 'kineticSculpture'], [/cloud_store/, 'cloudStore'], [/light_pavilion/, 'lightPavilion'], [/promenade/, 'promenade'], [/news_ring/, 'newsRing'], [/cowork_plaza/, 'coworkPlaza'], [/spawn_hub/, 'spawnHub'],
+    [/marble_statue/, 'marbleStatue'], [/kinetic_sculpture/, 'kineticSculpture'], [/cloud_store/, 'cloudStore'], [/light_pavilion/, 'lightPavilion'], [/promenade/, 'promenade'], [/news_ring/, 'newsRing'], [/cowork_plaza/, 'coworkPlaza'], [/spawn_hub/, 'spawnHub'], [/forest_garden/, 'forestGarden'],
     [/plaza_floor/, 'plazaFloor'], [/^fountain/, 'fountain'], [/theatre/, 'theatre'], [/round_tree/, 'roundTree'],
     [/lamp_post/, 'lampPost'], [/^bench/, 'bench'], [/flower_bed/, 'flowerBed'], [/^shop_/, 'shop'],
     [/neon_tower|aetheria/, 'neonTower'], [/casino|vegas/, 'casino'], [/arch_gate|plaza_gate/, 'archGate'],

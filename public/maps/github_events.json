@@ -1,0 +1,13 @@
+{
+ "_how_to": "Add the official YouTube link of the livestream in 'stream' when GitHub announces it (e.g. https://www.youtube.com/watch?v=VIDEO_ID). Times are UTC.",
+ "events": [
+  {
+   "name": "GitHub Universe 2026",
+   "location": "Fort Mason Center, San Francisco \u00b7 and online",
+   "start": "2026-10-28T16:00:00Z",
+   "end": "2026-10-30T01:00:00Z",
+   "url": "https://githubuniverse.com/",
+   "stream": ""
+  }
+ ]
+}

@@ -43,7 +43,12 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **Coin indicator & daily bonus**: the top-right coin shows your MVC; click it for the daily bonus and the ways to earn more.
 - **Sound effects (optional)**: synthesized footsteps that change with the ground (stone, grass, wood, an echoing cave), jump and landing, coins, teleports and crickets at night. Toggle with 🔊 or `/sound`.
 - **Timeline Hall (Museum)**: a building inside a building: lit frames from 1969 to 2005 (ARPANET, Windows 1.0, the first website, Mosaic, Windows 95, personal homepages, the late-90s Apple site, Winamp, Google beta, instant messengers, Mac OS 9, the office assistant, the Blue Screen of Death, Thefacebook, YouTube; illustrated recreations) around the white **Memorable Mentions** vault with hardware nobody uses anymore.
-- **The Hotel**: a cozy lodge (dark wood, green wallpaper, a crackling fireplace, warm sconces, rooms with beds) with a title card when you walk in, in the Multiverse Hotel district and in Genesis City.
+- **The Hotel**: a two-floor log cabin (green wallpaper, a stone chimney fireplace, a mezzanine with stairs, rooms with beds, pendant lamps, cobwebs) with a title card when you walk in. Its back door leads to a fenced backyard with pine trees, a concrete bunker and a **hatch** (E): below it, a maze of metal ventilation ducts; follow the light strips to the blue vent and it drops you into the Genesis Plaza Underground. In the Multiverse Hotel district and in Genesis City.
+- **Softer, less blocky world**: every box in the world has rounded edges and surfaces get a subtle grain; Genesis City is paved with stone.
+- **Multiverse Forest**: gardens enclosed by hedges with a giant tree, a screen counting the trees devs planted (`/plant` in the Green-Tech Sandbox), green-coding tips on boards, flowers and benches.
+- **House of MAC flagship**: a two-story stone corner store with LED shop windows showing the Mac ads (`public/assets/ads/`), neon signs and an open black steel frame on top with giant glowing Apple, macOS and Xcode logos, plus a reflective sidewalk with neon lines.
+- **GitHub events screen (Tech Square)**: a countdown to the next GitHub event (GitHub Universe 2026, Oct 28–29, San Francisco and online), a LIVE badge while it happens (E opens the official site) and the livestream on the screen once its YouTube link is added to `public/maps/github_events.json`; next to it, replays of past Universe keynotes.
+- **Faster start**: the welcome screen appears before the scripts finish loading, you enter as soon as Genesis Plaza is built, and the rest of the world appears in the background.
 - **Stone pavements**: like Decentraland, Genesis City is mostly paved with stone, with round lawns under the trees and real grass only on the outskirts.
 - **Sky and edge of the world**: Minecraft-style blocky clouds at 150 m that you can fly through (the view gets hazier the higher you go and turns white inside a cloud); past the neighborhoods the land empties out gradually, a dark treeline and rolling hills close the horizon, and an invisible wall stops you at the last coordinate (±640 m).
 - **Night lights**: path lamps glow with soft halos at night and glowing stones float over pedestals along the paths.
@@ -229,7 +234,7 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `museum` | **Museum of Forgotten Hardware & Software** | Walk inside a giant 3.5" floppy disk, climb the stairs onto a Pentium-era processor and its circuits, parkour up a giant CRT monitor, and browse a clicky keyboard, a cassette, a spinning CD-ROM, a vacuum-tube wall, punch cards, a ball mouse and the Hall of Forgotten Software (DOS, BASIC, early desktops, 90s homepages) |
 | `dungeon` | **Debug Dungeon (Labyrinth of Bugs)** | A co-op dungeon crawler. Grab the **Git Commit Hammer** at the entrance and click bugs to hit them, or cast `/script`s. Monsters: Memory Leak, NullPointerException, Infinite Loop, Race Condition, Off-By-One Error and the **Blue Screen of Death** boss. Health is owned by the server, so everyone fights the same bugs; defeated bugs respawn after 30 s, and kills go to the **Bug Bounty Leaderboard** |
 | `opensource` | **Open Source HQ** | A 3D home for repositories: code murals anyone can post to, floating meeting rooms and 8 decoration slots. Changing a decoration takes a real review flow: `/pr`, then another dev runs `/approve`, then `/merge`. The Pull Request board shows what is open |
-| `keynote` | **Keynote Amphitheater** | A permanent arena inspired by WWDC and Google I/O stages. The big screen autoplays Apple's official WWDC keynotes (2020 to 2025, played through YouTube's embedded player from Apple's own channel); click a screen or `/watch` to play. `/stream` puts any YouTube or Twitch live event on the screen for everyone. The wearables booths dress your cursor with a hoodie or an endless coffee mug |
+| `keynote` | **Keynote Amphitheater** | A permanent arena inspired by WWDC and Google I/O stages. The big screen autoplays Apple's official WWDC keynotes (2020 to 2025, plus OpenAI DevDay 2023, 2025 and 2026 and GitHub Universe 2023–2025 keynotes, played through YouTube's embedded player from Apple's own channel); click a screen or `/watch` to play. `/stream` puts any YouTube or Twitch live event on the screen for everyone. The wearables booths dress your cursor with a hoodie or an endless coffee mug |
 | `greentech` | **Green-Tech Sandbox** | Green IT: a solar farm, spinning wind turbines, a liquid-cooled data center with a living roof, a vertical farm, EV chargers, battery storage and a Code Efficiency Lab comparing the energy cost of algorithms. Plant trees with `/plant` to raise the district's renewable energy meter |
 
 ### Silicon Valley (`/world valley`)
@@ -375,6 +380,10 @@ The store is ready to show your own images; nothing has to be changed in the cod
 Billboards resize to each banner's aspect ratio. Add more banners to the carousel by listing them in `public/assets/ads/ads.json`. Until a file exists, the store shows the official Simple Icons logos and generated boards. Apple ads and logos are copyrighted / trademarks of Apple Inc.: only publish them if you have the right to.
 
 ---
+
+## 🏷️ Official logos and real ads (optional)
+
+Some companies asked Simple Icons to remove their logos (OpenAI, Microsoft, AWS, Oracle, Adobe, LinkedIn, Salesforce), so they show as text. Put their official logo files in `public/assets/logos/` (see the README there) and real ad images in `public/assets/ads/brands/<brand>.jpg` to replace the generated boards. Only publish images you have the right to use.
 
 ## ⚖️ Trademarks & media
 

@@ -343,6 +343,38 @@
    "variant": "pastel",
    "seed": 1,
    "rotationY": -1.5708
+  },
+  {
+   "type": "events_screen",
+   "position": [
+    24,
+    0,
+    24
+   ],
+   "scale": [
+    14,
+    12,
+    1
+   ],
+   "color": "#a371f7",
+   "label": "GitHub events",
+   "rotationY": -2.36
+  },
+  {
+   "type": "universe_replays",
+   "position": [
+    -24,
+    0,
+    24
+   ],
+   "scale": [
+    11,
+    10,
+    1
+   ],
+   "color": "#a371f7",
+   "label": "GitHub Universe replays",
+   "rotationY": 2.36
   }
  ]
 }

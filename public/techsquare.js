@@ -349,7 +349,120 @@ const TechSquare = (() => {
   };
 
   const rules = [
-    [/shibuya_building/, 'shibuyaBuilding'],[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+    [/shibuya_building/, 'shibuyaBuilding'], [/events_screen/, 'eventsScreen'], [/universe_replays/, 'universeReplays'],[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+  // ---------------------------------------------------------------------------
+  // GitHub events screen: countdown to the next annual event (GitHub Universe),
+  // a LIVE badge while it happens, and the official livestream on the screen
+  // when its YouTube link is added to maps/github_events.json
+  // ---------------------------------------------------------------------------
+  function youtubeId(url) {
+    const match = /(?:v=|youtu\.be\/|\/live\/|\/embed\/)([\w-]{11})/.exec(url || '');
+    return match ? match[1] : null;
+  }
+
+  // Replays of past GitHub Universe opening keynotes, autoplaying (muted) nearby
+  function universeReplays(group, { w, h, data }) {
+    const steel = material('#2b2d33', { metalness: 0.8, roughness: 0.35 });
+    [-1, 1].forEach((side) => group.add(box(0.5, h, 0.5, steel, side * (w / 2 + 0.25), h / 2, 0)));
+    const screenHeight = w * 9 / 16;
+    const screen = box(w, screenHeight, 0.2, material('#000000'), 0, h - screenHeight / 2 - 0.3, 0);
+    group.add(screen);
+    const videos = (data && data.videos) || ['P6Va0_KILi4', 'dSf8QOjazrQ', 'NrQkdDVupQE'];
+    VideoScreens.register(screen, w, screenHeight, VideoScreens.youtubeEmbed(videos), { distance: 90 });
+    const caption = textSprite('GitHub Universe · keynote replays (V for sound)', { width: 9, background: 'rgba(45, 27, 78, 0.92)' });
+    caption.position.set(0, h + 0.8, 0.2);
+    group.add(caption);
+    group.userData.label = 'GitHub Universe keynote replays';
+  }
+
+  function eventsScreen(group, { w, h }) {
+    const steel = material('#2b2d33', { metalness: 0.8, roughness: 0.35 });
+    [-1, 1].forEach((side) => group.add(box(0.6, h, 0.6, steel, side * (w / 2 + 0.3), h / 2, 0)));
+    group.add(box(w + 1.2, 0.6, 0.6, steel, 0, h, 0));
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 576;
+    const texture = new THREE.CanvasTexture(canvas);
+    const screenHeight = h * 0.62;
+    const screen = box(w, screenHeight, 0.25, [steel, steel, steel, steel, new THREE.MeshBasicMaterial({ map: texture }), steel], 0, h - screenHeight / 2 - 0.4, 0);
+    group.add(screen);
+    const glowFrame = box(w + 0.3, screenHeight + 0.3, 0.1, PropKit.kit.glow('#a371f7', 1.2), 0, h - screenHeight / 2 - 0.4, -0.15);
+    group.add(glowFrame);
+    let events = [];
+    let video = null;
+    fetch('maps/github_events.json').then((response) => response.json()).then((data) => { events = data.events || []; draw(); }).catch(() => {});
+    const ctx = canvas.getContext('2d');
+    const pad = (n) => String(n).padStart(2, '0');
+    function current() {
+      const now = Date.now();
+      return events.map((event) => ({ ...event, startAt: Date.parse(event.start), endAt: Date.parse(event.end) })).filter((event) => event.endAt > now - 86400000).sort((a, b) => a.startAt - b.startAt)[0];
+    }
+    function draw() {
+      const event = current();
+      const now = Date.now();
+      const gradient = ctx.createLinearGradient(0, 0, 1024, 576);
+      gradient.addColorStop(0, '#0d1117');
+      gradient.addColorStop(1, '#2d1b4e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 1024, 576);
+      for (let i = 0; i < 40; i++) { ctx.fillStyle = `rgba(163, 113, 247, ${0.05 + (i % 5) * 0.03})`; ctx.beginPath(); ctx.arc((i * 137) % 1024, (i * 91) % 576, 2 + (i % 4), 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#a371f7';
+      ctx.font = 'bold 30px Segoe UI, Arial, sans-serif';
+      ctx.fillText('GITHUB EVENTS · LIVE ON THE MULTIVERSE', 48, 70);
+      if (!event) {
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 52px Segoe UI, Arial, sans-serif';
+        ctx.fillText('No upcoming event announced yet', 48, 300);
+        texture.needsUpdate = true;
+        return;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 76px Segoe UI, Arial, sans-serif';
+      ctx.fillText(event.name, 48, 190, 930);
+      ctx.fillStyle = '#c9d1d9';
+      ctx.font = '32px Segoe UI, Arial, sans-serif';
+      ctx.fillText(event.location || '', 48, 245, 930);
+      const dates = `${new Date(event.startAt).toUTCString().slice(0, 16)} → ${new Date(event.endAt - 1).toUTCString().slice(0, 16)}`;
+      ctx.fillText(dates, 48, 292, 930);
+      if (now < event.startAt) {
+        const left = event.startAt - now;
+        const days = Math.floor(left / 86400000);
+        const hours = Math.floor((left % 86400000) / 3600000);
+        const minutes = Math.floor((left % 3600000) / 60000);
+        const seconds = Math.floor((left % 60000) / 1000);
+        ctx.fillStyle = '#3fb950';
+        ctx.font = 'bold 30px Segoe UI, Arial, sans-serif';
+        ctx.fillText('STARTS IN', 48, 380);
+        ctx.font = 'bold 96px Consolas, Menlo, monospace';
+        ctx.fillText(`${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`, 48, 480);
+      } else if (now <= event.endAt) {
+        const blink = Math.floor(now / 700) % 2;
+        ctx.fillStyle = blink ? '#f85149' : '#da3633';
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(48, 340, 300, 90, 20) : ctx.rect(48, 340, 300, 90); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 60px Segoe UI, Arial, sans-serif';
+        ctx.fillText('● LIVE', 80, 407);
+        ctx.font = '32px Segoe UI, Arial, sans-serif';
+        ctx.fillText(youtubeId(event.stream) ? 'The keynote is playing on this screen' : 'Press E to watch on the official site', 380, 400, 600);
+      } else {
+        ctx.fillStyle = '#8b949e';
+        ctx.font = 'bold 44px Segoe UI, Arial, sans-serif';
+        ctx.fillText('Thanks for watching! See you next year.', 48, 420);
+      }
+      texture.needsUpdate = true;
+      // Official livestream on the screen while the event is live
+      const id = youtubeId(event.stream);
+      const live = now >= event.startAt && now <= event.endAt;
+      if (live && id && !video) video = VideoScreens.register(screen, w, screenHeight, VideoScreens.youtubeEmbed([id]), { distance: 120 });
+      screen.userData.url = event.url;
+    }
+    screen.userData.url = 'https://githubuniverse.com/';
+    screen.userData.label = 'GitHub events screen';
+    PropKit.kit.interactive(screen, 'link', 'GitHub events (official site)');
+    setInterval(draw, 1000);
+    draw();
+    group.userData.label = 'GitHub events screen';
+  }
+
   // ---------------------------------------------------------------------------
   // Shibuya-style buildings: colorful facades, vertical neon signs, a white
   // corner store with a big slogan, a pastel striped column and shop windows
@@ -392,6 +505,8 @@ const TechSquare = (() => {
   }
 
   Object.assign(builders, {
+    eventsScreen,
+    universeReplays,
     shibuyaBuilding(group, { w, h, d, data }) {
       const variant = (data && data.variant) || 'stripes';
       const seed = (data && data.seed) || 0;
