@@ -12,6 +12,7 @@ const VideoScreens = (() => {
   let cssRenderer = null;
   let cssScene = null;
   let lastOcclusionCheck = 0;
+  let soundOn = false;
   const occlusionRay = new THREE.Raycaster();
   const worldPosition = new THREE.Vector3();
   const worldQuaternion = new THREE.Quaternion();
@@ -29,8 +30,8 @@ const VideoScreens = (() => {
     return `https://www.youtube.com/embed/videoseries?list=UU${channelId.slice(2)}&autoplay=1&mute=1&loop=1&playsinline=1&rel=0`;
   }
 
-  function register(anchor, width, height, source) {
-    const screen = { anchor, width, height, source, object: null, visible: true };
+  function register(anchor, width, height, source, { distance = ACTIVATE_DISTANCE } = {}) {
+    const screen = { anchor, width, height, source, distance, object: null, visible: true };
     screens.push(screen);
     return {
       setSource(next) {
@@ -48,7 +49,7 @@ const VideoScreens = (() => {
     element.style.pointerEvents = 'auto';
     element.style.background = '#000';
     const iframe = document.createElement('iframe');
-    iframe.src = screen.source;
+    iframe.src = soundOn ? screen.source.replace('mute=1', 'mute=0') : screen.source;
     iframe.title = 'Video screen';
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
     iframe.allowFullscreen = true;
@@ -85,7 +86,7 @@ const VideoScreens = (() => {
     screens.forEach((screen) => {
       if (!screen.anchor.parent || !screen.source) return;
       screen.anchor.getWorldPosition(worldPosition);
-      const near = worldPosition.distanceTo(avatarPosition) < ACTIVATE_DISTANCE;
+      const near = worldPosition.distanceTo(avatarPosition) < screen.distance;
       if (near && !screen.object) createIframe(screen);
       if (!near && screen.object) removeIframe(screen);
       if (!screen.object) return;
@@ -108,5 +109,13 @@ const VideoScreens = (() => {
     cssRenderer.render(cssScene, camera);
   }
 
-  return { init, update, register, youtubeEmbed, channelUploadsEmbed };
+  // V toggles the sound: screens reload unmuted (a key press lets the browser
+  // allow autoplay with sound). Returns the new state.
+  function toggleSound() {
+    soundOn = !soundOn;
+    screens.forEach((screen) => { if (screen.object) removeIframe(screen); });
+    return soundOn;
+  }
+
+  return { init, update, register, youtubeEmbed, channelUploadsEmbed, toggleSound };
 })();

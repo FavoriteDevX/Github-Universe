@@ -348,7 +348,212 @@ const TechSquare = (() => {
     }
   };
 
-  const rules = [[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+  const rules = [
+    [/shibuya_building/, 'shibuyaBuilding'], [/events_screen/, 'eventsScreen'], [/universe_replays/, 'universeReplays'],[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+  // ---------------------------------------------------------------------------
+  // GitHub events screen: countdown to the next annual event (GitHub Universe),
+  // a LIVE badge while it happens, and the official livestream on the screen
+  // when its YouTube link is added to maps/github_events.json
+  // ---------------------------------------------------------------------------
+  function youtubeId(url) {
+    const match = /(?:v=|youtu\.be\/|\/live\/|\/embed\/)([\w-]{11})/.exec(url || '');
+    return match ? match[1] : null;
+  }
+
+  // Replays of past GitHub Universe opening keynotes, autoplaying (muted) nearby
+  function universeReplays(group, { w, h, data }) {
+    const steel = material('#2b2d33', { metalness: 0.8, roughness: 0.35 });
+    [-1, 1].forEach((side) => group.add(box(0.5, h, 0.5, steel, side * (w / 2 + 0.25), h / 2, 0)));
+    const screenHeight = w * 9 / 16;
+    const screen = box(w, screenHeight, 0.2, material('#000000'), 0, h - screenHeight / 2 - 0.3, 0);
+    group.add(screen);
+    const videos = (data && data.videos) || ['P6Va0_KILi4', 'dSf8QOjazrQ', 'NrQkdDVupQE'];
+    VideoScreens.register(screen, w, screenHeight, VideoScreens.youtubeEmbed(videos), { distance: 90 });
+    const caption = textSprite('GitHub Universe · keynote replays (V for sound)', { width: 9, background: 'rgba(45, 27, 78, 0.92)' });
+    caption.position.set(0, h + 0.8, 0.2);
+    group.add(caption);
+    group.userData.label = 'GitHub Universe keynote replays';
+  }
+
+  function eventsScreen(group, { w, h }) {
+    const steel = material('#2b2d33', { metalness: 0.8, roughness: 0.35 });
+    [-1, 1].forEach((side) => group.add(box(0.6, h, 0.6, steel, side * (w / 2 + 0.3), h / 2, 0)));
+    group.add(box(w + 1.2, 0.6, 0.6, steel, 0, h, 0));
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 576;
+    const texture = new THREE.CanvasTexture(canvas);
+    const screenHeight = h * 0.62;
+    const screen = box(w, screenHeight, 0.25, [steel, steel, steel, steel, new THREE.MeshBasicMaterial({ map: texture }), steel], 0, h - screenHeight / 2 - 0.4, 0);
+    group.add(screen);
+    const glowFrame = box(w + 0.3, screenHeight + 0.3, 0.1, PropKit.kit.glow('#a371f7', 1.2), 0, h - screenHeight / 2 - 0.4, -0.15);
+    group.add(glowFrame);
+    let events = [];
+    let video = null;
+    fetch('maps/github_events.json').then((response) => response.json()).then((data) => { events = data.events || []; draw(); }).catch(() => {});
+    const ctx = canvas.getContext('2d');
+    const pad = (n) => String(n).padStart(2, '0');
+    function current() {
+      const now = Date.now();
+      return events.map((event) => ({ ...event, startAt: Date.parse(event.start), endAt: Date.parse(event.end) })).filter((event) => event.endAt > now - 86400000).sort((a, b) => a.startAt - b.startAt)[0];
+    }
+    function draw() {
+      const event = current();
+      const now = Date.now();
+      const gradient = ctx.createLinearGradient(0, 0, 1024, 576);
+      gradient.addColorStop(0, '#0d1117');
+      gradient.addColorStop(1, '#2d1b4e');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 1024, 576);
+      for (let i = 0; i < 40; i++) { ctx.fillStyle = `rgba(163, 113, 247, ${0.05 + (i % 5) * 0.03})`; ctx.beginPath(); ctx.arc((i * 137) % 1024, (i * 91) % 576, 2 + (i % 4), 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#a371f7';
+      ctx.font = 'bold 30px Segoe UI, Arial, sans-serif';
+      ctx.fillText('GITHUB EVENTS · LIVE ON THE MULTIVERSE', 48, 70);
+      if (!event) {
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 52px Segoe UI, Arial, sans-serif';
+        ctx.fillText('No upcoming event announced yet', 48, 300);
+        texture.needsUpdate = true;
+        return;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 76px Segoe UI, Arial, sans-serif';
+      ctx.fillText(event.name, 48, 190, 930);
+      ctx.fillStyle = '#c9d1d9';
+      ctx.font = '32px Segoe UI, Arial, sans-serif';
+      ctx.fillText(event.location || '', 48, 245, 930);
+      const dates = `${new Date(event.startAt).toUTCString().slice(0, 16)} → ${new Date(event.endAt - 1).toUTCString().slice(0, 16)}`;
+      ctx.fillText(dates, 48, 292, 930);
+      if (now < event.startAt) {
+        const left = event.startAt - now;
+        const days = Math.floor(left / 86400000);
+        const hours = Math.floor((left % 86400000) / 3600000);
+        const minutes = Math.floor((left % 3600000) / 60000);
+        const seconds = Math.floor((left % 60000) / 1000);
+        ctx.fillStyle = '#3fb950';
+        ctx.font = 'bold 30px Segoe UI, Arial, sans-serif';
+        ctx.fillText('STARTS IN', 48, 380);
+        ctx.font = 'bold 96px Consolas, Menlo, monospace';
+        ctx.fillText(`${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`, 48, 480);
+      } else if (now <= event.endAt) {
+        const blink = Math.floor(now / 700) % 2;
+        ctx.fillStyle = blink ? '#f85149' : '#da3633';
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(48, 340, 300, 90, 20) : ctx.rect(48, 340, 300, 90); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 60px Segoe UI, Arial, sans-serif';
+        ctx.fillText('● LIVE', 80, 407);
+        ctx.font = '32px Segoe UI, Arial, sans-serif';
+        ctx.fillText(youtubeId(event.stream) ? 'The keynote is playing on this screen' : 'Press E to watch on the official site', 380, 400, 600);
+      } else {
+        ctx.fillStyle = '#8b949e';
+        ctx.font = 'bold 44px Segoe UI, Arial, sans-serif';
+        ctx.fillText('Thanks for watching! See you next year.', 48, 420);
+      }
+      texture.needsUpdate = true;
+      // Official livestream on the screen while the event is live
+      const id = youtubeId(event.stream);
+      const live = now >= event.startAt && now <= event.endAt;
+      if (live && id && !video) video = VideoScreens.register(screen, w, screenHeight, VideoScreens.youtubeEmbed([id]), { distance: 120 });
+      screen.userData.url = event.url;
+    }
+    screen.userData.url = 'https://githubuniverse.com/';
+    screen.userData.label = 'GitHub events screen';
+    PropKit.kit.interactive(screen, 'link', 'GitHub events (official site)');
+    setInterval(draw, 1000);
+    draw();
+    group.userData.label = 'GitHub events screen';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shibuya-style buildings: colorful facades, vertical neon signs, a white
+  // corner store with a big slogan, a pastel striped column and shop windows
+  // ---------------------------------------------------------------------------
+  const SIGN_WORDS = ['コード', 'カラオケ', 'ラーメン', 'ゲーム', 'デバッグ', 'お店', 'ハッカソン', '飲食店', 'モール', 'アプリ'];
+  function verticalSign(text, background, color) {
+    return PropKit.kit.canvasTexture(`vsign|${text}|${background}`, 128, 64 + text.length * 100, (ctx, w, h) => {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 84px "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      [...text].forEach((char, i) => ctx.fillText(char, w / 2, 82 + i * 100));
+    });
+  }
+
+  function horizontalSign(text, background, color) {
+    return PropKit.kit.canvasTexture(`hsign|${text}|${background}`, 512, 128, (ctx, w, h) => {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 80px "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, w / 2, h / 2 + 4);
+    });
+  }
+
+  function stripedTexture(base, stripe) {
+    return PropKit.kit.canvasTexture(`stripes|${base}|${stripe}`, 256, 256, (ctx, w, h) => {
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = stripe;
+      for (let y = 0; y < h; y += 32) ctx.fillRect(0, y, w, 12);
+    });
+  }
+
+  Object.assign(builders, {
+    eventsScreen,
+    universeReplays,
+    shibuyaBuilding(group, { w, h, d, data }) {
+      const variant = (data && data.variant) || 'stripes';
+      const seed = (data && data.seed) || 0;
+      const palettes = {
+        stripes: ['#e8590c', '#ffd8a8'],
+        pastel: ['#fff4e6', '#ffa8a8'],
+        corner: ['#f8f9fa', '#1c3d6e']
+      };
+      const [base, accent] = palettes[variant] || palettes.stripes;
+      if (variant === 'corner') {
+        // White rounded corner store with a slogan, navy curved side and a striped column
+        group.add(roundedSlab(w, h, d, 3, material(base, { roughness: 0.5 })));
+        group.add(mesh(new THREE.CylinderGeometry(d / 2, d / 2, h, 32, 1, false, 0, Math.PI), material(accent, { roughness: 0.4 }), w / 2, h / 2, 0));
+        const slogan = horizontalSign((data && data.slogan) || 'WHATEVER YOU CODE', base, '#1d1d1f');
+        group.add(box(w * 0.6, w * 0.15, 0.1, new THREE.MeshBasicMaterial({ map: slogan }), -w * 0.05, h * 0.62, d / 2 + 0.05));
+        // Shop window with displays
+        group.add(box(w * 0.7, 4.2, 0.1, material('#bfe3ff', { transparent: true, opacity: 0.45, roughness: 0.05 }), -w * 0.05, 2.3, d / 2 + 0.06));
+        for (let i = 0; i < 4; i++) group.add(box(1.2, 2.4, 0.1, new THREE.MeshBasicMaterial({ map: BrandLogos.billboardTexture(['GitHub', 'Figma', 'Docker', 'Rust'][i], { tagline: 'merch', background: '#ffffff', foreground: '#1d1d1f', width: 256, height: 512 }) }), -w * 0.3 + i * 2, 1.7, d / 2 - 0.5));
+        // Pastel striped column at the corner
+        ['#ff8fab', '#69db7c', '#4dabf7'].forEach((color, i) => group.add(box(0.35, h + 1, 0.35, material(color), -w / 2 - 0.6 + i * 0.36, (h + 1) / 2, d / 2 + 0.8)));
+        group.add(box(w * 0.5, 2.2, 0.2, new THREE.MeshBasicMaterial({ map: horizontalSign('お店 · DEV STORE', '#1c3d6e', '#69db7c') }), -w * 0.05, h - 1.6, d / 2 + 0.1));
+      } else {
+        const facade = new THREE.MeshStandardMaterial({ map: repeated(stripedTexture(base, accent), Math.max(1, w / 8), h / 8), roughness: 0.6 });
+        group.add(roundedSlab(w, h, d, 0.8, facade));
+        // Recessed windows as darker bands with glass
+        for (let floor = 1; floor < Math.floor(h / 4); floor++) group.add(box(w * 0.7, 1.6, 0.1, material('#2b3a55', { transparent: true, opacity: 0.85, roughness: 0.1 }), 0, floor * 4 + 1, d / 2 + 0.05));
+        // Vertical neon signs on the corners and a horizontal one at the top
+        const signColors = [['#ffd43b', '#c92a2a'], ['#ffffff', '#5f3dc4'], ['#ff8fab', '#ffffff'], ['#b2f2bb', '#2b8a3e']];
+        [-1, 1].forEach((side, i) => {
+          const word = SIGN_WORDS[(seed + i * 3) % SIGN_WORDS.length];
+          const [bg, fg] = signColors[(seed + i) % signColors.length];
+          const height = word.length * 1.5 + 0.6;
+          const sign = box(1.4, height, 0.3, new THREE.MeshBasicMaterial({ map: verticalSign(word, bg, fg) }), side * (w / 2 + 0.3), h * 0.55, d / 2 - 0.4);
+          sign.rotation.y = side * Math.PI / 2;
+          group.add(sign);
+          const light = box(1.5, height + 0.2, 0.1, glow(fg, 0.6), side * (w / 2 + 0.3), h * 0.55, d / 2 - 0.4);
+          light.rotation.y = side * Math.PI / 2;
+          group.add(light);
+        });
+        const [bg, fg] = signColors[(seed + 2) % signColors.length];
+        group.add(box(w * 0.7, 2, 0.3, new THREE.MeshBasicMaterial({ map: horizontalSign(SIGN_WORDS[(seed + 5) % SIGN_WORDS.length], bg, fg) }), 0, h - 1.4, d / 2 + 0.2));
+        // Glowing shop front on the ground floor
+        group.add(box(w * 0.8, 3, 0.1, glow('#fff3bf', 0.5), 0, 1.6, d / 2 + 0.06));
+      }
+    }
+  });
+
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 
   function init(socket, scene, system) {

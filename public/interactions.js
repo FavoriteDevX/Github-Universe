@@ -71,7 +71,12 @@ function fixBug(bug) {
   }
 
   const PROMPTS = {
-    laptop: 'Press E to work on the laptop',
+    laptop: 'Press E to work on the laptop · C to Codify',
+    codeblock: 'Press E to edit your code block',
+    land: 'Press E to buy this parcel (250 MVC)',
+    bed: 'Press E to sleep (skips the night, sets your spawn point)',
+    cafe_menu: 'Press E to see the menu and order',
+    roast: 'Press E to Fry your Code 🔥',
     sit: 'Press E to sit',
     coffee: 'Press E for a coffee (run faster)',
     arcade: 'Press E to play',
@@ -91,6 +96,7 @@ function fixBug(bug) {
   // Actions
   // --------------------------------------------------------------------------
   function interact(object) {
+    if (window.Sound) Sound.play('interact');
     const { type, label } = object.userData.interactable;
     switch (type) {
       case 'laptop': openWork(object); break;
@@ -109,6 +115,11 @@ function fixBug(bug) {
       case 'glass': hooks.system(`🪟 Smart glass: ${object.userData.cycle()}`); break;
       case 'vehicle': Vehicles.mount(object.userData.vehicleKey); break;
       case 'jukebox': hooks.system(object.userData.onInteract()); break;
+      case 'codeblock': Codify.interact(object); break;
+      case 'land': hooks.buyLand(object.userData.parcel); break;
+      case 'bed': hooks.sleep(object); break;
+      case 'cafe_menu': Cafe.open(); break;
+      case 'roast': Codify.startRoast(object); break;
       case 'link': {
         const url = object.userData.url;
         if (url && /^https:\/\//.test(url)) { window.open(url, '_blank', 'noopener'); hooks.system(`↗ Opened ${label} in a new tab.`); }

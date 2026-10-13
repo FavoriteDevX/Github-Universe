@@ -129,15 +129,276 @@
     },
 
     purpleRocks(group, { w, h, d }) {
-      const rock = material('#7048e8', { flatShading: true, roughness: 0.8 });
-      for (let i = 0; i < 6; i++) {
-        const peak = mesh(new THREE.ConeGeometry(w * (0.18 + (i % 3) * 0.05), h * (0.6 + (i % 2) * 0.4), 5), rock, ((i * 37) % 10 / 10 - 0.5) * w * 0.7, -h / 2 + h * 0.3, ((i * 53) % 10 / 10 - 0.5) * d * 0.7);
+      // Faceted amethyst rocks with orange moss, a pool on top and a waterfall
+      const rock = material('#7048e8', { flatShading: true, roughness: 0.75 });
+      const dark = material('#5f3dc4', { flatShading: true, roughness: 0.8 });
+      const moss = material('#f59f00', { flatShading: true, roughness: 1 });
+      for (let i = 0; i < 9; i++) {
+        const size = w * (0.16 + (i % 3) * 0.06);
+        const peak = mesh(new THREE.DodecahedronGeometry(size, 0), i % 2 ? rock : dark, ((i * 37) % 10 / 10 - 0.5) * w * 0.75, -h / 2 + size * (0.8 + (i % 4) * 0.35), ((i * 53) % 10 / 10 - 0.5) * d * 0.75);
+        peak.scale.y = 1.4 + (i % 3) * 0.4;
+        peak.rotation.set(i, i * 2, 0);
         group.add(peak);
+        const cap = mesh(new THREE.DodecahedronGeometry(size * 0.55, 0), moss, peak.position.x, peak.position.y + size * peak.scale.y * 0.75, peak.position.z);
+        cap.scale.y = 0.3;
+        group.add(cap);
       }
-      const fall = box(w * 0.2, h * 0.8, 0.3, material('#99e9f2', { transparent: true, opacity: 0.75, emissive: '#99e9f2', emissiveIntensity: 0.3 }), 0, 0, d / 2);
+      const pool = cylinder(w * 0.2, w * 0.2, 0.2, material('#66d9e8', { roughness: 0.1, emissive: '#3bc9db', emissiveIntensity: 0.25 }), 0, h * 0.3, d * 0.15, 20);
+      group.add(pool);
+      const fallTexture = PropKit.kit.canvasTexture('tokiFall', 64, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#99e9f2';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        for (let i = 0; i < 30; i++) ctx.fillRect((i * 13) % cw, (i * 37) % ch, 3, 18);
+      });
+      const fallMap = repeated(fallTexture, 1, 2);
+      const fall = box(w * 0.22, h * 0.8, 0.2, new THREE.MeshStandardMaterial({ map: fallMap, transparent: true, opacity: 0.85, emissive: '#99e9f2', emissiveIntensity: 0.35 }), 0, -h * 0.1, d / 2);
+      fall.castShadow = false;
       group.add(fall);
+      animate(fall, (time) => { fallMap.offset.y = time * 1.2; });
     },
 
+    // Waterfall pouring from a floating island all the way down to a plaza on
+    // the ground, with a splash pond and an elevator back up to the island
+    skyWaterfall(group, { w, h, data }) {
+      const waterTexture = PropKit.kit.canvasTexture('skyFall', 64, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#74c0fc';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        for (let i = 0; i < 40; i++) ctx.fillRect((i * 11) % cw, (i * 47) % ch, 2 + (i % 3), 24);
+      });
+      const map = repeated(waterTexture, 1, h / 6);
+      const stream = mesh(new THREE.CylinderGeometry(w * 0.35, w * 0.55, h, 16, 1, true), new THREE.MeshStandardMaterial({ map, transparent: true, opacity: 0.8, emissive: '#74c0fc', emissiveIntensity: 0.3, side: THREE.DoubleSide, depthWrite: false }), 0, -h / 2, 0);
+      stream.castShadow = false;
+      stream.raycast = () => {};
+      group.add(stream);
+      // Mist where the water lands
+      const mist = [];
+      for (let i = 0; i < 6; i++) {
+        const puff = new THREE.Sprite(new THREE.SpriteMaterial({ color: '#e7f5ff', transparent: true, opacity: 0.35, depthWrite: false }));
+        puff.raycast = () => {};
+        puff.userData.phase = i / 6;
+        group.add(puff);
+        mist.push(puff);
+      }
+      // Plaza below: pavers, a round splash pond, benches and the elevator
+      const plaza = new THREE.Group();
+      plaza.position.y = -h;
+      plaza.add(cylinder(w * 4, w * 4, 0.3, new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.cobbleTexture('#d8c3a5'), 4, 4), roughness: 0.9 }), 0, 0.15, 0, 48));
+      plaza.add(cylinder(w * 1.6, w * 1.7, 0.6, material('#f1ece4'), 0, 0.3, 0, 32));
+      const pond = cylinder(w * 1.45, w * 1.45, 0.1, material('#4dabf7', { roughness: 0.05, metalness: 0.3, emissive: '#1c7ed6', emissiveIntensity: 0.2 }), 0, 0.62, 0, 32);
+      pond.raycast = () => {};
+      plaza.add(pond);
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const bench = new THREE.Group();
+        bench.add(box(2.2, 0.12, 0.6, material('#c9a27a'), 0, 0.55, 0));
+        [-0.9, 0.9].forEach((dx) => bench.add(box(0.1, 0.55, 0.5, material('#495057'), dx, 0.27, 0)));
+        bench.position.set(Math.cos(angle) * w * 2.6, 0.3, Math.sin(angle) * w * 2.6);
+        bench.rotation.y = -angle + Math.PI / 2;
+        plaza.add(interactive(bench, 'sit', 'Waterfall plaza bench'));
+      }
+      const elevator = new THREE.Group();
+      elevator.add(cylinder(1.4, 1.4, 0.3, glow('#2ed573', 0.8), 0, 0.45, 0, 24));
+      elevator.add(mesh(new THREE.CylinderGeometry(1.5, 1.5, 4, 24, 1, true), material('#cfe8ff', { transparent: true, opacity: 0.25, side: THREE.DoubleSide }), 0, 2.4, 0));
+      const beam = mesh(new THREE.CylinderGeometry(0.6, 0.6, h, 12, 1, true), new THREE.MeshBasicMaterial({ color: '#b2f2bb', transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false }), 0, h / 2, 0);
+      beam.raycast = () => {};
+      elevator.add(beam);
+      const caption = textSprite('Elevator · up to the floating island (E)', { width: 8, background: 'rgba(46, 213, 115, 0.9)' });
+      caption.position.y = 5.2;
+      elevator.add(caption);
+      elevator.position.set(w * 3, 0.3, 0);
+      // data.top: landing spot on the island, relative to the top of the waterfall
+      const target = (data && data.top) || [0, 2.5, 0];
+      elevator.userData.destination = new THREE.Vector3(target[0], target[1] + h, target[2]);
+      plaza.add(interactive(elevator, 'warp', 'Up to the floating island'));
+      group.add(plaza);
+      animate(stream, (time) => {
+        map.offset.y = time * 1.6;
+        mist.forEach((puff, i) => {
+          const t = (time * 0.4 + puff.userData.phase) % 1;
+          puff.position.set(Math.sin(i * 2.1) * w * t * 1.5, -h + 0.8 + t * 3, Math.cos(i * 2.1) * w * t * 1.5);
+          puff.scale.setScalar(1.5 + t * 4);
+          puff.material.opacity = 0.35 * (1 - t);
+        });
+      });
+      group.userData.label = 'Sky waterfall';
+    },
+
+    // Tropical beach arena (Decentraland style): sandy island in the sea, a
+    // curved stone wall with red and yellow banners and torches, curved palm
+    // trees, glowing teal paths, a portal arch, a statue, a boardwalk pier,
+    // beach chairs and umbrellas
+    beachArena(group, { w, h }) {
+      const radius = w / 2;
+      const sand = new THREE.MeshStandardMaterial({ map: PropKit.kit.canvasTexture('beachSand', 512, 512, (ctx, cw, ch) => {
+        ctx.fillStyle = '#f2dca2'; ctx.fillRect(0, 0, cw, ch);
+        let seed = 9;
+        const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+        for (let i = 0; i < 4000; i++) { ctx.fillStyle = ['#e9cf8e', '#f7e6b5', '#dcc07c', '#fff1c9'][i % 4]; ctx.fillRect(random() * cw, random() * ch, 2, 2); }
+        for (let i = 0; i < 30; i++) { ctx.strokeStyle = 'rgba(200, 170, 110, 0.35)'; ctx.lineWidth = 3; ctx.beginPath(); const y = random() * ch; ctx.moveTo(0, y); ctx.bezierCurveTo(cw * 0.3, y + 10, cw * 0.6, y - 10, cw, y); ctx.stroke(); }
+      }), roughness: 1 });
+      sand.map.wrapS = sand.map.wrapT = THREE.RepeatWrapping;
+      sand.map.repeat.set(4, 4);
+      group.add(cylinder(radius * 0.82, radius * 0.86, 0.6, sand, 0, 0, 0, 64));
+      // Sea around the island with moving waves
+      const waveMap = PropKit.kit.canvasTexture('seaWaves', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#2bb3d6'; ctx.fillRect(0, 0, cw, ch);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'; ctx.lineWidth = 3;
+        for (let y = 0; y < ch; y += 24) { ctx.beginPath(); for (let x = 0; x <= cw; x += 8) { const yy = y + Math.sin(x / 20) * 4; x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
+      });
+      const sea = repeated(waveMap, 6, 6);
+      const water = mesh(new THREE.RingGeometry(radius * 0.8, radius * 1.15, 64), new THREE.MeshStandardMaterial({ map: sea, transparent: true, opacity: 0.92, roughness: 0.1, metalness: 0.2 }), 0, -0.05, 0);
+      water.rotation.x = -Math.PI / 2;
+      water.receiveShadow = true;
+      group.add(water);
+      // Glowing teal paths: an inner ring and radial lines
+      const teal = glow('#63e6be', 1.2);
+      const ring = mesh(new THREE.RingGeometry(radius * 0.38, radius * 0.4, 64), teal, 0, 0.32, 0);
+      ring.rotation.x = -Math.PI / 2;
+      group.add(ring);
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        const line = box(0.25, 0.03, radius * 0.4, teal, Math.cos(angle) * radius * 0.6, 0.32, Math.sin(angle) * radius * 0.6);
+        line.rotation.y = -angle + Math.PI / 2;
+        group.add(line);
+      }
+      // Curved stone wall (back half) with banners and torches
+      const stone = material('#a8a29a', { roughness: 0.9, flatShading: true });
+      const wallArc = Math.PI * 1.1;
+      group.add(mesh(new THREE.CylinderGeometry(radius * 0.74, radius * 0.74, 3, 48, 1, true, Math.PI - wallArc / 2, wallArc), new THREE.MeshStandardMaterial({ color: '#a8a29a', roughness: 0.9, side: THREE.DoubleSide }), 0, 1.8, 0));
+      const torches = [];
+      for (let i = 0; i <= 8; i++) {
+        const angle = Math.PI - wallArc / 2 + (i / 8) * wallArc;
+        const x = Math.sin(angle) * radius * 0.74;
+        const z = Math.cos(angle) * radius * 0.74;
+        group.add(box(1.2, 4.2, 1.2, stone, x, 2.4, z));
+        const flame = mesh(new THREE.ConeGeometry(0.3, 0.8, 6), glow('#ff922b', 2.4, { transparent: true, opacity: 0.9 }), x, 5, z);
+        flame.raycast = () => {};
+        group.add(flame);
+        torches.push(flame);
+        if (i < 8) {
+          const mid = angle + wallArc / 16;
+          const banner = box(1.2, 2.2, 0.08, material(i % 2 ? '#c92a2a' : '#f59f00', { roughness: 0.9 }), Math.sin(mid) * (radius * 0.74 - 0.3), 3.4, Math.cos(mid) * (radius * 0.74 - 0.3));
+          banner.rotation.y = mid + Math.PI;
+          group.add(banner);
+        }
+      }
+      // Curved palm trees
+      const palms = [[radius * 0.5, radius * 0.45], [-radius * 0.55, radius * 0.4], [radius * 0.6, -radius * 0.15], [-radius * 0.35, -radius * 0.55], [radius * 0.15, radius * 0.66]];
+      palms.forEach(([x, z], i) => {
+        const lean = new THREE.Vector3(i % 2 ? 1.6 : -1.4, 0, 0.8);
+        const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(x, 0.3, z), new THREE.Vector3(x + lean.x * 0.3, 3, z + lean.z * 0.3), new THREE.Vector3(x + lean.x, 6.5, z + lean.z)]);
+        group.add(mesh(new THREE.TubeGeometry(curve, 16, 0.22, 8, false), material('#8d6e4f', { roughness: 1 })));
+        const top = curve.getPoint(1);
+        for (let k = 0; k < 7; k++) {
+          const angle = (k / 7) * Math.PI * 2;
+          const leaf = mesh(new THREE.ConeGeometry(0.45, 3.2, 4), material(k % 2 ? '#2f9e44' : '#37b24d', { flatShading: true }), top.x + Math.cos(angle) * 1.2, top.y - 0.2, top.z + Math.sin(angle) * 1.2);
+          leaf.rotation.set(Math.sin(angle) * 1.2, 0, -Math.cos(angle) * 1.2);
+          leaf.scale.z = 0.25;
+          group.add(leaf);
+        }
+        [0.3, -0.3].forEach((dx) => group.add(sphere(0.22, material('#6d4c41'), top.x + dx, top.y - 0.5, top.z, 8)));
+      });
+      // Portal arch (golden frame with a glowing teal surface): back to Genesis Plaza
+      const portal = new THREE.Group();
+      portal.add(mesh(new THREE.TorusGeometry(2.2, 0.35, 10, 32, Math.PI), material('#e0b84c', { metalness: 0.6, roughness: 0.3 }), 0, 3, 0));
+      [-2.2, 2.2].forEach((x) => portal.add(box(0.7, 3, 0.7, material('#e0b84c', { metalness: 0.6 }), x, 1.5, 0)));
+      const surface = mesh(new THREE.CircleGeometry(2, 32, 0, Math.PI), glow('#66d9e8', 1.2, { transparent: true, opacity: 0.75, side: THREE.DoubleSide }), 0, 3, 0);
+      portal.add(surface);
+      portal.add(box(3.8, 3, 0.05, glow('#66d9e8', 1.2, { transparent: true, opacity: 0.75 }), 0, 1.5, 0));
+      portal.userData.label = 'Portal · back to Genesis Plaza';
+      portal.position.set(radius * 0.45, 0.3, -radius * 0.42);
+      portal.rotation.y = -0.7;
+      group.add(interactive(portal, 'jump', 'plaza'));
+      // Statue of a diver on a pedestal in the center
+      group.add(cylinder(1.4, 1.6, 1.2, stone, 0, 0.9, -radius * 0.2, 12));
+      const statue = new THREE.Group();
+      statue.add(cylinder(0.45, 0.35, 1.8, material('#5c6b73', { roughness: 0.5 }), 0, 1, 0, 12));
+      statue.add(sphere(0.38, material('#5c6b73'), 0, 2.2, 0, 16));
+      [-1, 1].forEach((side) => { const arm = cylinder(0.12, 0.1, 1.4, material('#5c6b73'), side * 0.55, 2.2, 0, 8); arm.rotation.z = side * -0.6; statue.add(arm); });
+      statue.position.set(0, 1.5, -radius * 0.2);
+      group.add(statue);
+      // Boardwalk pier into the sea
+      for (let i = 0; i < 12; i++) group.add(box(3, 0.15, 0.8, material(i % 2 ? '#a47148' : '#b5835a'), 0, 0.45, radius * 0.6 + i * 0.85));
+      [-1.4, 1.4].forEach((x) => { for (let i = 0; i < 4; i++) group.add(cylinder(0.12, 0.12, 1.4, material('#6d4c41'), x, -0.1, radius * 0.62 + i * 3, 6)); });
+      // Beach chairs (sit) and umbrellas
+      [[-radius * 0.3, radius * 0.2], [-radius * 0.15, radius * 0.3], [radius * 0.25, radius * 0.18]].forEach(([x, z], i) => {
+        const chair = new THREE.Group();
+        chair.add(box(0.9, 0.15, 1.8, material(['#ff6b6b', '#4dabf7', '#ffd43b'][i]), 0, 0.5, 0));
+        const back = box(0.9, 0.12, 1, material(['#ff6b6b', '#4dabf7', '#ffd43b'][i]), 0, 0.85, -0.85);
+        back.rotation.x = -0.9;
+        chair.add(back);
+        chair.position.set(x, 0.3, z);
+        group.add(interactive(chair, 'sit', 'Beach chair'));
+        group.add(cylinder(0.05, 0.05, 3, material('#f8f9fa'), x + 1.2, 1.8, z, 6));
+        group.add(mesh(new THREE.ConeGeometry(1.6, 0.7, 10), material(i % 2 ? '#ff8787' : '#ffffff'), x + 1.2, 3.3, z));
+      });
+      animate(group, (time) => {
+        sea.offset.set(time * 0.02, time * 0.03);
+        torches.forEach((flame, i) => { flame.scale.set(1, 0.8 + Math.sin(time * 11 + i) * 0.2, 1); });
+        surface.material.emissiveIntensity = 1 + Math.sin(time * 2) * 0.3;
+      });
+      group.userData.label = 'Tropical Beach';
+    },
+
+    // Toki Land ground: lawn with autumn-leaf mats, blue puddles and paths
+    tokiGround(group, { w, d }) {
+      const texture = PropKit.kit.canvasTexture('tokiGround', 1024, 1024, (ctx, cw, ch) => {
+        ctx.fillStyle = '#4e8a3a';
+        ctx.fillRect(0, 0, cw, ch);
+        let seed = 5;
+        const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+        for (let i = 0; i < 1600; i++) { ctx.fillStyle = ['#5c9a45', '#457c33', '#66a84f'][i % 3]; ctx.fillRect(random() * cw, random() * ch, 4, 6); }
+        // Autumn leaf mats (orange/yellow speckled patches)
+        for (let i = 0; i < 9; i++) {
+          const x = random() * cw;
+          const y = random() * ch;
+          const r = 60 + random() * 90;
+          ctx.fillStyle = '#e8a33a';
+          ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.6, random() * 3, 0, Math.PI * 2); ctx.fill();
+          for (let k = 0; k < 140; k++) { ctx.fillStyle = ['#f59f00', '#ffd43b', '#d9480f', '#ffa94d'][k % 4]; ctx.fillRect(x + (random() - 0.5) * r * 1.6, y + (random() - 0.5) * r, 5, 4); }
+        }
+        // Blue puddles
+        for (let i = 0; i < 5; i++) {
+          const x = random() * cw;
+          const y = random() * ch;
+          ctx.fillStyle = '#74c0fc';
+          ctx.beginPath(); ctx.ellipse(x, y, 40 + random() * 40, 20 + random() * 25, random() * 3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.beginPath(); ctx.ellipse(x - 10, y - 6, 16, 6, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        // Paver path around the edge
+        ctx.strokeStyle = '#d8c3a5';
+        ctx.lineWidth = 60;
+        ctx.strokeRect(40, 40, cw - 80, ch - 80);
+      });
+      const ground = box(w, 0.4, d, new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
+      ground.castShadow = false;
+      group.add(ground);
+      // Low white walls with cones, mushroom-pink trees and a floating golden key
+      const white = material('#f1ece4', { roughness: 0.7 });
+      [[-w / 2 + 6, -d / 2 + 10, 0.6, 12], [w / 2 - 10, d / 2 - 6, 10, 0.6]].forEach(([x, z, ww, dd]) => group.add(box(ww, 1.6, dd, white, x, 0.8, z)));
+      for (let i = 0; i < 10; i++) {
+        const cone = mesh(new THREE.ConeGeometry(0.4, 1.6, 8), material(i % 2 ? '#ff8787' : '#f8f9fa', { roughness: 0.6 }), -w / 2 + 4 + (i * 5.3) % (w - 8), 1, -d / 2 + 3 + ((i * 7.1) % 6));
+        group.add(cone);
+      }
+      [[-18, -16], [20, -18], [-22, 2], [8, 20]].forEach(([x, z], i) => {
+        group.add(cylinder(0.25, 0.35, 3, material('#6d4c41'), x, 1.5, z, 8));
+        const crown = sphere(1.8, material(['#f783ac', '#e64980', '#ffa8a8', '#da77f2'][i], { flatShading: true }), x, 3.8, z, 8);
+        crown.scale.y = 0.75;
+        group.add(crown);
+      });
+      const key = new THREE.Group();
+      const gold = glow('#fcc419', 0.8);
+      { const ring = mesh(new THREE.TorusGeometry(0.5, 0.12, 8, 20), gold); key.add(ring); }
+      key.add(box(1.6, 0.18, 0.18, gold, 1.2, 0, 0));
+      key.add(box(0.18, 0.4, 0.18, gold, 1.8, -0.25, 0));
+      key.add(box(0.18, 0.3, 0.18, gold, 1.5, -0.2, 0));
+      key.position.set(-17, 16.5, -4);
+      group.add(key);
+      animate(key, (time) => { key.rotation.y = time; key.position.y = 16.5 + Math.sin(time * 2) * 0.3; });
+    },
     // Welcome Hall extras: round bar with stools, floating crystals, wall TV
     barCounter(group, { w, h }) {
       const radius = w / 2;
@@ -503,6 +764,108 @@
       VideoScreens.register(screen, w, h * 0.55, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
     },
 
+    // House of MAC flagship (like the corner stores of Decentraland's fashion
+    // street): a two-story stone base with LED shop windows showing the Mac ads
+    // (assets/ads), neon signs, and on top an open black steel frame with giant
+    // glowing logos; a dark reflective sidewalk with neon lines in front
+    macFlagship(group, { w, h, d }) {
+      const baseH = 11;
+      const stoneFacade = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.brickTexture('#d8c7ad'), w / 4, baseH / 3), roughness: 0.85 });
+      const dark = material('#15161b', { roughness: 0.4, metalness: 0.5 });
+      // Base walls with openings: big LED windows and the glass entrance (front, +z)
+      const windowMaterials = [];
+      const ads = ['macbook-air.jpg', 'macbook-neo.jpg', 'm1.jpg', 'macos.jpg', 'mac-apps.jpg', 'macbook-air.jpg'];
+      const fallback = [['Mac', 'Apple personal computers'], ['MacBook Neo', 'Big value for small business.'], ['Apple M1', 'Small chip. Giant leap.'], ['macOS', 'Apple desktop operating system'], ['Xcode', 'Apple developer tools'], ['Swift', 'Programming language by Apple']];
+      const adWindow = (index, ww, wh, x, y, z, rotation) => {
+        const [title, tagline] = fallback[index % fallback.length];
+        const face = new THREE.MeshBasicMaterial({ map: productBoard(title, tagline, '#000000', '#ffffff') });
+        windowMaterials.push(face);
+        const panel = box(ww, wh, 0.2, [dark, dark, dark, dark, face, dark], x, y, z);
+        panel.rotation.y = rotation;
+        group.add(panel);
+        loadAd(ads[index % ads.length], (texture) => { face.map = texture; face.needsUpdate = true; });
+        const frame = box(ww + 0.3, wh + 0.3, 0.1, glow('#b197fc', 1.1), x - Math.sin(rotation) * 0.12, y, z - Math.cos(rotation) * 0.12);
+        frame.rotation.y = rotation;
+        group.add(frame);
+      };
+      // Front wall pieces around the entrance and two LED windows
+      group.add(box(w, baseH - 8.5, 0.6, stoneFacade, 0, 8.5 + (baseH - 8.5) / 2, d / 2));
+      [-1, 1].forEach((side) => {
+        group.add(box(1.2, 8.5, 0.6, stoneFacade, side * (w / 2 - 0.6), 4.25, d / 2));
+        group.add(box(1.2, 8.5, 0.6, stoneFacade, side * 4.2, 4.25, d / 2));
+        adWindow(side < 0 ? 0 : 1, w / 2 - 6.6, 6.5, side * (w / 4 + 1.8), 4.4, d / 2 + 0.35, 0);
+      });
+      // Side and back walls with LED windows
+      [-1, 1].forEach((side) => {
+        group.add(box(0.6, baseH, d, stoneFacade, side * w / 2, baseH / 2, 0));
+        for (let i = 0; i < 2; i++) adWindow(2 + i + (side > 0 ? 2 : 0), d * 0.36, 5.5, side * (w / 2 + 0.35), 4.6, -d / 2 + d * 0.28 + i * d * 0.45, side * Math.PI / 2);
+      });
+      group.add(box(w, baseH, 0.6, stoneFacade, 0, baseH / 2, -d / 2));
+      // Dark cornice band with a white light strip and the roof slab
+      group.add(box(w + 1, 1.2, d + 1, dark, 0, baseH - 0.6, 0));
+      group.add(box(w + 1.05, 0.12, d + 1.05, glow('#f8f9fa', 1.2), 0, baseH - 1.25, 0));
+      // Neon signs on the cornice
+      const neon = (text, color) => PropKit.kit.canvasTexture(`neon|${text}|${color}`, 1024, 256, (ctx, cw, ch) => {
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.font = 'bold 150px Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 30;
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = color;
+        ctx.strokeText(text, cw / 2, ch / 2);
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.strokeText(text, cw / 2, ch / 2);
+      });
+      [['House of MAC', '#da77f2', -w * 0.22], ['Mac', '#74c0fc', w * 0.28]].forEach(([text, color, x]) => {
+        const sign = mesh(new THREE.PlaneGeometry(text.length > 4 ? 12 : 6, 3), new THREE.MeshBasicMaterial({ map: neon(text, color), transparent: true, depthWrite: false }), x, baseH + 1.4, d / 2 + 0.7);
+        sign.raycast = () => {};
+        group.add(sign);
+      });
+      // Open steel frame on top with floors and giant glowing logos
+      const steel = material('#101114', { metalness: 0.7, roughness: 0.4 });
+      const frameH = h - baseH;
+      const floors = 3;
+      const columnsX = 5;
+      const columnsZ = 4;
+      for (let i = 0; i < columnsX; i++) {
+        for (let j = 0; j < columnsZ; j++) {
+          if (i > 0 && i < columnsX - 1 && j > 0 && j < columnsZ - 1) continue;
+          group.add(box(0.6, frameH, 0.6, steel, -w / 2 + (i / (columnsX - 1)) * w, baseH + frameH / 2, -d / 2 + (j / (columnsZ - 1)) * d));
+        }
+      }
+      for (let f = 1; f <= floors; f++) {
+        const y = baseH + (f / floors) * frameH;
+        [-1, 1].forEach((side) => {
+          group.add(box(w + 0.6, 0.5, 0.5, steel, 0, y, side * d / 2));
+          group.add(box(0.5, 0.5, d + 0.6, steel, side * w / 2, y, 0));
+        });
+        if (f < floors) group.add(box(w - 0.6, 0.3, d - 0.6, material('#2a2b31', { roughness: 0.8 }), 0, y - 0.1, 0));
+      }
+      // Giant glowing logos inside the frame, one per floor, facing the street
+      const logoPanel = (name, slug, y) => {
+        const texture = BrandLogos.billboardTexture(name, { background: '#000000', foreground: '#ffffff', width: 512, height: 512, layout: 'logo', logoSlug: slug });
+        const panel = mesh(new THREE.PlaneGeometry(frameH / floors - 1, frameH / floors - 1), new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false }), 0, y, d / 2 - 1.5);
+        panel.raycast = () => {};
+        group.add(panel);
+        return panel;
+      };
+      const logos = [logoPanel('Apple', 'apple', baseH + frameH * (2.5 / floors)), logoPanel('macOS', 'macos', baseH + frameH * (1.5 / floors)), logoPanel('Xcode', 'xcode', baseH + frameH * (0.5 / floors))];
+      // Dark reflective sidewalk with neon lines in front of the store
+      const sidewalk = box(w + 8, 0.1, 10, material('#1b1c22', { metalness: 0.7, roughness: 0.08 }), 0, 0.05, d / 2 + 5.5);
+      sidewalk.castShadow = false;
+      group.add(sidewalk);
+      [[0, 0.12, d / 2 + 1, w + 8, 0.12], [0, 0.12, d / 2 + 10.4, w + 8, 0.12]].forEach(([x, y, z, lw, ld]) => group.add(box(lw, 0.05, ld, glow('#f06595', 2), x, y, z)));
+      const diagonal = box(0.15, 0.05, 12, glow('#f06595', 2), w * 0.3, 0.12, d / 2 + 5.5);
+      diagonal.rotation.y = 0.7;
+      group.add(diagonal);
+      animate(group, (time) => { logos.forEach((logo, i) => { logo.material.opacity = 0.75 + Math.sin(time * 1.5 + i) * 0.25; }); });
+      group.userData.label = 'House of MAC';
+    },
+
     // Freestanding ad boards (official product logo + name). When the ad banner
     // image exists in public/assets/ads/ (block "image"), the board shows it,
     // resized to the banner's aspect ratio.
@@ -696,8 +1059,8 @@
   const rules = [
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
-    [/purple_rocks/, 'purpleRocks'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
-    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
+    [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/beach_arena/, 'beachArena'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
+    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/mac_flagship/, 'macFlagship'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();

@@ -26,13 +26,40 @@ const BrandLogos = (() => {
   };
   const svgCache = new Map();
 
+  // Brands that asked Simple Icons to remove their logo: their official logo
+  // can be dropped into public/assets/logos/<key>.svg (or .png) by the owner
+  const OWNER_LOGOS = {
+    OpenAI: 'openai', Microsoft: 'microsoft', 'Microsoft Azure': 'azure', Azure: 'azure', AWS: 'aws', Amazon: 'amazon',
+    Oracle: 'oracle', Adobe: 'adobe', LinkedIn: 'linkedin', Salesforce: 'salesforce'
+  };
+
   function slugFor(name) {
-    return SLUGS[name] || null;
+    return SLUGS[name] || OWNER_LOGOS[name] || null;
+  }
+
+  function imageFromUrl(url) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
+  }
+
+  // Owner-provided files: official logos (assets/logos) and real ads (assets/ads/brands)
+  const ownerFiles = new Map();
+  function ownerImage(path) {
+    if (!ownerFiles.has(path)) ownerFiles.set(path, imageFromUrl(path));
+    return ownerFiles.get(path);
   }
 
   // Fetches the SVG once and recolors it (Simple Icons ship single-color paths)
   function loadLogoImage(slug, color) {
     const key = `${slug}|${color}`;
+    if (!svgCache.has(key) && Object.values(OWNER_LOGOS).includes(slug)) {
+      // Official logo files keep their own colors
+      svgCache.set(key, ownerImage(`assets/logos/${slug}.svg`).catch(() => ownerImage(`assets/logos/${slug}.png`)));
+    }
     if (!svgCache.has(key)) {
       const fromCdn = () => fetch(`${SIMPLE_ICONS_CDN}/${slug}.svg`).then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.status))));
       svgCache.set(key, localIcons().then((icons) => icons[slug] || fromCdn()).catch(fromCdn)
@@ -94,6 +121,14 @@ const BrandLogos = (() => {
     draw(null);
     const slug = logoSlug || slugFor(name);
     if (slug) loadLogoImage(slug, foreground).then(draw).catch(() => { /* offline: keep the wordmark */ });
+    // A real ad dropped in public/assets/ads/brands/<slug>.jpg replaces the board
+    if (slug && layout === 'billboard') {
+      ownerImage(`assets/ads/brands/${slug}.jpg`).then((ad) => {
+        const scale = Math.max(width / ad.width, height / ad.height);
+        ctx.drawImage(ad, (width - ad.width * scale) / 2, (height - ad.height * scale) / 2, ad.width * scale, ad.height * scale);
+        texture.needsUpdate = true;
+      }).catch(() => { /* no ad file: keep the logo board */ });
+    }
     return texture;
   }
 

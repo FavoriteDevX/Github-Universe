@@ -329,6 +329,140 @@
     return texture && texture.image;
   }
 
+  // Timeline of memorable screens (illustrated recreations, not real screenshots)
+  function timelineTexture(kind) {
+    return canvasTexture(`timeline|${kind}`, 512, 384, (ctx, w, h) => {
+      const window95 = (title, color = '#000080') => {
+        ctx.fillStyle = '#c0c0c0'; ctx.fillRect(40, 40, w - 80, h - 90);
+        ctx.fillStyle = color; ctx.fillRect(44, 44, w - 88, 26);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Tahoma, Arial'; ctx.fillText(title, 52, 62);
+      };
+      if (kind === 'win1') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#0000aa'; ctx.fillRect(0, 0, w, 30); ctx.fillRect(0, 180, w, 26);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Courier New'; ctx.fillText('MS-DOS Executive', 180, 21); ctx.fillText('Clock', 230, 199);
+        ctx.fillStyle = '#000'; ctx.font = '16px Courier New'; ['A:  C:  \\', 'CALC.EXE  CLOCK.EXE  NOTEPAD.EXE', 'PAINT.EXE  REVERSI.EXE  WRITE.EXE'].forEach((line, i) => ctx.fillText(line, 16, 60 + i * 26));
+        ctx.beginPath(); ctx.arc(256, 290, 70, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(256, 290); ctx.lineTo(256, 240); ctx.moveTo(256, 290); ctx.lineTo(296, 300); ctx.stroke();
+      } else if (kind === 'mosaic') {
+        ctx.fillStyle = '#bdbdbd'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#e0e0e0'; ctx.fillRect(10, 40, w - 20, 34);
+        ctx.fillStyle = '#000'; ctx.font = '15px Arial'; ctx.fillText('URL: http://www.ncsa.uiuc.edu/', 18, 62);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(10, 84, w - 20, h - 94);
+        ctx.fillStyle = '#000'; ctx.font = 'bold 26px Times New Roman'; ctx.fillText('Welcome to NCSA Mosaic', 30, 130);
+        ctx.fillStyle = '#d4a017'; ctx.fillRect(30, 150, 120, 90);
+        ctx.fillStyle = '#0000ee'; ctx.font = '18px Times New Roman'; ['What\'s New', 'Starting Points', 'Internet Resources'].forEach((link, i) => ctx.fillText(link, 170, 175 + i * 30));
+      } else if (kind === 'bsod') {
+        ctx.fillStyle = '#0000aa'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#aaaaaa'; ctx.fillRect(200, 50, 112, 26);
+        ctx.fillStyle = '#0000aa'; ctx.font = 'bold 18px Courier New'; ctx.fillText('Windows', 214, 69);
+        ctx.fillStyle = '#ffffff'; ctx.font = '16px Courier New';
+        ['A fatal exception 0E has occurred at', '0028:C0011E36 in VXD VMM(01) +', '00010E36. The current application', 'will be terminated.', '', '* Press any key to terminate the', '  current application.', '* Press CTRL+ALT+DEL again to restart', '  your computer.', '', '      Press any key to continue _'].forEach((line, i) => ctx.fillText(line, 40, 110 + i * 22));
+      } else if (kind === 'apple97') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#e6e6e6'; ctx.fillRect(0, 0, w, 50);
+        ['Store', 'Hot News', 'Products', 'Support'].forEach((tab, i) => { ctx.fillStyle = ['#7aa6d6', '#e5a24b', '#9bc46b', '#c58bd0'][i]; ctx.fillRect(20 + i * 120, 12, 110, 30); ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Arial'; ctx.fillText(tab, 30 + i * 120, 33); });
+        ctx.fillStyle = '#000'; ctx.font = 'bold 34px Georgia'; ctx.fillText('Think different.', 40, 140);
+        ctx.fillStyle = '#5a5a5a'; ctx.font = '16px Arial'; ['The new Power Mac G3', 'Mac OS 8 is here', 'Developer Connection'].forEach((line, i) => ctx.fillText(`· ${line}`, 40, 200 + i * 30));
+        ctx.fillStyle = '#c0c0c0'; ctx.fillRect(330, 170, 140, 150);
+      } else if (kind === 'google98') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.font = 'bold 56px Georgia'; ['G', 'o', 'o', 'g', 'l', 'e', '!'].forEach((letter, i) => { ctx.fillStyle = ['#3369e8', '#d50f25', '#eeb211', '#3369e8', '#009925', '#d50f25', '#3369e8'][i]; ctx.fillText(letter, 120 + i * 40, 120); });
+        ctx.fillStyle = '#000'; ctx.font = '14px Arial'; ctx.fillText('Search the web using Google!', 160, 160);
+        ctx.strokeStyle = '#555'; ctx.strokeRect(120, 180, 270, 26);
+        ctx.fillStyle = '#ddd'; ctx.fillRect(140, 225, 110, 26); ctx.fillRect(265, 225, 120, 26);
+        ctx.fillStyle = '#000'; ctx.fillText('Google Search', 150, 243); ctx.fillText("I'm feeling lucky", 270, 243);
+      } else if (kind === 'thefacebook') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#3b5998'; ctx.fillRect(0, 0, w, 54);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px Verdana'; ctx.fillText('[ thefacebook ]', 20, 38);
+        ctx.fillStyle = '#6d84b4'; ctx.fillRect(0, 54, 120, h - 54);
+        ctx.fillStyle = '#ffffff'; ctx.font = '13px Verdana'; ['login', 'register', 'about'].forEach((link, i) => ctx.fillText(link, 20, 90 + i * 24));
+        ctx.fillStyle = '#3b5998'; ctx.font = 'bold 18px Verdana'; ctx.fillText('[ Welcome to Thefacebook ]', 140, 90);
+        ctx.fillStyle = '#333'; ctx.font = '13px Verdana'; ['Thefacebook is an online directory that', 'connects people through social networks', 'at colleges.', '', 'You can use Thefacebook to:', '  • Search for people at your school', '  • Find out who are in your classes', '  • Look up your friends\' friends'].forEach((line, i) => ctx.fillText(line, 140, 125 + i * 22));
+      } else if (kind === 'youtube05') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#000'; ctx.font = 'bold 30px Arial'; ctx.fillText('You', 20, 46);
+        ctx.fillStyle = '#cc0000'; ctx.fillRect(78, 18, 74, 38); ctx.fillStyle = '#fff'; ctx.fillText('Tube', 82, 46);
+        ctx.fillStyle = '#666'; ctx.font = '13px Arial'; ctx.fillText('Broadcast Yourself', 160, 46);
+        ctx.fillStyle = '#000'; ctx.fillRect(40, 80, 280, 200);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(160, 150); ctx.lineTo(160, 210); ctx.lineTo(210, 180); ctx.fill();
+        ctx.fillStyle = '#03c'; ctx.font = 'bold 14px Arial'; ctx.fillText('Me at the zoo', 40, 305);
+        ctx.fillStyle = '#666'; ctx.font = '12px Arial'; ctx.fillText('0:19 · Added: April 23, 2005', 40, 325);
+      } else if (kind === 'win95') {
+        ctx.fillStyle = '#008080'; ctx.fillRect(0, 0, w, h);
+        window95('My Computer');
+        ctx.fillStyle = '#000'; ctx.font = '14px Tahoma'; ['3½ Floppy (A:)', '(C:)', 'Control Panel', 'Printers'].forEach((item, i) => { ctx.fillStyle = '#ffd43b'; ctx.fillRect(70 + i * 95, 110, 40, 32); ctx.fillStyle = '#000'; ctx.fillText(item, 60 + i * 95, 165); });
+        ctx.fillStyle = '#c0c0c0'; ctx.fillRect(0, h - 34, w, 34);
+        ctx.fillStyle = '#000'; ctx.font = 'bold 16px Tahoma'; ctx.fillText('Start', 34, h - 11); ctx.strokeRect(6, h - 30, 74, 26);
+      } else if (kind === 'winamp') {
+        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#2e2e3e'; ctx.fillRect(40, 60, w - 80, 160);
+        ctx.fillStyle = '#00ff00'; ctx.font = '22px Courier New'; ctx.fillText('1. DJ Mike Llama - Llama Whippin', 52, 100);
+        ctx.fillText('00:05   128kbps  44kHz', 52, 140);
+        for (let i = 0; i < 20; i++) { ctx.fillStyle = i % 3 ? '#00ff00' : '#ffff00'; const bar = 10 + ((i * 37) % 60); ctx.fillRect(60 + i * 18, 210 - bar, 12, bar); }
+        ctx.fillStyle = '#ffd43b'; ctx.font = 'bold 18px Arial'; ctx.fillText('"It really whips the llama\'s ass!"', 60, 280);
+      } else if (kind === 'msn') {
+        ctx.fillStyle = '#eaf2fb'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#3a6ea5'; ctx.fillRect(0, 0, w, 40);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 18px Tahoma'; ctx.fillText('Messenger - Online', 16, 27);
+        ctx.fillStyle = '#000'; ctx.font = '15px Tahoma'; ['Online (3)', '  ● dev_friend  - shipping on friday', '  ● nerd_2006  - brb', '  ● coder_x  - ♪ Listening to: Coldplay', 'Offline (12)'].forEach((line, i) => ctx.fillText(line, 20, 80 + i * 30));
+        ctx.fillStyle = '#ffd43b'; ctx.fillRect(330, 240, 150, 60); ctx.fillStyle = '#000'; ctx.fillText('*nudge*', 370, 275);
+      } else if (kind === 'clippy') {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#ffffcc'; ctx.fillRect(40, 40, 300, 120); ctx.strokeRect(40, 40, 300, 120);
+        ctx.fillStyle = '#000'; ctx.font = '17px Tahoma'; ["It looks like you're writing", 'a letter. Would you like help?', '', '○ Get help with writing the letter'].forEach((line, i) => ctx.fillText(line, 54, 72 + i * 24));
+        ctx.strokeStyle = '#888'; ctx.lineWidth = 7; ctx.beginPath(); ctx.ellipse(400, 260, 34, 80, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(388, 230, 6, 0, Math.PI * 2); ctx.arc(414, 230, 6, 0, Math.PI * 2); ctx.fill();
+      } else if (kind === 'geocities') {
+        ctx.fillStyle = '#000033'; ctx.fillRect(0, 0, w, h);
+        for (let i = 0; i < 80; i++) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i * 53) % w, (i * 97) % h, 2, 2); }
+        ctx.fillStyle = '#ff00ff'; ctx.font = 'bold 30px Comic Sans MS, cursive'; ctx.fillText('Welcome 2 my homepage!!!', 30, 70);
+        ctx.fillStyle = '#ffff00'; ctx.fillRect(140, 140, 230, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 18px Arial'; ctx.fillText('🚧 UNDER CONSTRUCTION 🚧', 150, 172);
+        ctx.fillStyle = '#00ff00'; ctx.font = '18px Courier New'; ctx.fillText('You are visitor #000451', 140, 250);
+        ctx.fillStyle = '#00ffff'; ctx.fillText('[Sign my guestbook] [Webring >>]', 90, 300);
+      } else if (kind === 'macos9') {
+        ctx.fillStyle = '#6b78a6'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#e8e8e8'; ctx.fillRect(0, 0, w, 24);
+        ctx.fillStyle = '#000'; ctx.font = '14px Charcoal, Chicago, Arial'; ctx.fillText('  File  Edit  View  Special  Help', 20, 17);
+        ctx.fillStyle = '#dddddd'; ctx.fillRect(60, 60, 300, 200);
+        ctx.fillStyle = '#bbbbbb'; ctx.fillRect(60, 60, 300, 22);
+        ctx.fillStyle = '#000'; ctx.fillText('Macintosh HD', 170, 76);
+        ['Applications', 'System Folder', 'Documents'].forEach((item, i) => { ctx.fillStyle = '#8fb3e8'; ctx.fillRect(80 + i * 95, 110, 50, 40); ctx.fillStyle = '#000'; ctx.fillText(item, 70 + i * 95, 170); });
+      } else {
+        ctx.fillStyle = '#222'; ctx.fillRect(0, 0, w, h);
+      }
+    });
+  }
+
+  const TIMELINE = [
+    [1969, 'arpanet', 'ARPANET', 'The first packet-switched network: its first message, "LO", crashed while typing LOGIN.'],
+    [1985, 'win1', 'Windows 1.0', 'Tiled windows on top of MS-DOS, with Calculator, Clock, Notepad and Reversi.'],
+    [1991, 'firstsite', 'The first website', 'Tim Berners-Lee published the first web page at CERN.'],
+    [1993, 'mosaic', 'NCSA Mosaic', 'The browser that showed images inline with text and made the web popular.'],
+    [1995, 'win95', 'Windows 95', 'The Start button, the taskbar and plug and play reached millions of homes.'],
+    [1995, 'geocities', 'Personal homepages', 'Starry backgrounds, visitor counters, guestbooks, webrings and "under construction" signs.'],
+    [1997, 'apple97', 'Apple website (late 1990s)', '"Think different": colorful tabs and the Power Mac G3 era.'],
+    [1997, 'winamp', 'Winamp', 'The MP3 player with skins, a spectrum analyzer and a famous llama.'],
+    [1998, 'google98', 'Google (beta)', 'A search box, two buttons and a link-based ranking that changed the web.'],
+    [1999, 'msn', 'Instant messengers', 'Status messages, nudges and "brb": how a generation chatted after school.'],
+    [1999, 'macos9', 'Mac OS 9', 'Platinum windows, extensions conflicts and the last classic Mac OS.'],
+    [2001, 'clippy', 'The office assistant', '"It looks like you\'re writing a letter." Loved by few, remembered by all.'],
+    [2001, 'bsod', 'Blue Screen of Death', 'A fatal exception 0E has occurred... the most feared screen of the PC era.'],
+    [2004, 'thefacebook', 'Thefacebook', 'An online directory that connected people through social networks at colleges.'],
+    [2005, 'youtube05', 'YouTube', '"Me at the zoo", 19 seconds, the first video uploaded to the site.']
+  ];
+
+  const MEMORABLE_MENTIONS = [
+    ['zipdisk', 'Zip disk (100 MB)', 'A chunky floppy successor that clicked ominously when it died.'],
+    ['pager', 'Pager', 'Numeric messages and "call me back" codes, years before smartphones.'],
+    ['pda', 'PDA with stylus', 'Handwriting recognition, a calendar and a stylus that was always lost.'],
+    ['modem', '56k dial-up modem', 'The screeching handshake that meant you were going online (and nobody could call home).'],
+    ['crt', 'CRT monitor', 'Heavy, warm and humming: degauss button included.'],
+    ['joystick', 'Analog joystick', 'Calibrate before every game, drift forever after.'],
+    ['floppy', '3.5" floppy disk', '1.44 MB of hope. Its icon still means "save".'],
+    ['tamagotchi', 'Virtual pet keychain', 'Needed feeding during class. Many did not survive.']
+  ];
+
   const HISTORY = [
     ['arpanet', 'ARPANET (1969)', 'The first packet-switched network connected UCLA, SRI, UCSB and the University of Utah. Its first message, "LO", crashed while typing "LOGIN".'],
     ['email', 'First network email (1971)', 'Ray Tomlinson sent the first email between two computers and chose the @ sign to separate user and host.'],
@@ -500,6 +634,106 @@
     }
   });
 
+  function hardwareModel(kind) {
+    const item = new THREE.Group();
+    const dark = material('#2b2d33', { roughness: 0.5 });
+    const beige = material('#d8cfc0', { roughness: 0.6 });
+    if (kind === 'zipdisk') { item.add(box(1, 0.15, 1, material('#1c7ed6'), 0, 0.08, 0)); item.add(box(0.6, 0.02, 0.4, material('#e9ecef'), 0, 0.17, 0.2)); }
+    else if (kind === 'pager') { item.add(box(0.7, 0.25, 0.4, dark, 0, 0.15, 0)); item.add(box(0.5, 0.02, 0.2, glow('#94d82d', 0.8), 0, 0.28, 0)); }
+    else if (kind === 'pda') { item.add(box(0.55, 0.12, 0.9, material('#868e96'), 0, 0.06, 0)); item.add(box(0.42, 0.02, 0.55, glow('#c3fae8', 0.4), 0, 0.13, -0.05)); item.add(cylinder(0.02, 0.02, 0.8, dark, 0.35, 0.1, 0, 6)).children; }
+    else if (kind === 'modem') { item.add(box(1.2, 0.3, 0.8, beige, 0, 0.15, 0)); for (let i = 0; i < 6; i++) item.add(box(0.06, 0.04, 0.04, glow(i % 2 ? '#ff6b6b' : '#94d82d', 1.2), -0.4 + i * 0.16, 0.25, 0.41)); }
+    else if (kind === 'crt') { item.add(box(1.2, 1, 1.1, beige, 0, 0.5, 0)); item.add(box(0.95, 0.75, 0.02, glow('#1864ab', 0.5), 0, 0.55, 0.56)); }
+    else if (kind === 'joystick') { item.add(box(0.7, 0.2, 0.7, dark, 0, 0.1, 0)); item.add(cylinder(0.05, 0.07, 0.7, dark, 0, 0.5, 0, 8)); item.add(sphere(0.12, material('#e03131'), 0, 0.9, 0, 10)); }
+    else if (kind === 'floppy') { item.add(box(0.9, 0.04, 0.9, dark, 0, 0.02, 0)); item.add(box(0.5, 0.045, 0.25, material('#adb5bd', { metalness: 0.8 }), 0, 0.03, -0.3)); item.add(box(0.6, 0.045, 0.35, material('#f8f9fa'), 0, 0.03, 0.22)); }
+    else { const egg = sphere(0.35, material('#f783ac'), 0, 0.38, 0, 16); egg.scale.y = 1.25; item.add(egg); item.add(box(0.28, 0.2, 0.02, glow('#c3fae8', 0.4), 0, 0.42, 0.33)); }
+    return item;
+  }
+
+  Object.assign(builders, {
+    // A building inside a building: the Timeline Hall (stone walls, skylight,
+    // a timeline on the floor and lit frames from 1969 to 2005) wraps the
+    // white "Memorable Mentions" vault with forgotten hardware on pedestals
+    timelineHall(group, { w, h, d, label }) {
+      const stone = material('#c9b79c', { roughness: 0.8 });
+      const floor = new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.gridTexture('#efe7db', '#d6cbb8', 4), w / 6, d / 6), roughness: 0.6 });
+      group.add(box(w, 0.3, d, floor, 0, 0.15, 0));
+      // Outer walls with an entrance on the front (+z)
+      group.add(box(w, h, 0.8, stone, 0, h / 2, -d / 2));
+      [-1, 1].forEach((side) => group.add(box(0.8, h, d, stone, side * w / 2, h / 2, 0)));
+      [-1, 1].forEach((side) => group.add(box(w / 2 - 3, h, 0.8, stone, side * (w / 4 + 1.5), h / 2, d / 2)));
+      group.add(box(6, h - 5, 0.8, stone, 0, 5 + (h - 5) / 2, d / 2));
+      // Roof ring with a glass skylight and columns
+      group.add(box(w + 1, 0.6, 4, stone, 0, h, -d / 2 + 2));
+      group.add(box(w + 1, 0.6, 4, stone, 0, h, d / 2 - 2));
+      [-1, 1].forEach((side) => group.add(box(4, 0.6, d - 8, stone, side * (w / 2 - 2), h, 0)));
+      const skylight = box(w - 8, 0.2, d - 8, material('#cfe8ff', { transparent: true, opacity: 0.3, roughness: 0.05 }), 0, h, 0);
+      skylight.castShadow = false;
+      group.add(skylight);
+      const title = PropKit.kit.textSprite(label || 'Timeline Hall · Forgotten Software & Hardware', { width: 14, background: 'rgba(93, 64, 55, 0.92)' });
+      title.position.set(0, h + 2, d / 2 + 1);
+      group.add(title);
+      // Timeline line on the floor around the inner vault, with year markers
+      const pathRadius = Math.min(w, d) / 2 - 4;
+      const line = mesh(new THREE.RingGeometry(pathRadius - 0.15, pathRadius + 0.15, 64), glow('#ffb703', 1), 0, 0.32, 0);
+      line.rotation.x = -Math.PI / 2;
+      group.add(line);
+      // Frames on the outer walls in chronological order (left wall, back wall, right wall)
+      const wallSpots = [];
+      const perSide = Math.ceil(TIMELINE.length / 3);
+      for (let i = 0; i < TIMELINE.length; i++) {
+        const sideIndex = Math.floor(i / perSide);
+        const t = (i % perSide + 0.5) / perSide;
+        if (sideIndex === 0) wallSpots.push([-w / 2 + 0.5, d / 2 - 3 - t * (d - 6), Math.PI / 2]);
+        else if (sideIndex === 1) wallSpots.push([-w / 2 + 3 + t * (w - 6), -d / 2 + 0.5, 0]);
+        else wallSpots.push([w / 2 - 0.5, -d / 2 + 3 + t * (d - 6), -Math.PI / 2]);
+      }
+      TIMELINE.forEach(([year, kind, name, info], index) => {
+        const [x, z, rotation] = wallSpots[index];
+        const frame = new THREE.Group();
+        frame.add(box(3.6, 2.9, 0.15, material('#3e2723'), 0, 0, 0));
+        frame.add(box(3.3, 2.5, 0.05, new THREE.MeshBasicMaterial({ map: timelineTexture(kind) }), 0, 0, 0.1));
+        frame.add(box(2, 0.5, 0.05, new THREE.MeshBasicMaterial({ map: labelTexture(`${year} · ${name}`, { bg: '#3e2723', fg: '#ffe8a3', width: 512, height: 100, font: 'bold 34px Georgia, serif' }) }), 0, -1.75, 0.1));
+        frame.add(box(1.8, 0.1, 0.3, glow('#fff3c4', 1.6), 0, 1.6, 0.3));
+        frame.position.set(x, 3.4, z);
+        frame.rotation.y = rotation;
+        frame.userData = { label: `${year} · ${name}`, info };
+        group.add(PropKit.kit.interactive(frame, 'inspect', name));
+        // Year marker on the floor timeline
+        const angle = Math.atan2(z, x);
+        const marker = PropKit.kit.textSprite(String(year), { width: 1.6, background: 'rgba(255, 183, 3, 0.9)', color: '#3e2723' });
+        marker.position.set(Math.cos(angle) * pathRadius, 0.9, Math.sin(angle) * pathRadius);
+        group.add(marker);
+      });
+      // Inner building: the Memorable Mentions vault (white, with an open front)
+      const vault = new THREE.Group();
+      const vw = w * 0.42;
+      const vd = d * 0.42;
+      const vh = h * 0.55;
+      const white = material('#f8f9fa', { roughness: 0.4 });
+      vault.add(box(vw, vh, 0.4, white, 0, vh / 2, -vd / 2));
+      [-1, 1].forEach((side) => vault.add(box(0.4, vh, vd, white, side * vw / 2, vh / 2, 0)));
+      [-1, 1].forEach((side) => vault.add(box(vw / 2 - 1.6, vh, 0.4, white, side * (vw / 4 + 0.8), vh / 2, vd / 2)));
+      vault.add(box(vw + 0.6, 0.4, vd + 0.6, white, 0, vh, 0));
+      vault.add(box(vw * 0.8, 0.08, 0.5, glow('#4dabf7', 1.2), 0, vh - 0.3, vd / 2 + 0.25));
+      const sign = box(vw * 0.6, 0.9, 0.1, new THREE.MeshBasicMaterial({ map: labelTexture('MEMORABLE MENTIONS', { bg: '#1c2a5a', fg: '#ffffff', width: 512, height: 100, font: 'bold 44px Segoe UI, Arial, sans-serif' }) }), 0, vh + 0.9, vd / 2 + 0.3);
+      vault.add(sign);
+      MEMORABLE_MENTIONS.forEach(([kind, name, info], index) => {
+        const column = index % 4;
+        const row = Math.floor(index / 4);
+        const x = -vw / 2 + 1.6 + column * ((vw - 3.2) / 3);
+        const z = -vd / 2 + 1.8 + row * 2.6;
+        vault.add(cylinder(0.5, 0.6, 1, material('#dee2e6'), x, 0.5, z, 16));
+        const model = hardwareModel(kind);
+        model.position.set(x, 1, z);
+        model.userData = { label: name, info };
+        vault.add(PropKit.kit.interactive(model, 'inspect', name));
+        vault.add(box(0.06, 0.06, 0.6, glow('#fff3c4', 1.2), x, vh - 0.6, z));
+      });
+      group.add(vault);
+      group.userData.label = 'Timeline Hall';
+    }
+  });
+
   const rules = [
     [/giant_floppy/, 'giantFloppy'],
     [/giant_cpu/, 'giantCpu'],
@@ -513,7 +747,8 @@
     [/ball_mouse/, 'ballMouse'],
     [/museum_entrance/, 'museumHall'],
     [/history_corridor/, 'historyCorridor'],
-    [/minimal_gallery/, 'minimalGallery']
+    [/minimal_gallery/, 'minimalGallery'],
+    [/timeline_hall/, 'timelineHall']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();

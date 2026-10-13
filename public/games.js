@@ -4,14 +4,21 @@
 // Builders for the interactive maps plus the shared game state that is synced
 // through server.js (or simulated locally in solo mode).
 const GameSystems = (() => {
-  const { material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, labelTexture, windowsTexture, repeated, gridTexture, canvasTexture } = PropKit.kit;
+  const { material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, labelTexture, windowsTexture, repeated, gridTexture, canvasTexture, seat } = PropKit.kit;
 
   const DECOR_ITEMS = ['tree', 'lamp', 'banner', 'fountain', 'duck', 'flag', 'neon', 'bench'];
   const WEARABLES = ['hoodie', 'mug', 'cap', 'headphones', 'none'];
-  // Official keynote recordings from Apple's own YouTube channel, played through YouTube's embed player
+  // Keynote recordings played through YouTube's embed player: Apple's WWDCs,
+  // OpenAI DevDays and GitHub Universe opening keynotes (newest first)
   const KEYNOTE_PLAYLIST = [
+    { videoId: 'Fls_onRviPM', title: 'OpenAI DevDay 2026 Keynote', subtitle: 'OpenAI - Sept 29, 2026' },
+    { videoId: 'P6Va0_KILi4', title: 'GitHub Universe 2025 Keynote', subtitle: 'GitHub - Oct 28, 2025' },
+    { videoId: 'hS1YqcewH0c', title: 'OpenAI DevDay 2025 Keynote', subtitle: 'OpenAI - Oct 6, 2025' },
     { videoId: '0_DjDdfqtUE', title: 'WWDC 2025 Keynote', subtitle: 'Apple - June 9, 2025' },
+    { videoId: 'dSf8QOjazrQ', title: 'GitHub Universe 2024 Keynote', subtitle: 'GitHub - Oct 29, 2024' },
     { videoId: 'RXeOiIDNNek', title: 'WWDC 2024 Keynote', subtitle: 'Apple - June 10, 2024' },
+    { videoId: 'NrQkdDVupQE', title: 'GitHub Universe 2023 Keynote', subtitle: 'GitHub - Nov 8, 2023' },
+    { videoId: 'U9mJuUkhUzk', title: 'OpenAI DevDay 2023 Keynote', subtitle: 'OpenAI - Nov 6, 2023' },
     { videoId: 'GYkq9Rgoj8E', title: 'WWDC 2023 Keynote', subtitle: 'Apple - June 5, 2023' },
     { videoId: 'q5D55G7Ejs8', title: 'WWDC 2022 Keynote', subtitle: 'Apple - June 6, 2022' },
     { videoId: '0TD96VTf0Xs', title: 'WWDC 2021 Keynote', subtitle: 'Apple - June 7, 2021' },
@@ -307,6 +314,34 @@ const GameSystems = (() => {
         strip.position.set(0, -h / 2 + (h / tiers) * (tier + 1) + 0.1, -d / 2 - 10);
         group.add(strip);
       }
+      // Theatre chairs on every visible tier, all facing the stage (E to sit)
+      const chairs = [];
+      for (let tier = 0; tier < tiers; tier++) {
+        const top = -h / 2 + (h / tiers) * (tier + 1);
+        if (top < 0.2) continue;
+        const ringWidth = (w / 2 - 14) / tiers;
+        const radius = 14 + tier * ringWidth + ringWidth * 0.55;
+        const count = Math.floor((radius * Math.PI * 0.86) / 1.5);
+        for (let i = 0; i < count; i++) {
+          const angle = Math.PI * 1.07 + (i + 0.5) * ((Math.PI * 0.86) / count);
+          chairs.push({ x: Math.cos(angle) * radius, y: top, z: -d / 2 - 10 - Math.sin(angle) * radius, facing: Math.atan2(Math.cos(angle), -Math.sin(angle)) });
+        }
+      }
+      const cushion = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 0.35, 0.8), material('#c1121f', { roughness: 0.95 }), chairs.length);
+      const back = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 0.9, 0.15), material('#a4161a', { roughness: 0.95 }), chairs.length);
+      const matrix = new THREE.Matrix4();
+      const rotation = new THREE.Quaternion();
+      const offset = new THREE.Vector3();
+      chairs.forEach((chair, index) => {
+        rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), chair.facing);
+        matrix.compose(new THREE.Vector3(chair.x, chair.y + 0.45, chair.z), rotation, new THREE.Vector3(1, 1, 1));
+        cushion.setMatrixAt(index, matrix);
+        offset.set(0, 0, 0.42).applyQuaternion(rotation);
+        matrix.compose(new THREE.Vector3(chair.x + offset.x, chair.y + 0.95, chair.z + offset.z), rotation, new THREE.Vector3(1, 1, 1));
+        back.setMatrixAt(index, matrix);
+        group.add(seat(chair.x, chair.y + 0.6, chair.z, 'Amphitheater seat', chair.facing));
+      });
+      [cushion, back].forEach((instanced) => { instanced.castShadow = true; instanced.receiveShadow = true; group.add(instanced); });
     },
 
     keynoteStage(group, { w, h, d, color }) {
@@ -329,7 +364,7 @@ const GameSystems = (() => {
       const screenMesh = box(w, h, 0.05, new THREE.MeshBasicMaterial({ map: screen.texture }), 0, 0, d / 2 + 0.03);
       group.add(screenMesh);
       // The keynotes autoplay (muted) right on the big screen when you are close
-      keynoteVideo = VideoScreens.register(screenMesh, w, h, VideoScreens.youtubeEmbed(KEYNOTE_PLAYLIST.map((entry) => entry.videoId)));
+      keynoteVideo = VideoScreens.register(screenMesh, w, h, VideoScreens.youtubeEmbed(KEYNOTE_PLAYLIST.map((entry) => entry.videoId)), { distance: 160 });
       [-1, 1].forEach((side) => group.add(box(1.2, h + 4, 1.2, material('#2b2d42'), side * (w / 2 + 1), -2, 0)));
       keynoteScreen = { screen, group };
       group.userData.isKeynoteScreen = true;
@@ -846,7 +881,7 @@ const GameSystems = (() => {
       }
       if (stream) hooks.system(`Live stream set on the Keynote screen: ${stream.title}. Type /watch.`);
     },
-    trees(trees) { state.trees = trees; renderPlantedTrees(); }
+    trees(trees) { state.trees = trees; window.multiverseTreeCount = trees.length; renderPlantedTrees(); }
   };
 
   // Local simulation used only in solo mode (no server)

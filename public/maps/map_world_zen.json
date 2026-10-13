@@ -1,10 +1,85 @@
 {
-  "themeName": "Private World Instance: Zen Floating Temple",
-  "backgroundColor": "#a4b0be",
-  "blocks": [
-    { "type": "floating_island_base", "position": [0, 0, 0], "scale": [24, 4, 24], "color": "#2ed573", "label": "Isolated World Chunk (Off-Chain Instance)" },
-    { "type": "meditation_altar", "position": [0, 2.4, 0], "scale": [4, 0.8, 4], "color": "#ffa502", "label": "Zen Mindful Coding Anchor" },
-    { "type": "corporate_boardroom_table", "position": [0, 2.2, -6], "scale": [3, 0.4, 6], "color": "#747d8c", "label": "Private Meeting Node" },
-    { "type": "waterfall_drain", "position": [0, -2, 11], "scale": [4, 6, 0.5], "color": "#70a1ff" }
-  ]
+ "themeName": "Private World Instance: Zen Floating Temple",
+ "backgroundColor": "#a4b0be",
+ "blocks": [
+  {
+   "type": "floating_island_base",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    24,
+    4,
+    24
+   ],
+   "color": "#2ed573",
+   "label": "Isolated World Chunk (Off-Chain Instance)"
+  },
+  {
+   "type": "meditation_altar",
+   "position": [
+    0,
+    2.4,
+    0
+   ],
+   "scale": [
+    4,
+    0.8,
+    4
+   ],
+   "color": "#ffa502",
+   "label": "Zen Mindful Coding Anchor"
+  },
+  {
+   "type": "corporate_boardroom_table",
+   "position": [
+    0,
+    2.2,
+    -6
+   ],
+   "scale": [
+    3,
+    0.4,
+    6
+   ],
+   "color": "#747d8c",
+   "label": "Private Meeting Node"
+  },
+  {
+   "type": "waterfall_drain",
+   "position": [
+    0,
+    -2,
+    11
+   ],
+   "scale": [
+    4,
+    6,
+    0.5
+   ],
+   "color": "#70a1ff"
+  },
+  {
+   "type": "sky_waterfall",
+   "position": [
+    0,
+    -1.6,
+    13
+   ],
+   "scale": [
+    2.2,
+    14.84,
+    2.2
+   ],
+   "color": "#74c0fc",
+   "label": "Sky waterfall",
+   "top": [
+    0,
+    6.3,
+    -16.8
+   ]
+  }
+ ]
 }

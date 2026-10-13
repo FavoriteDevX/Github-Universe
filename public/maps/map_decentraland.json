@@ -20,7 +20,7 @@
     [
      -62,
      22,
-     8
+     14
     ]
    ]
   },
@@ -191,9 +191,9 @@
   {
    "type": "west_aetheria_neon_tower",
    "position": [
-    -80,
+    -94,
     12,
-    6
+    2
    ],
    "scale": [
     16,
@@ -310,9 +310,9 @@
   {
    "type": "pond",
    "position": [
-    -46,
+    -40,
     0,
-    50
+    59
    ],
    "scale": [
     26,
@@ -470,9 +470,9 @@
   {
    "type": "round_tree",
    "position": [
-    -49.8,
+    -36,
     3.5,
-    15.0
+    -6
    ],
    "scale": [
     4,
@@ -944,9 +944,9 @@
     22
    ],
    "scale": [
-    8,
+    14,
     1,
-    8
+    14
    ],
    "color": "#2ec4f2",
    "label": "Underground entrance",
@@ -1135,6 +1135,158 @@
    ],
    "color": "#0b0b12",
    "label": "Hypercar Showroom"
+  },
+  {
+   "type": "ad_cube_stack",
+   "position": [
+    64,
+    0,
+    -37
+   ],
+   "scale": [
+    6,
+    18,
+    6
+   ],
+   "color": "#b2f22c",
+   "label": "Ad tower",
+   "seed": 0
+  },
+  {
+   "type": "led_cube_kiosk",
+   "position": [
+    71,
+    0,
+    41
+   ],
+   "scale": [
+    9,
+    16,
+    9
+   ],
+   "color": "#4cc9f0",
+   "label": "LED cube",
+   "seed": 5
+  },
+  {
+   "type": "supertree",
+   "position": [
+    11,
+    0,
+    61
+   ],
+   "scale": [
+    8,
+    18,
+    8
+   ],
+   "color": "#3f8f3a",
+   "label": "Supertree"
+  },
+  {
+   "type": "supertree",
+   "position": [
+    -21,
+    0,
+    58
+   ],
+   "scale": [
+    7,
+    15,
+    7
+   ],
+   "color": "#3f8f3a",
+   "label": "Supertree"
+  },
+  {
+   "type": "supertree",
+   "position": [
+    58,
+    0,
+    21
+   ],
+   "scale": [
+    8,
+    20,
+    8
+   ],
+   "color": "#3f8f3a",
+   "label": "Supertree"
+  },
+  {
+   "type": "marble_statue",
+   "position": [
+    77,
+    0,
+    -28
+   ],
+   "scale": [
+    3,
+    7,
+    3
+   ],
+   "color": "#f3eee9",
+   "label": "Statue of the Unknown Developer"
+  },
+  {
+   "type": "kinetic_sculpture",
+   "position": [
+    77,
+    0,
+    28
+   ],
+   "scale": [
+    8,
+    7,
+    8
+   ],
+   "color": "#9aa5b1",
+   "label": "Kinetic sculpture"
+  },
+  {
+   "type": "cloud_store",
+   "position": [
+    0,
+    0,
+    -32
+   ],
+   "scale": [
+    18,
+    8,
+    10
+   ],
+   "color": "#b89b8c",
+   "label": "Cotton Cloud Shop"
+  },
+  {
+   "type": "news_ring",
+   "position": [
+    -62,
+    0,
+    22
+   ],
+   "scale": [
+    30,
+    6,
+    30
+   ],
+   "color": "#ffb703",
+   "label": "Events Explorer"
+  },
+  {
+   "type": "spawn_hub",
+   "position": [
+    -62,
+    0,
+    22
+   ],
+   "scale": [
+    52,
+    1,
+    52
+   ],
+   "color": "#e9ecf2",
+   "label": "Genesis spawn hub"
   }
  ]
 }

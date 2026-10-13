@@ -19,10 +19,33 @@ const PropKit = (() => {
   // Materials, geometry helpers and canvas textures (cached and shared)
   // --------------------------------------------------------------------------
   const materialCache = new Map();
+  // A very soft grain on flat-colored surfaces so they read as painted
+  // plaster/plastic instead of perfectly flat CG color
+  let grainTexture = null;
+  function grain() {
+    if (!grainTexture) {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      const image = ctx.createImageData(128, 128);
+      for (let i = 0; i < image.data.length; i += 4) {
+        const value = 238 + Math.floor(Math.random() * 17);
+        image.data[i] = image.data[i + 1] = image.data[i + 2] = value;
+        image.data[i + 3] = 255;
+      }
+      ctx.putImageData(image, 0, 0);
+      grainTexture = new THREE.CanvasTexture(canvas);
+      grainTexture.wrapS = grainTexture.wrapT = THREE.RepeatWrapping;
+      grainTexture.repeat.set(3, 3);
+    }
+    return grainTexture;
+  }
+
   function material(color, options = {}) {
     const key = `${color}|${JSON.stringify(options)}`;
     if (!materialCache.has(key)) {
-      materialCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, ...options }));
+      const flat = !options.map && !options.transparent && !options.emissive && !options.flatShading;
+      materialCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, ...(flat ? { map: grain() } : {}), ...options }));
     }
     return materialCache.get(key);
   }
@@ -45,7 +68,51 @@ const PropKit = (() => {
     return result;
   }
 
-  const box = (w, h, d, boxMaterial, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), boxMaterial, x, y, z);
+  // Every box in the world has softly rounded edges (Decentraland-like, less
+  // "blocky"). The geometry keeps BoxGeometry's 6 material groups and per-face
+  // UVs, so textured faces still work; geometries are cached by size.
+  const roundedBoxCache = new Map();
+  function roundedBoxGeometry(w, h, d) {
+    const minDim = Math.min(w, h, d);
+    if (minDim < 0.06) return new THREE.BoxGeometry(w, h, d);
+    const key = `${w.toFixed(3)}|${h.toFixed(3)}|${d.toFixed(3)}`;
+    if (roundedBoxCache.has(key)) return roundedBoxCache.get(key);
+    const r = Math.min(0.18, Math.max(0.02, minDim * 0.16));
+    const geometry = new THREE.BoxGeometry(1, 1, 1, 6, 6, 6);
+    const position = geometry.attributes.position;
+    const normal = geometry.attributes.normal;
+    const half = [w / 2, h / 2, d / 2];
+    const v = new THREE.Vector3();
+    const inner = new THREE.Vector3();
+    for (let i = 0; i < position.count; i++) {
+      const coords = [position.getX(i), position.getY(i), position.getZ(i)].map((c, axis) => {
+        // Remap so the outer third of each axis becomes the rounded band
+        const a = Math.abs(c);
+        const mapped = a <= 1 / 3 ? a * 3 * (half[axis] - r) : (half[axis] - r) + (a - 1 / 3) * 6 * r;
+        return Math.sign(c) * mapped;
+      });
+      v.set(coords[0], coords[1], coords[2]);
+      inner.set(
+        THREE.MathUtils.clamp(v.x, -(half[0] - r), half[0] - r),
+        THREE.MathUtils.clamp(v.y, -(half[1] - r), half[1] - r),
+        THREE.MathUtils.clamp(v.z, -(half[2] - r), half[2] - r)
+      );
+      const n = v.clone().sub(inner);
+      if (n.lengthSq() < 1e-10) n.set(normal.getX(i), normal.getY(i), normal.getZ(i));
+      n.normalize();
+      v.copy(inner).addScaledVector(n, r);
+      position.setXYZ(i, v.x, v.y, v.z);
+      normal.setXYZ(i, n.x, n.y, n.z);
+    }
+    position.needsUpdate = true;
+    normal.needsUpdate = true;
+    geometry.computeBoundingSphere();
+    geometry.computeBoundingBox();
+    roundedBoxCache.set(key, geometry);
+    return geometry;
+  }
+
+  const box = (w, h, d, boxMaterial, x, y, z) => mesh(roundedBoxGeometry(w, h, d), boxMaterial, x, y, z);
   const cylinder = (radiusTop, radiusBottom, h, cylinderMaterial, x, y, z, segments = 16) =>
     mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, h, segments), cylinderMaterial, x, y, z);
   const sphere = (radius, sphereMaterial, x, y, z, segments = 12) =>
@@ -102,31 +169,75 @@ const PropKit = (() => {
     });
   }
 
+  // Glass curtain wall: mullions, spandrel bands, sky reflections, a few lit offices
   function windowsTexture(wallColor, litColor = '#ffe9a8') {
-    return canvasTexture(`windows|${wallColor}|${litColor}`, 128, 256, (ctx, w, h) => {
+    return canvasTexture(`windows|${wallColor}|${litColor}`, 256, 512, (ctx, w, h) => {
       ctx.fillStyle = wallColor;
       ctx.fillRect(0, 0, w, h);
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 4; col++) {
-          const lit = (row * 7 + col * 3) % 5 === 0;
-          ctx.fillStyle = lit ? litColor : 'rgba(20, 30, 50, 0.75)';
-          ctx.fillRect(10 + col * 30, 12 + row * 30, 18, 20);
+      let seed = wallColor.length * 131 + 7;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      const columns = 4;
+      const rows = 8;
+      const cw = w / columns;
+      const rh = h / rows;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < columns; col++) {
+          const x = col * cw + 5;
+          const y = row * rh + 8;
+          const lit = random() < 0.16;
+          const glass = ctx.createLinearGradient(x, y, x + cw, y + rh);
+          if (lit) {
+            glass.addColorStop(0, litColor);
+            glass.addColorStop(1, shade(litColor, -0.2));
+          } else {
+            glass.addColorStop(0, 'rgba(178, 214, 240, 0.95)');
+            glass.addColorStop(0.45, 'rgba(70, 104, 140, 0.95)');
+            glass.addColorStop(1, 'rgba(40, 58, 86, 0.95)');
+          }
+          ctx.fillStyle = glass;
+          ctx.fillRect(x, y, cw - 10, rh - 18);
+          // Soft diagonal sky reflection
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+          ctx.beginPath(); ctx.moveTo(x, y + rh * 0.5); ctx.lineTo(x + cw * 0.5, y); ctx.lineTo(x + cw * 0.7, y); ctx.lineTo(x, y + rh * 0.75); ctx.fill();
         }
+        // Spandrel band between floors
+        ctx.fillStyle = shade(wallColor, 0.08);
+        ctx.fillRect(0, row * rh, w, 6);
       }
+      ctx.fillStyle = shade(wallColor, -0.1);
+      for (let col = 0; col <= columns; col++) ctx.fillRect(col * cw - 2, 0, 4, h);
     });
   }
 
+  // Large stone floor tiles with soft joints and mottled color (no neon grid lines)
   function gridTexture(baseColor, lineColor, cells = 8) {
-    return canvasTexture(`grid|${baseColor}|${lineColor}|${cells}`, 256, 256, (ctx, w, h) => {
+    return canvasTexture(`grid|${baseColor}|${lineColor}|${cells}`, 512, 512, (ctx, w, h) => {
       ctx.fillStyle = baseColor;
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = lineColor;
-      ctx.lineWidth = 2;
-      for (let i = 0; i <= cells; i++) {
-        const offset = (i / cells) * w;
-        ctx.beginPath(); ctx.moveTo(offset, 0); ctx.lineTo(offset, h); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, offset); ctx.lineTo(w, offset); ctx.stroke();
+      let seed = cells * 97 + baseColor.length;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      const size = w / Math.max(2, Math.min(cells, 4));
+      for (let y = 0; y < h; y += size) {
+        for (let x = 0; x < w; x += size) {
+          ctx.fillStyle = shade(baseColor, (random() - 0.5) * 0.08);
+          ctx.fillRect(x + 2, y + 2, size - 4, size - 4);
+          // Mottled stone grain
+          for (let i = 0; i < 40; i++) {
+            ctx.fillStyle = `rgba(${random() < 0.5 ? '255, 255, 255' : '0, 0, 0'}, ${0.02 + random() * 0.03})`;
+            ctx.beginPath();
+            ctx.arc(x + random() * size, y + random() * size, 3 + random() * 14, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
       }
+      ctx.strokeStyle = shade(lineColor, -0.05);
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 3;
+      for (let i = 0; i <= w; i += size) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     });
   }
 
@@ -265,24 +376,36 @@ const PropKit = (() => {
   }
 
   // Hand-painted style textures (cobblestone, brick, wood planks, stucco, roof tiles)
+  // Irregular stone pavers in running bond, mottled, with soft grout lines
   function cobbleTexture(base = '#c98b5a') {
-    return canvasTexture(`cobble|${base}`, 256, 256, (ctx, w, h) => {
-      ctx.fillStyle = shade(base, -0.12);
+    return canvasTexture(`cobble|${base}`, 512, 512, (ctx, w, h) => {
+      ctx.fillStyle = shade(base, -0.16);
       ctx.fillRect(0, 0, w, h);
       let seed = 7;
       const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-          const x = col * 32 + (row % 2) * 16 + random() * 4;
-          const y = row * 32 + random() * 4;
-          ctx.fillStyle = shade(base, (random() - 0.5) * 0.12);
+      const rowHeight = 64;
+      for (let row = 0; row < h / rowHeight; row++) {
+        let x = -(row % 2) * 40 - random() * 30;
+        while (x < w) {
+          const width = 70 + random() * 60;
+          const y = row * rowHeight;
+          const tone = shade(base, (random() - 0.5) * 0.14);
+          const gradient = ctx.createLinearGradient(x, y, x, y + rowHeight);
+          gradient.addColorStop(0, shade(tone, 0.05));
+          gradient.addColorStop(1, shade(tone, -0.04));
+          ctx.fillStyle = gradient;
+          const r = 8;
           ctx.beginPath();
-          ctx.ellipse(x + 14, y + 14, 13, 12, random(), 0, Math.PI * 2);
+          ctx.moveTo(x + 3 + r, y + 3); ctx.lineTo(x + width - 3 - r, y + 3); ctx.quadraticCurveTo(x + width - 3, y + 3, x + width - 3, y + 3 + r);
+          ctx.lineTo(x + width - 3, y + rowHeight - 3 - r); ctx.quadraticCurveTo(x + width - 3, y + rowHeight - 3, x + width - 3 - r, y + rowHeight - 3);
+          ctx.lineTo(x + 3 + r, y + rowHeight - 3); ctx.quadraticCurveTo(x + 3, y + rowHeight - 3, x + 3, y + rowHeight - 3 - r);
+          ctx.lineTo(x + 3, y + 3 + r); ctx.quadraticCurveTo(x + 3, y + 3, x + 3 + r, y + 3);
           ctx.fill();
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-          ctx.beginPath();
-          ctx.ellipse(x + 11, y + 10, 6, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
+          for (let i = 0; i < 6; i++) {
+            ctx.fillStyle = `rgba(${random() < 0.5 ? '255, 255, 255' : '60, 40, 20'}, 0.05)`;
+            ctx.beginPath(); ctx.arc(x + random() * width, y + random() * rowHeight, 4 + random() * 10, 0, Math.PI * 2); ctx.fill();
+          }
+          x += width;
         }
       }
     });
@@ -436,7 +559,15 @@ const PropKit = (() => {
   // A box whose front face (+z) shows a texture
   function facedBox(w, h, d, bodyMaterial, frontMaterial, x, y, z) {
     const materials = [bodyMaterial, bodyMaterial, bodyMaterial, bodyMaterial, frontMaterial, bodyMaterial];
-    return mesh(new THREE.BoxGeometry(w, h, d), materials, x, y, z);
+    return mesh(roundedBoxGeometry(w, h, d), materials, x, y, z);
+  }
+
+  // Invisible spot you can sit on (E) for seats drawn as merged or instanced meshes
+  function seat(x, y, z, label = 'Seat', rotationY = 0) {
+    const spot = new THREE.Object3D();
+    spot.position.set(x, y, z);
+    spot.rotation.y = rotationY;
+    return interactive(spot, 'sit', label);
   }
 
   function animate(object, update) {
@@ -1302,6 +1433,8 @@ const PropKit = (() => {
     return [fallback, fallback, fallback];
   }
 
+  const SEAT_TYPES = /bench|sofa|chair|stool|couch|beanbag|lounge|picnic|bleacher|cushion|hammock|throne|swing/;
+
   // Builds one map block as a group positioned at its JSON coordinates
   function buildBlock(blockData) {
     const [w, h, d] = toVector(blockData.scale, 1);
@@ -1319,6 +1452,13 @@ const PropKit = (() => {
       block: { position: [x, y, z] },
       data: blockData
     });
+    if (typeof blockData.rotationY === 'number') group.rotation.y = blockData.rotationY;
+    // Roblox-style: anything that looks like a seat can be sat on (E)
+    if (SEAT_TYPES.test(type)) {
+      let hasSeat = false;
+      group.traverse((node) => { if (node !== group && node.userData.interactable) hasSeat = true; });
+      if (!hasSeat) interactive(group, 'sit', blockData.label || type.replace(/_/g, ' '));
+    }
     return group;
   }
 
@@ -1329,7 +1469,7 @@ const PropKit = (() => {
   }
 
   const kit = {
-    material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite,
+    material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, seat, roundedBoxGeometry,
     labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture,
     cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive
   };
