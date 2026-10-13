@@ -42,6 +42,9 @@ let flying = false; // Minecraft creative-style flight: double-tap Space
 let tunnelFall = null; // the 5-second fall down the underground water tunnel
 const TUNNEL_FALL_SECONDS = 5;
 let lastAltitudeBlur = 0;
+let lastAnimatedRefresh = -1;
+const nearbyAnimated = [];
+let animatedProbe = null;
 let lastEdgeWarning = 0;
 let wallet = 0; // Multiverse Coins (in-game only)
 let sleepingLocal = false;
@@ -104,18 +107,148 @@ const ui = {
 };
 
 // ============================================================================
+// QUALITY GOVERNOR: KEEPS THE GAME SMOOTH ON ANY COMPUTER
+// ============================================================================
+// Levels: 0 minimum, 1 low, 2 medium (default), 3 high. In "auto" mode the
+// governor watches the frame rate and lowers resolution, then shadows, then
+// the view distance when the game gets slow; it raises them again when there
+// is room. /quality low|medium|high|auto fixes or frees the level.
+const Quality = (() => {
+  const NAMES = ['minimum', 'low', 'medium', 'high'];
+  const RATIOS = [0.7, 0.9, 1.15, 1.6];
+  let current = 2;
+  let auto = true;
+  let frames = 0;
+  let windowSeconds = 0;
+  let goodWindows = 0;
+  let cap = 3;
+  try {
+    const saved = localStorage.getItem('multiverse-quality');
+    if (saved && saved !== 'auto' && NAMES.includes(saved)) { current = NAMES.indexOf(saved); auto = false; }
+  } catch (error) { /* storage blocked */ }
+
+  const VIEW = [130, 190, 260, 400];
+  const pixelRatio = () => Math.min(window.devicePixelRatio || 1, RATIOS[current]);
+  const viewDistance = () => VIEW[current];
+
+  function apply() {
+    if (!renderer) return;
+    renderer.setPixelRatio(pixelRatio());
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    scene.traverse((node) => { if (node.isDirectionalLight && node.userData.shadowCapable !== false) { if (node.userData.shadowCapable === undefined) node.userData.shadowCapable = node.castShadow; if (node.userData.shadowCapable) node.castShadow = current >= 2; } });
+  }
+
+  function set(level, keepAuto = false) {
+    current = Math.max(0, Math.min(3, level));
+    if (!keepAuto) auto = false;
+    apply();
+    return NAMES[current];
+  }
+
+  // Called every frame with the real frame time
+  function sample(seconds) {
+    if (!auto || !worldFullyLoadedFlag()) return;
+    frames++;
+    windowSeconds += seconds;
+    if (windowSeconds < 2) return;
+    const fps = frames / windowSeconds;
+    frames = 0;
+    windowSeconds = 0;
+    if (fps < 38 && current > 0) {
+      cap = current - 1; // do not climb back to a level that was too heavy
+      goodWindows = 0;
+      set(current - 1, true);
+    } else if (fps > 57 && current < cap) {
+      if (++goodWindows >= 4) { goodWindows = 0; set(current + 1, true); }
+    } else goodWindows = 0;
+  }
+
+  function choose(name) {
+    if (name === 'auto') {
+      auto = true; cap = 3;
+      try { localStorage.setItem('multiverse-quality', 'auto'); } catch (error) { /* storage blocked */ }
+      return 'auto';
+    }
+    const level = NAMES.indexOf(name);
+    if (level < 0) return null;
+    try { localStorage.setItem('multiverse-quality', name); } catch (error) { /* storage blocked */ }
+    return set(level);
+  }
+
+  return { pixelRatio, viewDistance, sample, choose, level: () => current, name: () => (auto ? `auto (${NAMES[current]})` : NAMES[current]) };
+})();
+const worldFullyLoadedFlag = () => worldFullyLoaded;
+
+// ============================================================================
+// DISTANCE CULLING: FAR AWAY BUILDINGS ARE NOT DRAWN
+// ============================================================================
+// The world has more than ten thousand meshes; drawing all of them every frame
+// is what made it slow. Once the world is built, it is split into "units"
+// (the largest groups smaller than ~60 m) and every half second the units
+// farther than the view distance are hidden. The fog ends at the same
+// distance, so nothing visibly pops in.
+const DistanceCulling = (() => {
+  const units = [];
+  const probe = new THREE.Vector3();
+  const box = new THREE.Box3();
+  const sphere = new THREE.Sphere();
+  let ready = false;
+  let lastRefresh = -1;
+
+  // Units are big pieces (buildings, plazas); small details inside them
+  // (benches, lamps, plants, signs) also disappear sooner, at the detail distance
+  function collect(node, maxRadius, detail) {
+    node.children.forEach((child) => {
+      if (child.isCamera || child.isLight || child.userData.alwaysVisible || child.isCSS3DObject) return;
+      box.setFromObject(child);
+      if (box.isEmpty()) return;
+      box.getBoundingSphere(sphere);
+      if (sphere.radius <= maxRadius) {
+        units.push({ node: child, local: child.worldToLocal(sphere.center.clone()), radius: sphere.radius, detail });
+        if (!detail && child.children.length) collect(child, 3, true);
+      } else if (child.children.length) collect(child, maxRadius, detail);
+    });
+  }
+
+  function prepare() {
+    units.length = 0;
+    scene.updateMatrixWorld(true);
+    collect(scene, 60, false);
+    ready = true;
+  }
+
+  function update(elapsed) {
+    if (!ready || elapsed - lastRefresh < 0.5) return;
+    lastRefresh = elapsed;
+    const view = Quality.viewDistance();
+    const detailView = view * 0.35;
+    units.forEach((unit) => {
+      probe.copy(unit.local);
+      unit.node.localToWorld(probe);
+      const reach = (unit.detail ? detailView : view) + unit.radius * 0.5;
+      const near = probe.distanceToSquared(camera.position) < reach * reach;
+      // Never re-show something the game itself hid
+      if (!near && unit.node.visible) { unit.node.visible = false; unit.culled = true; } else if (near && unit.culled) { unit.node.visible = true; unit.culled = false; }
+    });
+  }
+
+  return { prepare, update, count: () => units.length };
+})();
+
+// ============================================================================
 // ENGINE BOOTSTRAP
 // ============================================================================
 function initEngine() {
+  animatedProbe = new THREE.Vector3();
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.3, 2600);
   camera.position.set(0, 5, 10);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Quality.pixelRatio());
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   // Filmic tone mapping + an image-based environment give every material soft,
   // realistic reflections (glass, metal, polished floors) instead of flat colors
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -169,6 +302,7 @@ async function loadUniverse() {
   City.finalize();
   renderWorldList();
   worldFullyLoaded = true;
+  DistanceCulling.prepare();
 }
 
 let resolvePlazaReady = () => {};
@@ -1014,6 +1148,7 @@ const HELP_PAGES = [
   ['Teleport', '/tp <player> | /tp <x> <z> | /tp <x> <y> <z> (supports ~ relative) | /tpa <player> | /tpahere <player> | /tpaccept | /tpdeny'],
   ['Places', '/world <place> (alias /warp /goto) | /worlds | /spawn | /sethome | /home'],
   ['Codify', 'C opens Codify: write code, Add to world (private unless you tick Visible to others) | E on your block to edit it | Fry your Code at the Genesis Plaza firepit'],
+  ['Graphics', '/quality low | medium | high | auto — the game lowers it by itself when it gets slow'],
   ['Economy', '/balance | /pay <player> <amount> | /buyland (the parcel you stand on) | /lands — Multiverse Coins are in-game only'],
   ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder>'],
   ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear | /invite'],
@@ -1148,6 +1283,12 @@ function interpretChatCommand(inputBuffer) {
       const on = args[0] ? args[0] !== 'off' : !Sound.isEnabled();
       Sound.setEnabled(on);
       appendSystemMessage(on ? '🔊 Sound effects on.' : '🔇 Sound effects off.');
+      break;
+    }
+    case 'quality': {
+      if (!args[0]) { appendSystemMessage(`⚙️ Graphics quality: ${Quality.name()}. Use /quality low | medium | high | auto (or minimum on very old computers).`); break; }
+      const chosen = Quality.choose(args[0].toLowerCase());
+      appendSystemMessage(chosen ? `⚙️ Graphics quality: ${chosen}.` : 'Use /quality minimum | low | medium | high | auto.');
       break;
     }
     case 'balance':
@@ -1449,12 +1590,16 @@ function setupNetwork(session) {
 // ============================================================================
 function animate() {
   requestAnimationFrame(animate);
-  const deltaSeconds = Math.min(clock.getDelta(), 0.15); // keeps walking speed steady even at low frame rates
+  const frameSeconds = Math.min(clock.getDelta(), 0.25);
+  Quality.sample(frameSeconds);
+  const deltaSeconds = Math.min(frameSeconds, 0.1);
   const elapsed = clock.elapsedTime;
   const smoothing = 1 - Math.exp(-deltaSeconds * 18);
 
+  // Walking speed no longer depends on the frame rate: slow frames are split
+  // into small physics steps instead of being cut short (which made you crawl)
   if (Metro.isRiding()) Metro.update(camera, controls);
-  else if (viewMode === 'explore') updateAvatar(deltaSeconds); else walkCamera(deltaSeconds);
+  else if (viewMode === 'explore') { let left = frameSeconds; while (left > 0.0001) { const step = Math.min(left, 0.1); updateAvatar(step); left -= step; } } else walkCamera(frameSeconds);
   TechSquare.update(elapsed, deltaSeconds);
   Vehicles.update(deltaSeconds);
   controls.update();
@@ -1462,13 +1607,30 @@ function animate() {
   emitCursor(false);
 
   const { flash, haze, inCloud } = City.updateEnvironment({ ticks: currentTicks(), weather: worldClock.weather, camera, focus: controls.target, deltaSeconds, time: elapsed });
+  // The fog ends where distance culling starts hiding buildings
+  if (scene.fog) {
+    const view = Quality.viewDistance();
+    scene.fog.far = Math.min(scene.fog.far, view);
+    scene.fog.near = Math.min(scene.fog.near, view * 0.45);
+  }
+  DistanceCulling.update(elapsed);
   // High altitude blurs the view a little; flying through a cloud blurs it a lot
-  const blur = Math.round((haze * 1.6 + inCloud * 4) * 4) / 4;
+  // (a CSS blur on the whole canvas is very expensive, so it is skipped on lighter quality levels)
+  const blur = Quality.level() >= 2 ? Math.round((haze * 1.6 + inCloud * 4) * 4) / 4 : 0;
   if (blur !== lastAltitudeBlur) { renderer.domElement.style.filter = blur ? `blur(${blur}px)` : ''; lastAltitudeBlur = blur; }
   if (flash) lightningUntil = performance.now() + 120;
   ui.flash.style.opacity = performance.now() < lightningUntil ? '0.55' : '0';
 
-  PropKit.animatedObjects.forEach((object) => object.userData.animate(elapsed));
+  // Only animate what is near the camera (the list is refreshed twice a second)
+  if (elapsed - lastAnimatedRefresh > 0.5) {
+    lastAnimatedRefresh = elapsed;
+    nearbyAnimated.length = 0;
+    PropKit.animatedObjects.forEach((object) => {
+      object.getWorldPosition(animatedProbe);
+      if (animatedProbe.distanceToSquared(camera.position) < 180 * 180) nearbyAnimated.push(object);
+    });
+  }
+  nearbyAnimated.forEach((object) => object.userData.animate(elapsed));
   Codify.update(elapsed);
   {
     // Footsteps: stone in Genesis Plaza and on paths, an echo underground, grass elsewhere

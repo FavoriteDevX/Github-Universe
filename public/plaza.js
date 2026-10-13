@@ -1125,9 +1125,6 @@
       fire.add(puff);
       smoke.push(puff);
     }
-    const light = new THREE.PointLight('#ff9a3c', 1.6, 18, 2);
-    light.position.set(0, 2, 0);
-    fire.add(light);
     fire.traverse((node) => { if (node.isSprite) node.raycast = () => {}; });
     animate(fire, (time) => {
       flames.forEach((flame) => {
@@ -1148,7 +1145,6 @@
         puff.scale.setScalar(1 + t * 3);
         puff.material.opacity = 0.22 * (1 - t);
       });
-      light.intensity = 1.4 + Math.sin(time * 13) * 0.25 + Math.sin(time * 29) * 0.15;
     });
     return fire;
   }

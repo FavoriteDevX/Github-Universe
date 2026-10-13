@@ -368,9 +368,6 @@
       group.add(flame);
       flames.push(flame);
     });
-    const fireLight = new THREE.PointLight('#ff9a3c', 1.4, 14, 2);
-    fireLight.position.set(w * 0.12, 1.4, -d * 0.02 + 2);
-    group.add(fireLight);
     // Sofas facing the fire, a rug
     group.add(box(4, 0.05, 3, material('#7b1e1e', { roughness: 1 }), w * 0.12, 0.33, d * 0.2));
     [-1, 1].forEach((side) => {
@@ -391,9 +388,6 @@
       group.add(bulb);
       lamps.push(bulb);
     });
-    const lampLight = new THREE.PointLight('#ffd8a8', 0.9, 22, 2);
-    lampLight.position.set(0, h - 2.5, 0);
-    group.add(lampLight);
     // Cobwebs in the upper corners
     [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
       const web = mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: cobwebTexture(), transparent: true, side: THREE.DoubleSide, depthWrite: false }), sx * (w / 2 - 1.3), h - 1.3, sz * (d / 2 - 1.3));
@@ -411,7 +405,6 @@
     const center = new THREE.Vector3();
     animate(group, (time) => {
       flames.forEach((flame, i) => { flame.scale.set(1, 0.85 + Math.sin(time * (9 + i * 3)) * 0.15, 1); });
-      fireLight.intensity = 1.3 + Math.sin(time * 12) * 0.2 + Math.sin(time * 27) * 0.1;
       lamps.forEach((bulb, i) => { bulb.material.emissiveIntensity = 2.3 + Math.sin(time * 2 + i) * 0.2; });
       if (typeof avatar === 'undefined') return;
       group.getWorldPosition(center);
