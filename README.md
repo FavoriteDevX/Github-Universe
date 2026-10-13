@@ -372,8 +372,8 @@ Optional environment variables:
 
 The world has more than ten thousand objects, so the game only draws what is near you:
 
-- **Distance culling:** buildings beyond the view distance and small details (benches, lamps, plants) beyond about a third of it are not drawn; the fog ends at the same distance, so nothing pops in.
-- **Automatic quality:** the game watches the frame rate and, when it gets slow, lowers the resolution, turns off shadows and shortens the view distance; it goes back up when there is room. Use `/quality low | medium | high | auto` to choose (or `minimum` on very old computers); the choice is remembered in the browser.
+- **Distance culling:** buildings are skipped only where the fog already hides them completely (the view never changes), and small details (benches, lamps, plants) are skipped beyond 70–170 m depending on the quality level.
+- **Automatic quality:** the game watches the frame rate and, when it gets slow, lowers the resolution, turns off shadows and draws small details closer; it goes back up when there is room. Use `/quality low | medium | high | auto` to choose (or `minimum` on very old computers); the choice is remembered in the browser.
 - **Steady walking speed:** slow frames are split into small physics steps, so you walk at the same speed at 20 or 60 FPS.
 - **Lighter scene:** no point lights (fires and lamps glow on their own), shadows only from large objects, and lighter rounded boxes.
 

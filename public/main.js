@@ -111,23 +111,25 @@ const ui = {
 // ============================================================================
 // Levels: 0 minimum, 1 low, 2 medium (default), 3 high. In "auto" mode the
 // governor watches the frame rate and lowers resolution, then shadows, then
-// the view distance when the game gets slow; it raises them again when there
+// the distance of small details when the game gets slow; it raises them again when there
 // is room. /quality low|medium|high|auto fixes or frees the level.
 const Quality = (() => {
   const NAMES = ['minimum', 'low', 'medium', 'high'];
-  const RATIOS = [0.7, 0.9, 1.15, 1.6];
+  const RATIOS = [0.85, 1, 1.15, 1.6];
   let current = 2;
   let auto = true;
   let frames = 0;
   let windowSeconds = 0;
   let goodWindows = 0;
+  let badWindows = 0;
   let cap = 3;
   try {
     const saved = localStorage.getItem('multiverse-quality');
     if (saved && saved !== 'auto' && NAMES.includes(saved)) { current = NAMES.indexOf(saved); auto = false; }
   } catch (error) { /* storage blocked */ }
 
-  const VIEW = [130, 190, 260, 400];
+  // Distance at which small details (benches, lamps, plants, signs) stop being drawn
+  const VIEW = [70, 95, 125, 170];
   const pixelRatio = () => Math.min(window.devicePixelRatio || 1, RATIOS[current]);
   const viewDistance = () => VIEW[current];
 
@@ -154,11 +156,17 @@ const Quality = (() => {
     const fps = frames / windowSeconds;
     frames = 0;
     windowSeconds = 0;
+    // Two slow windows in a row (4 s) are needed: a single hitch is ignored
     if (fps < 38 && current > 0) {
-      cap = current - 1; // do not climb back to a level that was too heavy
       goodWindows = 0;
+      if (++badWindows < 2) return;
+      badWindows = 0;
+      cap = current - 1; // do not climb back to a level that was too heavy
       set(current - 1, true);
-    } else if (fps > 57 && current < cap) {
+      return;
+    }
+    badWindows = 0;
+    if (fps > 57 && current < cap) {
       if (++goodWindows >= 4) { goodWindows = 0; set(current + 1, true); }
     } else goodWindows = 0;
   }
@@ -185,8 +193,8 @@ const worldFullyLoadedFlag = () => worldFullyLoaded;
 // The world has more than ten thousand meshes; drawing all of them every frame
 // is what made it slow. Once the world is built, it is split into "units"
 // (the largest groups smaller than ~60 m) and every half second the units
-// farther than the view distance are hidden. The fog ends at the same
-// distance, so nothing visibly pops in.
+// that the fog already hides completely are skipped; small details
+// (benches, lamps, plants) are skipped a bit sooner.
 const DistanceCulling = (() => {
   const units = [];
   const probe = new THREE.Vector3();
@@ -220,8 +228,10 @@ const DistanceCulling = (() => {
   function update(elapsed) {
     if (!ready || elapsed - lastRefresh < 0.5) return;
     lastRefresh = elapsed;
-    const view = Quality.viewDistance();
-    const detailView = view * 0.35;
+    // Buildings are hidden only where the fog already hides them completely
+    // (so the look never changes); small details go sooner
+    const view = scene.fog ? Math.max(scene.fog.far, 200) : 900;
+    const detailView = Quality.viewDistance();
     units.forEach((unit) => {
       probe.copy(unit.local);
       unit.node.localToWorld(probe);
@@ -1607,12 +1617,6 @@ function animate() {
   emitCursor(false);
 
   const { flash, haze, inCloud } = City.updateEnvironment({ ticks: currentTicks(), weather: worldClock.weather, camera, focus: controls.target, deltaSeconds, time: elapsed });
-  // The fog ends where distance culling starts hiding buildings
-  if (scene.fog) {
-    const view = Quality.viewDistance();
-    scene.fog.far = Math.min(scene.fog.far, view);
-    scene.fog.near = Math.min(scene.fog.near, view * 0.45);
-  }
   DistanceCulling.update(elapsed);
   // High altitude blurs the view a little; flying through a cloud blurs it a lot
   // (a CSS blur on the whole canvas is very expensive, so it is skipped on lighter quality levels)
