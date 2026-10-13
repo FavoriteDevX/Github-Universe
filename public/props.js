@@ -63,7 +63,10 @@ const PropKit = (() => {
   function mesh(geometry, meshMaterial, x = 0, y = 0, z = 0) {
     const result = new THREE.Mesh(geometry, meshMaterial);
     result.position.set(x, y, z);
-    result.castShadow = true;
+    // Only big things cast shadows: thousands of small shadow casters were the
+    // main cost of the shadow pass (each one is drawn a second time)
+    if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+    result.castShadow = geometry.boundingSphere.radius > 0.9;
     result.receiveShadow = true;
     return result;
   }
@@ -71,14 +74,20 @@ const PropKit = (() => {
   // Every box in the world has softly rounded edges (Decentraland-like, less
   // "blocky"). The geometry keeps BoxGeometry's 6 material groups and per-face
   // UVs, so textured faces still work; geometries are cached by size.
+  // Light version: one bevel band per edge (96 vertices instead of ~300), and
+  // small parts (where rounding is invisible) stay plain cached boxes.
   const roundedBoxCache = new Map();
   function roundedBoxGeometry(w, h, d) {
     const minDim = Math.min(w, h, d);
-    if (minDim < 0.06) return new THREE.BoxGeometry(w, h, d);
     const key = `${w.toFixed(3)}|${h.toFixed(3)}|${d.toFixed(3)}`;
     if (roundedBoxCache.has(key)) return roundedBoxCache.get(key);
+    if (minDim < 0.25) {
+      const plain = new THREE.BoxGeometry(w, h, d);
+      roundedBoxCache.set(key, plain);
+      return plain;
+    }
     const r = Math.min(0.18, Math.max(0.02, minDim * 0.16));
-    const geometry = new THREE.BoxGeometry(1, 1, 1, 6, 6, 6);
+    const geometry = new THREE.BoxGeometry(1, 1, 1, 3, 3, 3);
     const position = geometry.attributes.position;
     const normal = geometry.attributes.normal;
     const half = [w / 2, h / 2, d / 2];
@@ -86,9 +95,9 @@ const PropKit = (() => {
     const inner = new THREE.Vector3();
     for (let i = 0; i < position.count; i++) {
       const coords = [position.getX(i), position.getY(i), position.getZ(i)].map((c, axis) => {
-        // Remap so the outer third of each axis becomes the rounded band
+        // Remap so the outer segment of each axis becomes the rounded band
         const a = Math.abs(c);
-        const mapped = a <= 1 / 3 ? a * 3 * (half[axis] - r) : (half[axis] - r) + (a - 1 / 3) * 6 * r;
+        const mapped = a <= 1 / 6 ? a * 6 * (half[axis] - r) : (half[axis] - r) + (a - 1 / 6) * 3 * r;
         return Math.sign(c) * mapped;
       });
       v.set(coords[0], coords[1], coords[2]);

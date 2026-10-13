@@ -106,6 +106,7 @@ Type `/help` in game for the full list, or `/help <page>` for one section.
 | `/metro [place]` (also `/train`) | Open the metro map, or ride the train straight to a place |
 | `/bed` | Go back to the last bed you slept in (your spawn point) |
 | `/sound [on\|off]` | Turn the sound effects on or off |
+| `/quality [low\|medium\|high\|auto]` | Graphics quality (auto lowers it by itself when the game gets slow) |
 
 ### Economy (in-game coins only)
 | Command | Action |
@@ -367,6 +368,17 @@ Optional environment variables:
 | `FINNHUB_API_KEY` | Free [Finnhub](https://finnhub.io) key for the stock scoreboard. Without it the scoreboard says it is not configured: prices are never invented |
 | `DISABLE_FEEDS=1` | Turn off all live feeds (offline / tests) |
 
+## ⚡ Performance
+
+The world has more than ten thousand objects, so the game only draws what is near you:
+
+- **Distance culling:** buildings beyond the view distance and small details (benches, lamps, plants) beyond about a third of it are not drawn; the fog ends at the same distance, so nothing pops in.
+- **Automatic quality:** the game watches the frame rate and, when it gets slow, lowers the resolution, turns off shadows and shortens the view distance; it goes back up when there is room. Use `/quality low | medium | high | auto` to choose (or `minimum` on very old computers); the choice is remembered in the browser.
+- **Steady walking speed:** slow frames are split into small physics steps, so you walk at the same speed at 20 or 60 FPS.
+- **Lighter scene:** no point lights (fires and lamps glow on their own), shadows only from large objects, and lighter rounded boxes.
+
+---
+
 ## 🍎 House of MAC banners and logos
 
 The store is ready to show your own images; nothing has to be changed in the code:
@@ -375,15 +387,15 @@ The store is ready to show your own images; nothing has to be changed in the cod
 | --- | --- | --- |
 | `finder.png` | `public/assets/store/` | Mac Finder logo above the glass entrance |
 | `genius-bar.png` | `public/assets/store/` | Logo on the wall behind the Genius Bar counter |
-| `macbook-air.jpg`, `macbook-neo.jpg`, `m1.jpg`, `macos.jpg`, `mac-apps.jpg` | `public/assets/ads/` | Outdoor ad billboards and the in-store ad carousel |
+| `macbook-air`, `macbook-neo`, `m1`, `macos`, `mac-apps` (`.png`, `.jpg`, `.jpeg` or `.webp`) | `public/assets/ads/` | Outdoor ad billboards and the in-store ad carousel |
 
-Billboards resize to each banner's aspect ratio. Add more banners to the carousel by listing them in `public/assets/ads/ads.json`. Until a file exists, the store shows the official Simple Icons logos and generated boards. Apple ads and logos are copyrighted / trademarks of Apple Inc.: only publish them if you have the right to.
+Any image format works: `macbook-air.png` and `macbook-air.jpg` are the same banner, and the name ignores capitals, spaces and underscores (`MacBook Air.png` also works). The server lists the files in these folders (`GET /api/owner-assets`), so the game only requests images that exist. Billboards resize to each banner's aspect ratio. Add more banners to the carousel by listing them in `public/assets/ads/ads.json`. Until a file exists, the store shows the official Simple Icons logos and generated boards. Apple ads and logos are copyrighted / trademarks of Apple Inc.: only publish them if you have the right to.
 
 ---
 
 ## 🏷️ Official logos and real ads (optional)
 
-Some companies asked Simple Icons to remove their logos (OpenAI, Microsoft, AWS, Oracle, Adobe, LinkedIn, Salesforce), so they show as text. Put their official logo files in `public/assets/logos/` (see the README there) and real ad images in `public/assets/ads/brands/<brand>.jpg` to replace the generated boards. Only publish images you have the right to use.
+Some companies asked Simple Icons to remove their logos (OpenAI, Microsoft, AWS, Oracle, Adobe, LinkedIn, Salesforce), so they show as text. Put their official logo files in `public/assets/logos/` (see the README there) and real ad images in `public/assets/ads/brands/<brand>.png` (or `.jpg` / `.webp`) to replace the generated boards. Only publish images you have the right to use.
 
 ## ⚖️ Trademarks & media
 

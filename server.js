@@ -15,6 +15,25 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 app.use(express.static(PUBLIC_DIR));
 app.use(express.json({ limit: '10kb' }));
 
+// Lists the images the owner dropped in public/assets (ads, store, logos), so
+// the client loads exactly the files that exist, whatever their format
+// (.png, .jpg, .jpeg, .webp, .svg), instead of guessing and causing 404s
+const OWNER_ASSET_FOLDERS = ['ads', 'ads/brands', 'store', 'logos'];
+app.get('/api/owner-assets', (req, res) => {
+  const listing = {};
+  OWNER_ASSET_FOLDERS.forEach((folder) => {
+    try {
+      listing[folder] = fs.readdirSync(path.join(PUBLIC_DIR, 'assets', folder), { withFileTypes: true })
+        .filter((entry) => entry.isFile() && /\.(png|jpe?g|webp|svg)$/i.test(entry.name))
+        .map((entry) => entry.name);
+    } catch (error) {
+      listing[folder] = [];
+    }
+  });
+  res.set('Cache-Control', 'no-cache');
+  res.json(listing);
+});
+
 // ----------------------------------------------------------------------------
 // Accounts: usernames + scrypt-hashed passwords, persisted in data/users.json
 // ----------------------------------------------------------------------------

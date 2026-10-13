@@ -1,6 +1,8 @@
 # House of MAC ad banners
 
-Put the ad banner images here with these exact names (JPG):
+Put the ad banner images here with these names. Any format works (`.png`,
+`.jpg`, `.jpeg` or `.webp`), and capitals, spaces and underscores are ignored:
+`macbook-air.png`, `macbook-air.jpg` and `MacBook Air.png` are the same banner.
 
 | File | Where it shows |
 |---|---|

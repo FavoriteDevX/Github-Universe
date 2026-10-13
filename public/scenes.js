@@ -558,24 +558,24 @@
 
   // Apple-logo textures through BrandLogos (Simple Icons) on product boards
   // Ad banners dropped by the owner in public/assets/ads/ (listed in ads.json)
+  // Owner images can be .png, .jpg, .jpeg or .webp: the server lists what
+  // exists in the folder and only that file is requested
+  function loadTextureAnyFormat(folder, file) {
+    return BrandLogos.findOwnerAsset(folder, file).then((url) => new Promise((resolve, reject) => new THREE.TextureLoader().load(url, (texture) => {
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = 4;
+      resolve(texture);
+    }, undefined, reject)));
+  }
+
   const adCache = new Map();
   function loadAd(file, onLoad) {
-    if (!adCache.has(file)) {
-      adCache.set(file, new Promise((resolve, reject) => new THREE.TextureLoader().load(`assets/ads/${encodeURIComponent(file)}`, (texture) => {
-        texture.encoding = THREE.sRGBEncoding;
-        texture.anisotropy = 4;
-        resolve(texture);
-      }, undefined, reject)));
-    }
+    if (!adCache.has(file)) adCache.set(file, loadTextureAnyFormat('ads', file));
     adCache.get(file).then(onLoad).catch(() => { /* banner not added yet: keep the generated board */ });
   }
 
   function loadStoreImage(file, onLoad) {
-    new THREE.TextureLoader().load(`assets/store/${file}`, (texture) => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.anisotropy = 4;
-      onLoad(texture);
-    }, undefined, () => { /* not added yet: keep the fallback */ });
+    loadTextureAnyFormat('store', file).then(onLoad).catch(() => { /* not added yet: keep the fallback */ });
   }
 
   // Fallback Genius Bar sign: three orbits around a nucleus with the name

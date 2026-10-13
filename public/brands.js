@@ -48,6 +48,21 @@ const BrandLogos = (() => {
 
   // Owner-provided files: official logos (assets/logos) and real ads (assets/ads/brands)
   const ownerFiles = new Map();
+  // Finds an owner file by its name in any format: "macbook-air" matches
+  // macbook-air.png, MacBook Air.jpg, macbook_air.webp... Resolves with the URL,
+  // or rejects when the file was not added (no request is made for it)
+  const normalize = (name) => name.toLowerCase().replace(/\.(png|jpe?g|webp|svg)$/, '').replace(/[\s_]+/g, '-');
+  let ownerListing = null;
+  function findOwnerAsset(folder, name) {
+    if (!ownerListing) ownerListing = fetch('/api/owner-assets').then((response) => (response.ok ? response.json() : null)).catch(() => null);
+    return ownerListing.then((listing) => {
+      const wanted = normalize(name);
+      // Without the Node server (static hosting) try the name exactly as given
+      if (!listing) return /\.(png|jpe?g|webp|svg)$/i.test(name) ? `assets/${folder}/${encodeURIComponent(name)}` : Promise.reject(new Error('no listing'));
+      const match = (listing[folder] || []).find((file) => normalize(file) === wanted);
+      return match ? `assets/${folder}/${encodeURIComponent(match)}` : Promise.reject(new Error('not added'));
+    });
+  }
   function ownerImage(path) {
     if (!ownerFiles.has(path)) ownerFiles.set(path, imageFromUrl(path));
     return ownerFiles.get(path);
@@ -58,7 +73,7 @@ const BrandLogos = (() => {
     const key = `${slug}|${color}`;
     if (!svgCache.has(key) && Object.values(OWNER_LOGOS).includes(slug)) {
       // Official logo files keep their own colors
-      svgCache.set(key, ownerImage(`assets/logos/${slug}.svg`).catch(() => ownerImage(`assets/logos/${slug}.png`)));
+      svgCache.set(key, findOwnerAsset('logos', slug).then(ownerImage));
     }
     if (!svgCache.has(key)) {
       const fromCdn = () => fetch(`${SIMPLE_ICONS_CDN}/${slug}.svg`).then((response) => (response.ok ? response.text() : Promise.reject(new Error(response.status))));
@@ -121,9 +136,9 @@ const BrandLogos = (() => {
     draw(null);
     const slug = logoSlug || slugFor(name);
     if (slug) loadLogoImage(slug, foreground).then(draw).catch(() => { /* offline: keep the wordmark */ });
-    // A real ad dropped in public/assets/ads/brands/<slug>.jpg replaces the board
+    // A real ad dropped in public/assets/ads/brands/<slug>.png (or .jpg) replaces the board
     if (slug && layout === 'billboard') {
-      ownerImage(`assets/ads/brands/${slug}.jpg`).then((ad) => {
+      findOwnerAsset('ads/brands', slug).then(ownerImage).then((ad) => {
         const scale = Math.max(width / ad.width, height / ad.height);
         ctx.drawImage(ad, (width - ad.width * scale) / 2, (height - ad.height * scale) / 2, ad.width * scale, ad.height * scale);
         texture.needsUpdate = true;
@@ -163,5 +178,5 @@ const BrandLogos = (() => {
     return texture;
   }
 
-  return { billboardTexture, slugFor, appIconTexture };
+  return { billboardTexture, slugFor, appIconTexture, findOwnerAsset };
 })();
