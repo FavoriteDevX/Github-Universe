@@ -17,6 +17,13 @@ A fully functional 3D collaborative metaverse built for developers. Instead of a
 
 ---
 
+## 🖼️ 📸 Screenshots & Gameplay
+
+<img width="1200" height="700" alt="image-1792007569618" src="https://github.com/user-attachments/assets/3d3c7549-26b5-4b45-9a7e-883f6ea83521" />
+<img width="1100" height="620" alt="image-1791929585609" src="https://github.com/user-attachments/assets/743ebdc4-6b07-4556-b61d-887e15694b89" />
+<img width="595" height="260" alt="rfdsgdf" src="https://github.com/user-attachments/assets/32569009-eb9b-4c19-a433-8bdc1b150ce2" />
+<img width="1100" height="620" alt="image-1792008718931" src="https://github.com/user-attachments/assets/9d41054a-ac18-45e6-b4b4-f02114069e44" />
+
 ## 🎮 Controls & Commands
 
 ### Basic Controls
