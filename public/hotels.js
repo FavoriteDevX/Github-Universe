@@ -221,7 +221,7 @@
       hotelBed.position.set(side * w * 0.22, 0.3, -d * 0.1);
       group.add(hotelBed);
     });
-    const sign = textSprite(`🛏️ ${(data && data.name) || 'Mini Hotel'} · sleep here (E)`, { width: 7, background: 'rgba(91, 31, 58, 0.9)' });
+    const sign = textSprite(`${(data && data.name) || 'Mini Hotel'} · sleep here (E)`, { width: 7, background: 'rgba(91, 31, 58, 0.9)' });
     sign.position.set(0, h + 2.5, d / 2);
     group.add(sign);
     group.userData.label = (data && data.name) || 'Mini Hotel';
@@ -473,7 +473,7 @@
     const mazeOrigin = new THREE.Vector3(-w / 4, -30, zBack - yardDepth / 2 - 2);
     hatch.userData.destination = new THREE.Vector3(mazeOrigin.x, mazeOrigin.y + 0.4, mazeOrigin.z);
     group.add(interactive(hatch, 'warp', 'Down the hatch: the ventilation ducts'));
-    const hatchSign = textSprite('⚠ Hatch (E) · ventilation ducts', { width: 5, background: 'rgba(139, 37, 37, 0.92)' });
+    const hatchSign = textSprite('Hatch (E) · ventilation ducts', { width: 5, background: 'rgba(139, 37, 37, 0.92)' });
     hatchSign.position.set(-w / 4, 3, zBack - yardDepth / 2 - 2);
     group.add(hatchSign);
     buildDuctMaze(group, mazeOrigin);

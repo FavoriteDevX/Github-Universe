@@ -40,7 +40,6 @@ app.get('/api/owner-assets', (req, res) => {
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const MAX_INVENTORY = 20;
 let accounts = { users: {}, sessions: {} };
 try {
   accounts = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
@@ -54,7 +53,20 @@ accounts.lands = accounts.lands || {}; // parcel "x,z" -> { owner, boughtAt }
 // Multiverse Coins (MVC) are earned by playing and spent on land parcels.
 const STARTING_COINS = 100;
 const LAND_PRICE = 250;
-const MAX_PARCEL = 40; // Genesis City spans parcels -40..40 (16 m each)
+const MAX_PARCEL = 60; // Genesis City spans parcels -60..59 (16 m each, up to 960 m)
+// Around the central districts the land is a grid of parcels split by roads
+// (one parcel wide, every 8 parcels): road parcels cannot be bought
+// Same rules as the client (public/city.js): roads from maps/land.json and
+// community scenes picked by the same parcel hash cannot be bought
+const CORE_PARCELS = 25; // the center commons spans parcels -25..24
+const landLayout = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'land.json'), 'utf8'));
+function parcelHash(px, pz) {
+  let h = Math.imul((px * 374761393 + pz * 668265263) | 0, 1274126177);
+  h ^= h >>> 13;
+  return ((h >>> 0) % 1000) / 1000;
+}
+const isRoadParcel = (px, pz) => landLayout.roadsX.includes(px) || landLayout.roadsZ.includes(pz);
+const isSceneParcel = (px, pz) => parcelHash(px, pz) < landLayout.sceneChance;
 function walletOf(account) {
   if (typeof account.coins !== 'number') account.coins = STARTING_COINS;
   return account.coins;
@@ -210,7 +222,7 @@ function spawnSupplyDrop() {
   const id = `drop${++supplyDropCounter}`;
   lootSpawns[id] = { id, kind: 'drop', x: spot.x + (Math.random() - 0.5) * 6, z: spot.z + (Math.random() - 0.5) * 6, area: spot.area, openUntil: 0, landsAt: Date.now() + SUPPLY_DROP_FALL_MS };
   io.emit('loot_spawned', publicLoot().find((loot) => loot.id === id));
-  io.emit('system_message', `📦 A SUPPLY DROP is falling over ${spot.area}! First dev to reach it gets Rare-to-Legendary loot.`);
+  io.emit('system_message', `A SUPPLY DROP is falling over ${spot.area}! First dev to reach it gets Rare-to-Legendary loot.`);
   // Unopened drops disappear after five minutes
   setTimeout(() => {
     if (lootSpawns[id] && !lootSpawns[id].openUntil) { delete lootSpawns[id]; io.emit('loot_removed', id); }
@@ -316,7 +328,6 @@ io.on('connection', (socket) => {
   socket.emit('game_state', publicGameState());
   socket.emit('loot_spawns', publicLoot());
   socket.emit('tech_feeds', TechFeeds.snapshot());
-  socket.emit('inventory', account.inventory);
   socket.to(room).emit('new_developer_joined', activeDevelopers[socket.id]);
 
   const developer = () => activeDevelopers[socket.id];
@@ -495,16 +506,14 @@ io.on('connection', (socket) => {
     const dev = developer();
     if (!dev) return;
     const now = Date.now();
-    if (now - (account.lastTowerReward || 0) < 30 * 60 * 1000) { socket.emit('system_message', '🏆 You already claimed the Gravity Flip reward. Come back in 30 minutes!'); return; }
-    if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', 'Your inventory is full. Use or /drop something first.'); return; }
+    if (now - (account.lastTowerReward || 0) < 30 * 60 * 1000) { socket.emit('system_message', 'You already claimed the Gravity Flip reward. Come back in 30 minutes!'); return; }
     account.lastTowerReward = now;
-    account.inventory.push({ id: 'hoodie', foundAt: now });
     account.coins = walletOf(account) + 50;
     socket.emit('wallet', { coins: account.coins, earned: 50, reason: 'Gravity Flip reward' });
     saveAccounts();
-    socket.emit('inventory', account.inventory);
-    socket.emit('loot_result', { item: 'hoodie', from: 'drop' });
-    io.to(room).emit('system_message', `🏆 ${dev.devTag} conquered the Gravity Flip tower and earned an Epic Senior Dev Hoodie!`);
+    const prize = lootTable.items.filter((item) => item.rarity === 'epic' || item.rarity === 'legendary');
+    socket.emit('loot_result', { item: prize[Math.floor(Math.random() * prize.length)].id, from: 'drop' });
+    io.to(room).emit('system_message', `${dev.devTag} conquered the Gravity Flip tower and earned a rare code file!`);
   });
 
   // Vehicles from the Hypercar Showroom, shown to everyone in the lobby
@@ -512,7 +521,7 @@ io.on('connection', (socket) => {
   socket.on('daily_bonus', () => {
     const now = Date.now();
     const wait = 20 * 60 * 60 * 1000 - (now - (account.lastDaily || 0));
-    if (wait > 0) { socket.emit('system_message', `🎁 Daily bonus already claimed. Come back in ${Math.ceil(wait / 3600000)} h.`); return; }
+    if (wait > 0) { socket.emit('system_message', `Daily bonus already claimed. Come back in ${Math.ceil(wait / 3600000)} h.`); return; }
     account.lastDaily = now;
     account.coins = walletOf(account) + 50;
     saveAccounts();
@@ -527,7 +536,7 @@ io.on('connection', (socket) => {
     const now = Date.now();
     if (now - (dev.lastOrderAt || 0) < 1500) return;
     dev.lastOrderAt = now;
-    if (walletOf(account) < item.price) { socket.emit('system_message', `🍽️ ${item.name} costs ${item.price} MVC and you have ${account.coins}. Earn coins with commits, chests and supply drops.`); return; }
+    if (walletOf(account) < item.price) { socket.emit('system_message', `${item.name} costs ${item.price} MVC and you have ${account.coins}. Earn coins with commits, chests and supply drops.`); return; }
     account.coins -= item.price;
     saveAccounts();
     socket.emit('wallet', { coins: account.coins, spent: item.price, reason: item.name });
@@ -535,7 +544,7 @@ io.on('connection', (socket) => {
     saveAccounts();
     socket.emit('cafe_served', { id: item.id });
     socket.emit('packages', account.packages);
-    socket.to(room).emit('system_message', `🍽️ ${dev.devTag} ordered a ${item.name} at the Underground Cafe.`);
+    socket.to(room).emit('system_message', `${dev.devTag} ordered a ${item.name} at the Underground Cafe.`);
   });
 
   // Hotels: sleep in a bed at night; when at least half of the online devs are
@@ -545,18 +554,18 @@ io.on('connection', (socket) => {
     if (!dev) return;
     const ticks = currentTicks();
     const night = ticks > 12500 && ticks < 23500;
-    if (sleeping && !night) { socket.emit('system_message', '🛏️ You can only sleep at night. Your spawn point was set to this bed.'); return; }
+    if (sleeping && !night) { socket.emit('system_message', 'You can only sleep at night. Your spawn point was set to this bed.'); return; }
     dev.sleeping = !!sleeping;
     if (!sleeping) return;
     const online = Object.values(activeDevelopers);
     const asleep = online.filter((other) => other.sleeping).length;
     const needed = Math.max(1, Math.ceil(online.length / 2));
-    if (asleep < needed) { io.emit('system_message', `🛏️ ${dev.devTag} is sleeping (${asleep}/${needed} devs needed to skip the night).`); return; }
+    if (asleep < needed) { io.emit('system_message', `${dev.devTag} is sleeping (${asleep}/${needed} devs needed to skip the night).`); return; }
     worldState.ticks = 0;
     worldState.changedAt = Date.now();
     online.forEach((other) => { other.sleeping = false; });
     io.emit('world_state', worldStatePayload({ by: dev.devTag, kind: 'time' }));
-    io.emit('system_message', '🌅 Enough devs slept through the night. Good morning, Genesis City!');
+    io.emit('system_message', 'Enough devs slept through the night. Good morning, Genesis City!');
     io.emit('wake_up');
   });
 
@@ -595,7 +604,10 @@ io.on('connection', (socket) => {
     const dev = developer();
     if (!dev || typeof parcel !== 'string' || !/^-?\d{1,3},-?\d{1,3}$/.test(parcel)) return;
     const [px, pz] = parcel.split(',').map(Number);
-    if (Math.abs(px) > MAX_PARCEL || Math.abs(pz) > MAX_PARCEL) { socket.emit('system_message', 'That parcel is outside Genesis City.'); return; }
+    if (px < -MAX_PARCEL || px >= MAX_PARCEL || pz < -MAX_PARCEL || pz >= MAX_PARCEL) { socket.emit('system_message', 'That parcel is outside Genesis City.'); return; }
+    const inCore = px >= -CORE_PARCELS && px < CORE_PARCELS && pz >= -CORE_PARCELS && pz < CORE_PARCELS;
+    if (isRoadParcel(px, pz)) { socket.emit('system_message', 'That parcel is a road. Pick a green parcel next to it.'); return; }
+    if (!inCore && isSceneParcel(px, pz)) { socket.emit('system_message', 'That parcel already has a community scene.'); return; }
     if (accounts.lands[parcel]) { socket.emit('system_message', `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`); return; }
     if (walletOf(account) < LAND_PRICE) { socket.emit('system_message', `You need ${LAND_PRICE} MVC to buy a parcel (you have ${account.coins}). Earn coins with commits, chests and supply drops.`); return; }
     account.coins -= LAND_PRICE;
@@ -603,7 +615,7 @@ io.on('connection', (socket) => {
     saveAccounts();
     socket.emit('wallet', { coins: account.coins, spent: LAND_PRICE, reason: `parcel ${parcel}` });
     io.emit('lands', accounts.lands);
-    io.emit('system_message', `🏡 ${dev.devTag} bought parcel ${parcel} in Genesis City!`);
+    io.emit('system_message', `${dev.devTag} bought parcel ${parcel} in Genesis City!`);
   });
   socket.on('pay', ({ to, amount } = {}) => {
     const dev = developer();
@@ -645,14 +657,13 @@ io.on('connection', (socket) => {
     account.coins = walletOf(account) + 3;
     socket.emit('wallet', { coins: account.coins, earned: 3, reason: 'commit' });
     saveAccounts();
-    io.to(room).emit('system_message', `✔ ${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
+    io.to(room).emit('system_message', `${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
     io.emit('commit_leaderboard', commitLeaderboard());
   });
 
   // Sent by the client once its loot catalog is loaded
   socket.on('loot_sync', () => {
     socket.emit('loot_spawns', publicLoot());
-    socket.emit('inventory', account.inventory);
   });
 
   // Loot: open a chest or supply drop next to your cursor
@@ -663,15 +674,13 @@ io.on('connection', (socket) => {
     if (loot.openUntil > Date.now()) { socket.emit('system_message', 'Someone already looted this one.'); return; }
     if (loot.landsAt && loot.landsAt > Date.now()) { socket.emit('system_message', 'The supply drop is still falling!'); return; }
     if (Math.hypot(dev.position.x - loot.x, dev.position.z - loot.z) > LOOT_REACH) { socket.emit('system_message', 'Get closer to open it.'); return; }
-    if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', `Your inventory is full (${MAX_INVENTORY}). Use or /drop something first.`); return; }
 
+    // The loot is a real code file: the client downloads it right away
     const item = rollItem(loot.kind);
-    account.inventory.push({ id: item.id, foundAt: Date.now() });
     const bonus = loot.kind === 'drop' ? 25 : 5;
     account.coins = walletOf(account) + bonus;
     socket.emit('wallet', { coins: account.coins, earned: bonus, reason: loot.kind === 'drop' ? 'supply drop' : 'chest' });
     saveAccounts();
-    socket.emit('inventory', account.inventory);
     socket.emit('loot_result', { item: item.id, from: loot.kind });
     if (loot.kind === 'drop') {
       delete lootSpawns[id];
@@ -682,33 +691,8 @@ io.on('connection', (socket) => {
       setTimeout(() => io.emit('loot_state', { id, open: false }), CHEST_RESPAWN_MS);
     }
     if (item.rarity === 'legendary' || item.rarity === 'epic') {
-      io.emit('system_message', `✨ ${dev.devTag} found a ${lootTable.rarities[item.rarity].name.toUpperCase()} ${item.name}!`);
+      io.emit('system_message', `${dev.devTag} found a ${lootTable.rarities[item.rarity].name.toUpperCase()} ${item.name}!`);
     }
-  });
-
-  socket.on('item_use', ({ index } = {}) => {
-    const dev = developer();
-    const entry = account.inventory[index];
-    const item = entry && lootTable.items.find((candidate) => candidate.id === entry.id);
-    if (!dev || !item) return;
-    if (item.kind === 'consumable') {
-      account.inventory.splice(index, 1);
-      saveAccounts();
-      if (item.effect === 'lens') dev.lensUntil = Date.now() + item.seconds * 1000;
-    }
-    if (item.kind === 'wearable') {
-      dev.wearable = dev.wearable === item.wearable ? null : item.wearable;
-      io.to(room).emit('peer_updated', { id: socket.id, devTag: dev.devTag, wearable: dev.wearable });
-    }
-    socket.emit('inventory', account.inventory);
-    socket.emit('item_effect', { item: item.id });
-  });
-
-  socket.on('item_drop', ({ index } = {}) => {
-    if (!developer() || !account.inventory[index]) return;
-    account.inventory.splice(index, 1);
-    saveAccounts();
-    socket.emit('inventory', account.inventory);
   });
 
   // Clean-up memory garbage collection sequence triggers when a laptop connection drops down

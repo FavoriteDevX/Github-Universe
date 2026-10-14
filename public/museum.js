@@ -292,7 +292,7 @@
         for (let i = 0; i < 60; i++) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i * 83) % w, (i * 47) % h, 2, 2); }
         ctx.fillStyle = '#ffff00'; ctx.font = 'bold 34px Comic Sans MS, cursive'; ctx.fillText('~*~ My Cool Homepage ~*~', 40, 60);
         ctx.fillStyle = '#00ff00'; ctx.font = '22px Times New Roman'; ctx.fillText('You are visitor #0001337', 120, 120);
-        ctx.fillStyle = '#ffd700'; ctx.fillRect(120, 160, 270, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 22px Arial'; ctx.fillText('🚧 UNDER CONSTRUCTION 🚧', 128, 193);
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(120, 160, 270, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 22px Arial'; ctx.fillText('UNDER CONSTRUCTION', 128, 193);
         ctx.fillStyle = '#ff00ff'; ctx.font = '22px Times New Roman'; ctx.fillText('Sign my guestbook! · My webring ->', 70, 270);
         ctx.fillStyle = '#00ffff'; ctx.fillText('Best viewed at 800x600', 140, 330);
       } else if (kind === 'browser') {
@@ -417,7 +417,7 @@
         ctx.fillStyle = '#000033'; ctx.fillRect(0, 0, w, h);
         for (let i = 0; i < 80; i++) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i * 53) % w, (i * 97) % h, 2, 2); }
         ctx.fillStyle = '#ff00ff'; ctx.font = 'bold 30px Comic Sans MS, cursive'; ctx.fillText('Welcome 2 my homepage!!!', 30, 70);
-        ctx.fillStyle = '#ffff00'; ctx.fillRect(140, 140, 230, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 18px Arial'; ctx.fillText('🚧 UNDER CONSTRUCTION 🚧', 150, 172);
+        ctx.fillStyle = '#ffff00'; ctx.fillRect(140, 140, 230, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 18px Arial'; ctx.fillText('UNDER CONSTRUCTION', 150, 172);
         ctx.fillStyle = '#00ff00'; ctx.font = '18px Courier New'; ctx.fillText('You are visitor #000451', 140, 250);
         ctx.fillStyle = '#00ffff'; ctx.fillText('[Sign my guestbook] [Webring >>]', 90, 300);
       } else if (kind === 'macos9') {

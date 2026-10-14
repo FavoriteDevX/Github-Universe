@@ -8,7 +8,14 @@ const City = (() => {
   const PARCEL_SIZE = 16;
   const CELL_SIZE = 64; // 4x4 parcels per city block
   const ROAD_WIDTH = 8;
-  const WORLD_LIMIT = 640; // last walkable coordinate of Genesis City (meters)
+  const WORLD_LIMIT = 960; // last walkable coordinate of Genesis City (meters)
+  // Like Decentraland, the whole city is one grid of 16 m parcels: districts
+  // sit on it as estates, roads one parcel wide run between them at irregular
+  // spacing (maps/land.json), and the rest are small community scenes or
+  // empty parcels for sale. The center (where the generated neighborhoods,
+  // paths and gardens are) is the "commons": parcels there are not for sale.
+  const CORE_HALF = 400;
+  let landLayout = { roadsX: [], roadsZ: [], sceneChance: 0.24 };
   const CITY_RADIUS = 4; // cells -4..4 => 576m x 576m city
   const GROUND_LEVEL = -0.3;
   const { material, glow, repeated, windowsTexture, roadTexture, textSprite } = PropKit.kit;
@@ -41,6 +48,220 @@ const City = (() => {
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+  }
+
+  // --------------------------------------------------------------------------
+  // Land parcels (shared rules with server.js: same hash, same roads)
+  // --------------------------------------------------------------------------
+  const parcelOf = (x, z) => [Math.floor(x / PARCEL_SIZE), Math.floor(-z / PARCEL_SIZE)];
+  const parcelCenter = (px, pz) => [px * PARCEL_SIZE + PARCEL_SIZE / 2, -(pz * PARCEL_SIZE + PARCEL_SIZE / 2)];
+  function parcelHash(px, pz) {
+    let h = Math.imul((px * 374761393 + pz * 668265263) | 0, 1274126177);
+    h ^= h >>> 13;
+    return ((h >>> 0) % 1000) / 1000;
+  }
+  function inCore(x, z) {
+    return Math.abs(x) < CORE_HALF && Math.abs(z) < CORE_HALF;
+  }
+  function setLandLayout(layout) {
+    if (layout) landLayout = layout;
+  }
+  function isRoadParcel(px, pz) {
+    return landLayout.roadsX.includes(px) || landLayout.roadsZ.includes(pz);
+  }
+  function isSceneParcel(px, pz) {
+    return parcelHash(px, pz) < landLayout.sceneChance;
+  }
+  // What is at a point: 'district', 'road', 'commons' (center), 'scene' (a
+  // community build, not for sale) or 'land' (empty parcel for sale)
+  function landAt(x, z) {
+    if (districtAt(x, z)) return 'district';
+    const [px, pz] = parcelOf(x, z);
+    if (isRoadParcel(px, pz)) return 'road';
+    if (inCore(x, z)) return 'commons';
+    return isSceneParcel(px, pz) ? 'scene' : 'land';
+  }
+
+  // Natural grass for one parcel (no visible tiling: soft multi-scale noise,
+  // clover patches and blades) and interlocking pavers for the roads
+  function parcelTextures() {
+    const grass = PropKit.kit.canvasTexture('parcelGrass', 512, 512, (ctx, w) => {
+      let seed = 3;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      ctx.fillStyle = '#5f8f3a';
+      ctx.fillRect(0, 0, w, w);
+      // Large soft patches, then smaller ones (wrapping at the edges so parcels join seamlessly)
+      [[14, 90, 160, 0.16], [60, 25, 60, 0.18], [220, 6, 18, 0.22]].forEach(([count, minR, maxR, alpha]) => {
+        for (let k = 0; k < count; k++) {
+          const x = random() * w;
+          const y = random() * w;
+          const r = minR + random() * (maxR - minR);
+          const light = random() < 0.5;
+          [[0, 0], [w, 0], [-w, 0], [0, w], [0, -w]].forEach(([ox, oy]) => {
+            const patch = ctx.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+            patch.addColorStop(0, light ? `rgba(168, 201, 92, ${alpha})` : `rgba(38, 74, 28, ${alpha})`);
+            patch.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = patch;
+            ctx.fillRect(x + ox - r, y + oy - r, r * 2, r * 2);
+          });
+        }
+      });
+      // Blades of grass
+      for (let k = 0; k < 7000; k++) {
+        const x = random() * w;
+        const y = random() * w;
+        const tone = random();
+        ctx.strokeStyle = tone < 0.33 ? 'rgba(140, 186, 80, 0.55)' : tone < 0.66 ? 'rgba(52, 96, 34, 0.5)' : 'rgba(110, 150, 60, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (random() - 0.5) * 3, y - 2 - random() * 5); ctx.stroke();
+      }
+      // Tiny flowers and pebbles
+      for (let k = 0; k < 40; k++) {
+        ctx.fillStyle = ['#f8f9fa', '#ffe066', '#e599f7', '#ced4da'][k % 4];
+        ctx.beginPath(); ctx.arc(random() * w, random() * w, 1.2 + random() * 1.3, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+    const road = PropKit.kit.canvasTexture('parcelRoad', 512, 512, (ctx, w) => {
+      let seed = 8;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      ctx.fillStyle = '#8d877c';
+      ctx.fillRect(0, 0, w, w);
+      // Herringbone-like interlocking pavers with worn, rounded stones
+      const brick = 48;
+      for (let y = 0; y < w; y += brick / 2) {
+        for (let x = ((y / (brick / 2)) % 2) * (brick / 2) - brick; x < w + brick; x += brick) {
+          const l = 62 + random() * 12;
+          ctx.fillStyle = `hsl(${32 + random() * 10}, ${8 + random() * 8}%, ${l}%)`;
+          const bx = x + 2;
+          const by = y + 2;
+          const bw = brick - 4;
+          const bh = brick / 2 - 4;
+          ctx.beginPath();
+          ctx.moveTo(bx + 4, by); ctx.arcTo(bx + bw, by, bx + bw, by + bh, 4); ctx.arcTo(bx + bw, by + bh, bx, by + bh, 4);
+          ctx.arcTo(bx, by + bh, bx, by, 4); ctx.arcTo(bx, by, bx + bw, by, 4); ctx.fill();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.fillRect(bx + 3, by + 1, bw - 6, 2);
+        }
+      }
+      for (let k = 0; k < 1500; k++) {
+        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.fillRect(random() * w, random() * w, 1 + random() * 2, 1 + random() * 2);
+      }
+    });
+    return { grass, road };
+  }
+
+  // The parcel ground (instanced: a few draw calls for the whole city). Empty
+  // parcels are just grass, demarcated like in Decentraland by a thin stone
+  // edging along every parcel line and a small marker stone at each corner.
+  function buildLand() {
+    const districtRects = districts.filter((district) => !district.world.world).map(({ layout }) => ({
+      minX: layout.center.x - layout.size[0] / 2 - 2, maxX: layout.center.x + layout.size[0] / 2 + 2,
+      minZ: layout.center.z - layout.size[1] / 2 - 2, maxZ: layout.center.z + layout.size[1] / 2 + 2
+    }));
+    const overlapsDistrict = (px, pz) => {
+      const x0 = px * PARCEL_SIZE;
+      const z1 = -pz * PARCEL_SIZE;
+      const z0 = z1 - PARCEL_SIZE;
+      return districtRects.some((rect) => x0 < rect.maxX && x0 + PARCEL_SIZE > rect.minX && z0 < rect.maxZ && z1 > rect.minZ);
+    };
+    const holes = undergroundHoles();
+    const overlapsHole = (x, z) => holes.some((hole) => Math.abs(x - hole.x) < hole.size / 2 + PARCEL_SIZE / 2 && Math.abs(z - hole.z) < hole.size / 2 + PARCEL_SIZE / 2);
+    const grassSpots = [];
+    const roadSpots = [];
+    const count = Math.round((WORLD_LIMIT * 2) / PARCEL_SIZE);
+    for (let i = 0; i < count; i++) {
+      for (let j = 0; j < count; j++) {
+        const px = i - count / 2;
+        const pz = j - count / 2;
+        if (overlapsDistrict(px, pz)) continue;
+        const [x, z] = parcelCenter(px, pz);
+        if (overlapsHole(x, z)) continue;
+        if (isRoadParcel(px, pz)) roadSpots.push([x, z]);
+        else grassSpots.push([x, z, px, pz]);
+      }
+    }
+    const { grass, road } = parcelTextures();
+    // The ground lies 1 cm above the paved base; polygon offset keeps it on top
+    // even on GPUs with a low-precision depth buffer
+    const onTop = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 };
+    const plane = new THREE.PlaneGeometry(PARCEL_SIZE, PARCEL_SIZE).rotateX(-Math.PI / 2);
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const color = new THREE.Color();
+    const grassMesh = new THREE.InstancedMesh(plane, new THREE.MeshStandardMaterial({ map: grass, roughness: 1, ...onTop }), grassSpots.length);
+    grassSpots.forEach(([x, z, px, pz], index) => {
+      // Each parcel is rotated a quarter turn at random so the grass never repeats visibly
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.012, z), quaternion.setFromAxisAngle(up, Math.floor(parcelHash(px, pz) * 4) * Math.PI / 2), new THREE.Vector3(1, 1, 1));
+      grassMesh.setMatrixAt(index, matrix);
+      grassMesh.setColorAt(index, color.setHSL(0, 0, 0.94 + parcelHash(pz, px) * 0.08));
+    });
+    const roadMesh = new THREE.InstancedMesh(plane, new THREE.MeshStandardMaterial({ map: road, roughness: 0.95, ...onTop }), roadSpots.length);
+    roadSpots.forEach(([x, z], index) => {
+      matrix.makeTranslation(x, GROUND_LEVEL + 0.014, z);
+      roadMesh.setMatrixAt(index, matrix);
+    });
+    // Demarcation: low stone edging on the west and south side of each grass
+    // parcel (so every shared line gets exactly one), and corner marker stones
+    const stone = new THREE.MeshStandardMaterial({ color: '#cfc8b8', roughness: 0.9 });
+    const edges = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stone, grassSpots.length * 2);
+    const corners = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.28, 0.35, 6).translate(0, 0.175, 0), new THREE.MeshStandardMaterial({ color: '#e9e4d8', roughness: 0.8 }), grassSpots.length);
+    grassSpots.forEach(([x, z], index) => {
+      matrix.compose(new THREE.Vector3(x - PARCEL_SIZE / 2, GROUND_LEVEL + 0.03, z), quaternion.identity(), new THREE.Vector3(0.18, 0.06, PARCEL_SIZE));
+      edges.setMatrixAt(index * 2, matrix);
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.03, z + PARCEL_SIZE / 2), quaternion, new THREE.Vector3(PARCEL_SIZE, 0.06, 0.18));
+      edges.setMatrixAt(index * 2 + 1, matrix);
+      matrix.makeTranslation(x - PARCEL_SIZE / 2, GROUND_LEVEL, z + PARCEL_SIZE / 2);
+      corners.setMatrixAt(index, matrix);
+    });
+    [grassMesh, roadMesh, edges, corners].forEach((instanced) => {
+      instanced.raycast = () => {};
+      instanced.receiveShadow = true;
+      instanced.castShadow = false;
+      instanced.userData.alwaysVisible = true;
+      scene.add(instanced);
+    });
+  }
+
+  // Community buildings are instanced (no raycast): the avatar physics asks
+  // this instead, so you cannot walk through them
+  const sceneSolids = new Map();
+  let landScenes = 0;
+  function solidAt(x, z, y) {
+    const [px, pz] = parcelOf(x, z);
+    const solid = sceneSolids.get(`${px},${pz}`);
+    return Boolean(solid) && y < solid.top && x > solid.minX && x < solid.maxX && z > solid.minZ && z < solid.maxZ;
+  }
+
+  // Owned parcels: a fenced plot with the owner's sign (only these become 3D objects)
+  let ownedGroup = null;
+  function buildOwnedParcels() {
+    if (!scene) return;
+    if (ownedGroup) scene.remove(ownedGroup);
+    ownedGroup = new THREE.Group();
+    const { box } = PropKit.kit;
+    const post = material('#7048e8');
+    const plate = new THREE.MeshStandardMaterial({ color: '#9775fa', transparent: true, opacity: 0.35, roughness: 1 });
+    Object.entries(landOwners).forEach(([parcel, land]) => {
+      if (landSigns.has(parcel)) return;
+      const [px, pz] = parcel.split(',').map(Number);
+      const x = px * PARCEL_SIZE + PARCEL_SIZE / 2;
+      const z = -(pz * PARCEL_SIZE + PARCEL_SIZE / 2);
+      if (inCore(x, z)) return;
+      const plot = new THREE.Group();
+      plot.position.set(x, GROUND_LEVEL, z);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(PARCEL_SIZE - 0.4, PARCEL_SIZE - 0.4).rotateX(-Math.PI / 2), plate);
+      floor.position.y = 0.03;
+      floor.raycast = () => {};
+      plot.add(floor);
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => plot.add(box(0.3, 1.4, 0.3, post, sx * 7.6, 0.7, sz * 7.6)));
+      const sign = textSprite(`${land.owner} · parcel ${parcel}`, { width: 6, background: 'rgba(80, 50, 160, 0.9)' });
+      sign.position.y = 3;
+      plot.add(sign);
+      ownedGroup.add(plot);
+    });
+    scene.add(ownedGroup);
   }
 
   // --------------------------------------------------------------------------
@@ -218,20 +439,9 @@ const City = (() => {
     const pavers = repeated(PropKit.kit.cobbleTexture('#cfc6b8'), 1, 1);
     pavers.repeat.set(1 / 8, 1 / 8);
     const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: pavers, roughness: 0.95 }));
-    // Real grass only on the outskirts, past the city
+    // Real grass for lawns (the parcel grid is built in finalize, once every district exists)
     const texture = repeated(grassTexture, 1, 1);
     texture.repeat.set(1 / 10, 1 / 10);
-    const outskirts = new THREE.Shape();
-    outskirts.moveTo(-edge, -edge); outskirts.lineTo(edge, -edge); outskirts.lineTo(edge, edge); outskirts.lineTo(-edge, edge); outskirts.closePath();
-    const cityEdge = new THREE.Path();
-    cityEdge.absarc(0, 0, 400, 0, Math.PI * 2, true);
-    outskirts.holes.push(cityEdge);
-    const lawnRing = new THREE.Mesh(new THREE.ShapeGeometry(outskirts, 64), new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
-    lawnRing.rotation.x = -Math.PI / 2;
-    lawnRing.position.y = GROUND_LEVEL + 0.012;
-    lawnRing.receiveShadow = true;
-    lawnRing.raycast = () => {};
-    scene.add(lawnRing);
     grassMaterialForLawns = new THREE.MeshStandardMaterial({ map: texture, roughness: 1 });
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = GROUND_LEVEL;
@@ -439,6 +649,7 @@ const City = (() => {
       signMaterial.map = landSignTexture(parcel, owner);
       signMaterial.needsUpdate = true;
     });
+    buildOwnedParcels();
   }
 
   // Outskirts: past the neighborhoods the land fades out gradually (sparse
@@ -450,13 +661,13 @@ const City = (() => {
     const quaternion = new THREE.Quaternion();
     const up = new THREE.Vector3(0, 1, 0);
     const sparse = [];
-    for (let i = 0; i < 900; i++) {
+    for (let i = 0; i < 2200; i++) {
       const x = (random() * 2 - 1) * (WORLD_LIMIT - 20);
       const z = (random() * 2 - 1) * (WORLD_LIMIT - 20);
       const radius = Math.max(Math.abs(x), Math.abs(z));
-      // Density falls off from the neighborhoods to the edge
-      if (radius < 380 || random() > 0.9 - (radius - 380) / 400) continue;
-      if (insideDistrict(x, z, 6) || nearPath(x, z, 5)) continue;
+      // A few trees, rocks and grass tufts on the empty parcels (never on roads)
+      if (radius < CORE_HALF + 4 || random() > 0.45) continue;
+      if (landAt(x, z) !== 'land' || landAt(x + 3, z + 3) !== 'land' || landAt(x - 3, z - 3) !== 'land' || random() > 0.5) continue;
       sparse.push({ x, z, kind: random(), size: 0.6 + random() * 0.9 });
     }
     const trees = sparse.filter((spot) => spot.kind < 0.45);
@@ -1186,7 +1397,7 @@ const City = (() => {
     let crownIndex = 0;
     for (let i = 0; i < 26; i++) {
       const angle = (i / 26) * Math.PI * 2 + random() * 0.15;
-      const distance = 650 + random() * 250;
+      const distance = WORLD_LIMIT + 130 + random() * 220;
       const radius = 35 + random() * 50;
       const height = 30 + random() * 70;
       const mesa = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.75, radius, height, 7), rock);
@@ -1254,6 +1465,7 @@ const City = (() => {
 
   function finalize() {
     prepareGround();
+    buildLand();
     buildPaths();
     buildNeighborhoods();
     buildOutskirts();
@@ -1262,7 +1474,7 @@ const City = (() => {
   }
 
   return {
-    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, paths, setLandOwners, prepareGround,
+    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, CORE_HALF, paths, setLandOwners, prepareGround, landAt, isRoadParcel, isSceneParcel, setLandLayout, solidAt,
     landOwner: (parcel) => (landOwners[parcel] ? landOwners[parcel].owner : null),
     get landOwners() { return landOwners; },
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,

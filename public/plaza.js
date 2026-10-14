@@ -746,7 +746,7 @@
       });
       group.userData.label = 'Underground entrance: step in and fall for 5 seconds';
       // Big floating sign so newcomers (who spawn right in front) find the entrance
-      const sign = textSprite('⬇ UNDERGROUND · jump into the pool', { width: 11, background: 'rgba(24, 119, 242, 0.92)' });
+      const sign = textSprite('UNDERGROUND · jump into the pool', { width: 11, background: 'rgba(24, 119, 242, 0.92)' });
       sign.position.set(0, 5.5, 0);
       group.add(sign);
       animate(sign, (time) => { sign.position.y = 5.5 + Math.sin(time * 1.6) * 0.25; });
@@ -800,7 +800,7 @@
       }
       const menu = facedBox(5, 2.4, 0.15, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 40px Georgia, serif' }) }), radius * 0.45 + 3, 4, radius * 0.3 - 6.5);
       group.add(PropKit.kit.interactive(menu, 'cafe_menu', 'Underground Cafe menu'));
-      const orderSign = textSprite('🍝 Order here (E) · dishes are code packages', { width: 7, background: 'rgba(43, 27, 18, 0.9)' });
+      const orderSign = textSprite('Order here (E) · dishes are code packages', { width: 7, background: 'rgba(43, 27, 18, 0.9)' });
       orderSign.position.set(radius * 0.45 + 3, 6, radius * 0.3 - 6.3);
       group.add(orderSign);
       // Elevator back to Genesis Plaza
@@ -822,7 +822,7 @@
       const roastSpot = new THREE.Object3D();
       roastSpot.position.set(0, 1, 3.2);
       group.add(PropKit.kit.interactive(roastSpot, 'roast', 'Fry your Code'));
-      const roastSign = textSprite('🔥 Fry your Code (E)', { width: 5, background: 'rgba(201, 42, 42, 0.9)' });
+      const roastSign = textSprite('Fry your Code (E)', { width: 5, background: 'rgba(201, 42, 42, 0.9)' });
       roastSign.position.set(0, 4.6, 0);
       group.add(roastSign);
       window.firepits = window.firepits || [];

@@ -81,7 +81,7 @@ const Codify = (() => {
 
   function setStatus() {
     if (!active) { ui.status.textContent = 'Write some code and press "Add to world". Blocks are private unless you tick "Visible to others".'; return; }
-    ui.status.textContent = active.shared ? '👀 Shared: devs near you can see this block and its code live.' : '🔒 Private: only you can see this block. Edits appear in the world as you type.';
+    ui.status.textContent = active.shared ? 'Shared: devs near you can see this block and its code live.' : 'Private: only you can see this block. Edits appear in the world as you type.';
   }
 
   function open(block) {
@@ -247,7 +247,7 @@ const Codify = (() => {
     ui.add.textContent = 'New block';
     if (block.shared) sync(block);
     setStatus();
-    hooks.system('🧱 Code block added to the world. Keep typing: it updates live. Walk to the Genesis Plaza firepit to "Fry your Code".');
+    hooks.system('Code block added to the world. Keep typing: it updates live. Walk to the Genesis Plaza firepit to "Fry your Code".');
   }
 
   function removeBlock(id) {
@@ -319,7 +319,7 @@ const Codify = (() => {
   function startRoast(firepit) {
     const block = active || [...blocks.values()].reverse().find((candidate) => candidate.own);
     if (!block) {
-      hooks.system('🔥 Fry your Code: first write some code with Codify (C) and press "Add to world".');
+      hooks.system('Fry your Code: first write some code with Codify (C) and press "Add to world".');
       open();
       return;
     }
@@ -334,7 +334,7 @@ const Codify = (() => {
     const original = { position: block.group.position.clone(), scale: block.group.scale.clone(), visible: block.sprite.visible };
     block.sprite.visible = false;
     roast = { block, stick, fire, direction, start: performance.now(), original, bugs: findBugs(block.code, block.language), popped: [] };
-    hooks.system(`🔥 Roasting your ${LANGUAGES[block.language].name} code over the fire... looking for bugs.`);
+    hooks.system(`Roasting your ${LANGUAGES[block.language].name} code over the fire... looking for bugs.`);
   }
 
   function updateRoast() {
@@ -357,7 +357,7 @@ const Codify = (() => {
     // Each bug pops out of the fire as a little bug that burns up
     const due = Math.floor(t / (5 / Math.max(1, roast.bugs.length)));
     while (roast.popped.length < Math.min(due, roast.bugs.length)) {
-      const bug = PropKit.kit.textSprite('🐛', { width: 1.2, background: 'rgba(0, 0, 0, 0)', font: 'bold 96px Segoe UI Emoji, Apple Color Emoji, sans-serif' });
+      const bug = PropKit.kit.textSprite('BUG', { width: 1.2, background: 'rgba(201, 42, 42, 0.9)' });
       bug.position.copy(tip);
       bug.userData.born = t;
       bug.userData.drift = new THREE.Vector3((Math.random() - 0.5) * 2, 3, (Math.random() - 0.5) * 2);
@@ -382,9 +382,9 @@ const Codify = (() => {
     const lang = LANGUAGES[block.language] || LANGUAGES.javascript;
     block.glowRing.material.emissive.set(lang.color);
     roast = null;
-    const verdict = bugs.length === 0 ? '✨ Perfectly toasted: no bugs found!' : `🐛 ${bugs.length} bug${bugs.length > 1 ? 's' : ''} burned out of your code:`;
-    hooks.system(`🔥 Fry your Code — ${verdict}`);
-    ui.report.innerHTML = `<h4>🔥 Roast report</h4><p>${verdict}</p>${bugs.length ? `<ul>${bugs.map((bug) => `<li>${bug.line ? `<b>line ${bug.line}</b> ` : ''}${escapeHtml(bug.message)}</li>`).join('')}</ul>` : ''}<p class="codify-note">A playful bug finder (simple checks + the JavaScript parser), not a full linter.</p>`;
+    const verdict = bugs.length === 0 ? 'Perfectly toasted: no bugs found!' : `${bugs.length} bug${bugs.length > 1 ? 's' : ''} burned out of your code:`;
+    hooks.system(`Fry your Code — ${verdict}`);
+    ui.report.innerHTML = `<h4>Roast report</h4><p>${verdict}</p>${bugs.length ? `<ul>${bugs.map((bug) => `<li>${bug.line ? `<b>line ${bug.line}</b> ` : ''}${escapeHtml(bug.message)}</li>`).join('')}</ul>` : ''}<p class="codify-note">A playful bug finder (simple checks + the JavaScript parser), not a full linter.</p>`;
     open(block.own ? block : null);
   }
 
@@ -431,7 +431,7 @@ const Codify = (() => {
     active = null;
     ui.language.value = LANGUAGES[language] ? language : 'javascript';
     ui.code.value = code;
-    ui.report.innerHTML = `<h4>🍽️ ${escapeHtml(title)}</h4><p>Your package is in the editor. Press "Add to world" to place it as a code block.</p>`;
+    ui.report.innerHTML = `<h4>${escapeHtml(title)}</h4><p>Your package is in the editor. Press "Add to world" to place it as a code block.</p>`;
     open();
   }
 

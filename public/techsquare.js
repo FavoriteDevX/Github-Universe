@@ -183,7 +183,7 @@ const TechSquare = (() => {
         if (!list.length) { ctx.fillStyle = '#c9b48a'; ctx.fillText('Be the first: sit at a laptop (E) and commit!', 40, 220); }
         list.forEach(([name, commits], index) => {
           ctx.fillStyle = index === 0 ? '#ffd166' : '#ffffff';
-          ctx.fillText(`${['🥇', '🥈', '🥉'][index] || `${index + 1}.`} ${name}`, 40, 210 + index * 58);
+          ctx.fillText(`${index + 1}. ${name}`, 40, 210 + index * 58);
           ctx.fillText(`${commits} commits`, 720, 210 + index * 58);
         });
         texture.needsUpdate = true;
@@ -570,7 +570,7 @@ const TechSquare = (() => {
     socket.on('tech_feeds', (snapshot) => { feeds = snapshot; redrawAll(); });
     socket.on('feed_highlight', ({ repo, message }) => {
       flashUntil = performance.now() + 6000;
-      system(`🎆 New commit on ${repo}: ${message}`);
+      system(`New commit on ${repo}: ${message}`);
       const mural = City.districts.find((district) => district.world.key === 'techsquare');
       if (mural) launchFireworks(mural.layout.center);
     });

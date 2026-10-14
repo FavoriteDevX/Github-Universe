@@ -4,7 +4,7 @@
 // Everything is synthesized with the Web Audio API (no audio files): footsteps
 // that change with the ground (stone in plazas and on paths, soft grass, an
 // echoing cave underground), jump and landing, coins, teleports, clicks and
-// crickets at night. Toggle with the 🔊 dock button or /sound on|off; the
+// crickets at night. Toggle with the dock button or /sound on|off; the
 // choice is remembered in this browser.
 const Sound = (() => {
   let context = null;

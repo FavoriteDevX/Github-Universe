@@ -290,7 +290,12 @@ function initEngine() {
 // WORLD LOADING: EVERY MAP BECOMES A DISTRICT OF ONE CONTINUOUS CITY
 // ============================================================================
 async function loadUniverse() {
-  worldRegistry = await (await fetch('maps/worlds.json')).json();
+  const [registry, landLayout] = await Promise.all([
+    fetch('maps/worlds.json').then((response) => response.json()),
+    fetch('maps/land.json').then((response) => response.json()).catch(() => null)
+  ]);
+  worldRegistry = registry;
+  City.setLandLayout(landLayout);
   window.MULTIVERSE_WORLDS = worldRegistry; // used by the Events Wall to build its JUMP IN cards
   const maps = await Promise.all(worldRegistry.map((world) => fetch(`maps/${world.file}`).then((response) => response.json())));
   // Genesis Plaza is built first so devs can enter right away; the rest of the
@@ -422,7 +427,7 @@ function setViewMode(mode) {
 function toggleFlight() {
   flying = !flying;
   avatar.velocityY = 0;
-  appendSystemMessage(flying ? '🕊️ Flying! Space = up, Shift = down, double-tap Space to stop.' : '🛬 Flight off.');
+  appendSystemMessage(flying ? 'Flying! Space = up, Shift = down, double-tap Space to stop.' : 'Flight off.');
 }
 
 // Place where a teleport lands: the exact spawn for places that define one
@@ -473,7 +478,7 @@ function updateTunnelFall() {
     if (progress >= 1) {
       tunnelFall = null;
       camera.position.set(avatar.position.x, avatar.position.y + 4, avatar.position.z + 9);
-      appendSystemMessage('💧 Welcome to the Genesis Plaza Underground! Take the elevator (E) to go back up.');
+      appendSystemMessage('Welcome to the Genesis Plaza Underground! Take the elevator (E) to go back up.');
     }
     return true;
   }
@@ -487,7 +492,7 @@ function updateTunnelFall() {
     if (inside && ((entrance.group.userData.doorsOpen && depth > 0.2) || depth > 2) && depth < entrance.depth) {
       tunnelFall = { start: performance.now(), x: center.x, z: center.z, fromY: avatar.position.y, toY: center.y - 59.7 };
       flying = false;
-      appendSystemMessage('🌊 Falling down the water tunnel...');
+      appendSystemMessage('Falling down the water tunnel...');
       return true;
     }
   }
@@ -515,6 +520,8 @@ function updateAvatar(deltaSeconds) {
     // Try the full move, then slide along each axis when a wall blocks it
     [move, new THREE.Vector3(move.x, 0, 0), new THREE.Vector3(0, 0, move.z)].some((attempt) => {
       if (attempt.lengthSq() === 0 || isBlocked(attempt)) return false;
+      // Community buildings on the parcels are instanced, so they are checked here
+      if (City.solidAt(avatar.position.x + attempt.x, avatar.position.z + attempt.z, avatar.position.y)) return false;
       avatar.position.add(attempt);
       return true;
     });
@@ -530,7 +537,7 @@ function updateAvatar(deltaSeconds) {
     const flightGround = groundHeightAt(avatar.position.x, avatar.position.z, avatar.position.y + 0.5);
     if (avatar.position.y <= flightGround) {
       avatar.position.y = flightGround;
-      if (vertical < 0) { flying = false; appendSystemMessage('🛬 Landed. Double-tap Space to fly again.'); }
+      if (vertical < 0) { flying = false; appendSystemMessage('Landed. Double-tap Space to fly again.'); }
     }
     avatar.grounded = false;
   } else if (keysPressed.has(' ') && lootModifiers.jetpack) {
@@ -562,7 +569,7 @@ function updateAvatar(deltaSeconds) {
     avatar.position.z = THREE.MathUtils.clamp(avatar.position.z, -limit, limit);
     if (performance.now() - lastEdgeWarning > 8000) {
       lastEdgeWarning = performance.now();
-      appendSystemMessage('🧱 You reached the edge of Genesis City. Beyond this point there is nothing but empty horizon.');
+      appendSystemMessage('You reached the edge of Genesis City. Beyond this point there is nothing but empty horizon.');
     }
   }
   if (avatar.position.y < City.GROUND_LEVEL - 100) flyTo(bedSpawn() || places[0].target, null, 'You fell out of the world. Back to your spawn point!');
@@ -694,7 +701,7 @@ function openAvatarCustomizer() {
     try { localStorage.setItem('multiverse-look', JSON.stringify(look)); } catch (error) { /* storage blocked */ }
     applyLook(localCursor, look);
     if (socket && socket.connected) socket.emit('set_avatar', look);
-    appendSystemMessage('👕 Looking good! Change your outfit anytime with the 👕 button.');
+    appendSystemMessage('Looking good! Change your outfit anytime with the shirt button in the menu.');
   }, lookPreviewCursor);
 }
 
@@ -796,6 +803,8 @@ function showChatBubble(record, text) {
 // INPUT: CURSOR RAYCASTING, CAMERA WALKING, CLICKS
 // ============================================================================
 function bindInputEvents() {
+  const soundDockButton = document.querySelector('#dock [data-action="sound"]');
+  if (soundDockButton) soundDockButton.classList.toggle('muted', !Sound.isEnabled());
   const canvas = renderer.domElement;
   canvas.addEventListener('pointermove', (event) => {
     pointerNDC.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -825,14 +834,13 @@ function bindInputEvents() {
   document.querySelectorAll('#dock button').forEach((button) => {
     button.addEventListener('click', () => {
       Sound.play('click');
-      if (button.dataset.action === 'sound') { const on = Sound.setEnabled(!Sound.isEnabled()); button.textContent = on ? '🔊' : '🔇'; appendSystemMessage(on ? '🔊 Sound effects on.' : '🔇 Sound effects off.'); return; }
+      if (button.dataset.action === 'sound') { const on = Sound.setEnabled(!Sound.isEnabled()); button.classList.toggle('muted', !on); appendSystemMessage(on ? 'Sound effects on.' : 'Sound effects off.'); return; }
       const toggle = button.dataset.toggle;
       if (toggle) { button.classList.toggle('active', document.body.classList.toggle(toggle)); return; }
       const action = button.dataset.action;
       if (action === 'metro') Metro.open();
       if (action === 'avatar') openAvatarCustomizer();
       if (action === 'codify') Codify.open();
-      if (action === 'inventory') LootSystem.toggleInventory();
       if (action === 'invite') document.getElementById('invite-button').click();
       if (action === 'lobby') document.getElementById('lobby-button').click();
     });
@@ -868,12 +876,13 @@ function bindInputEvents() {
     // Shift+U: hide every overlay and keep only the scenery (screenshot mode)
     if (event.key === 'U') { document.body.classList.toggle('hide-ui'); return; }
     if (event.key === 'Escape') { closeInfoCard(); closeStream(); Cafe.close(); document.getElementById('mvc-store').style.display = 'none'; }
-    if (event.key.toLowerCase() === 'm') { setViewMode(viewMode === 'map' ? 'explore' : 'map'); return; }
-    if (event.key.toLowerCase() === 'v') { appendSystemMessage(VideoScreens.toggleSound() ? '🔊 Video screens: sound ON (press V to mute).' : '🔇 Video screens muted (press V for sound).'); return; }
+    // M: the Genesis City map (top view of every parcel); from the 3D overhead view, M walks again
+    if (event.key.toLowerCase() === 'm') { if (viewMode === 'map') setViewMode('explore'); else CityMap.toggle(); return; }
+    if (event.key.toLowerCase() === 'v') { appendSystemMessage(VideoScreens.toggleSound() ? 'Video screens: sound ON (press V to mute).' : 'Video screens muted (press V for sound).'); return; }
     if (event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey) { if (Codify.isOpen()) Codify.close(); else Codify.open(); event.preventDefault(); return; }
     if (event.key.toLowerCase() === 'n') { if (Metro.isOpen()) Metro.close(); else Metro.open(); return; }
     if (event.key === 'Escape' && Metro.isOpen()) { Metro.close(); return; }
-    if (event.key.toLowerCase() === 'e' && Vehicles.isMounted()) { Vehicles.dismount(); appendSystemMessage('🚶 You got off the vehicle.'); return; }
+    if (event.key.toLowerCase() === 'e' && Vehicles.isMounted()) { Vehicles.dismount(); appendSystemMessage('You got off the vehicle.'); return; }
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && LootSystem.tryOpen()) return;
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && Interactions.handleKey(event)) return;
     if (event.key === ' ' && !event.repeat) {
@@ -881,8 +890,6 @@ function bindInputEvents() {
       if (now - lastSpaceTap < 320) toggleFlight();
       lastSpaceTap = now;
     }
-    if (event.key.toLowerCase() === 'i') { LootSystem.toggleInventory(); return; }
-    if (/^[1-5]$/.test(event.key)) { LootSystem.useSlot(parseInt(event.key, 10) - 1); return; }
     if (event.key === ' ') event.preventDefault();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(event.key.toLowerCase())) wakeUp();
     keysPressed.add(event.key.toLowerCase());
@@ -1022,7 +1029,16 @@ function updateHud() {
   const position = localCursor.target;
   const district = City.districtAt(position.x, position.z);
   const chip = document.getElementById('location-chip');
-  if (chip) chip.firstChild.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : 'Genesis City';
+  let outside = 'Genesis City';
+  if (!district) {
+    const kind = City.landAt(position.x, position.z);
+    const parcelKey = `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
+    const owner = City.landOwner(parcelKey);
+    if (kind === 'road') outside = 'Genesis City · Road';
+    else if (kind === 'scene') outside = 'Community scene';
+    else if (kind === 'land') outside = owner ? `Parcel of ${owner}` : 'Empty parcel · for sale (/buyland)';
+  }
+  if (chip) chip.firstChild.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : outside;
   ui.district.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : 'Genesis City';
   ui.parcel.textContent = district && district.world.world ? 'World' : `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
   const parcelChip = document.getElementById('location-parcel');
@@ -1033,8 +1049,8 @@ function updateHud() {
   const secondsLeft = Math.max(0, Math.round(((isDay ? 12000 : 24000) - ticks) / TICKS_PER_SECOND));
   const countdown = `${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`;
   // While it is day, count down to nightfall; at night, count down to sunrise
-  ui.clock.textContent = `${ticksToClock(ticks)} · ${isDay ? '☀️ night in' : '🌙 day in'} ${worldClock.cycle ? countdown : '--:--'}`;
-  if (lastDayPhase !== null && lastDayPhase !== isDay) appendSystemMessage(isDay ? '☀️ A new day dawns over GitHub Multiverse.' : '🌙 Night has fallen over GitHub Multiverse. The billboards light up!');
+  ui.clock.textContent = `${ticksToClock(ticks)} · ${isDay ? 'night in' : 'day in'} ${worldClock.cycle ? countdown : '--:--'}`;
+  if (lastDayPhase !== null && lastDayPhase !== isDay) appendSystemMessage(isDay ? 'A new day dawns over GitHub Multiverse.' : 'Night has fallen over GitHub Multiverse. The billboards light up!');
   lastDayPhase = isDay;
   if (hudFrame % 60 === 1) renderWorldList();
   drawMinimap();
@@ -1166,7 +1182,7 @@ const HELP_PAGES = [
   ['Metro', 'N or /metro opens the transit map | /metro <place> rides the train there | walk through portals in Genesis Plaza'],
   ['Dungeon', '/bugs | /script <gc|try-catch|break|mutex|unit-test|reboot> | click bugs with the Git Commit Hammer'],
   ['Open Source HQ', '/mural <1-4> <code> | /pr <slot 1-8> <tree|lamp|banner|fountain|duck|flag|neon|bench> [hex] | /prs | /approve <n> | /merge <n> | /close <n>'],
-  ['Loot', 'E open chests & supply drops | 1-5 use hotbar items | I or /inv inventory | /use <n> | /drop <n> | /loot (nearest chest)'],
+  ['Loot', 'E opens chests & supply drops: each one gives a real code file, downloaded to your computer | /loot (nearest chest)'],
   ['Keynote & Green-Tech', '/keynotes | /watch [n] | /stream <YouTube/Twitch URL> [title] | /endstream | /wear <hoodie|mug|cap|headphones|none> | /plant | /energy']
 ];
 
@@ -1285,25 +1301,27 @@ function interpretChatCommand(inputBuffer) {
     }
     case 'bed': {
       const spot = bedSpawn();
-      if (spot) flyTo(spot, null, '🛏️ Back to your bed.');
+      if (spot) flyTo(spot, null, 'Back to your bed.');
       else appendSystemMessage('You have no bed yet. Sleep in a hotel bed (Multiverse Hotel or the mini hotels) to set your spawn point.');
       break;
     }
     case 'sound': {
       const on = args[0] ? args[0] !== 'off' : !Sound.isEnabled();
       Sound.setEnabled(on);
-      appendSystemMessage(on ? '🔊 Sound effects on.' : '🔇 Sound effects off.');
+      const soundButton = document.querySelector('#dock [data-action="sound"]');
+      if (soundButton) soundButton.classList.toggle('muted', !on);
+      appendSystemMessage(on ? 'Sound effects on.' : 'Sound effects off.');
       break;
     }
     case 'quality': {
-      if (!args[0]) { appendSystemMessage(`⚙️ Graphics quality: ${Quality.name()}. Use /quality low | medium | high | auto (or minimum on very old computers).`); break; }
+      if (!args[0]) { appendSystemMessage(`Graphics quality: ${Quality.name()}. Use /quality low | medium | high | auto (or minimum on very old computers).`); break; }
       const chosen = Quality.choose(args[0].toLowerCase());
-      appendSystemMessage(chosen ? `⚙️ Graphics quality: ${chosen}.` : 'Use /quality minimum | low | medium | high | auto.');
+      appendSystemMessage(chosen ? `Graphics quality: ${chosen}.` : 'Use /quality minimum | low | medium | high | auto.');
       break;
     }
     case 'balance':
     case 'wallet':
-      appendSystemMessage(`🪙 You have ${wallet} MVC (Multiverse Coins: in-game only, no real value). Earn them with commits, chests and supply drops; spend them on land parcels.`);
+      appendSystemMessage(`You have ${wallet} MVC (Multiverse Coins: in-game only, no real value). Earn them with commits, chests and supply drops; spend them on land parcels.`);
       break;
     case 'pay': {
       const amount = parseInt(args[1], 10);
@@ -1315,13 +1333,17 @@ function interpretChatCommand(inputBuffer) {
     case 'land': {
       const parcel = ui.parcel.textContent;
       if (!/^-?\d+,-?\d+$/.test(parcel)) { appendSystemMessage('Stand on a Genesis City parcel to buy it.'); break; }
-      if (City.districtAt(avatar.position.x, avatar.position.z)) { appendSystemMessage('This parcel is part of a district. Find a "PARCEL FOR SALE" sign or an empty lot outside the scenes.'); break; }
+      const kind = City.landAt(avatar.position.x, avatar.position.z);
+      if (kind === 'district') { appendSystemMessage('This parcel is part of a district. Walk to the empty green parcels around the city (press M for the map).'); break; }
+      if (kind === 'road') { appendSystemMessage('You are on a road. Step onto a green parcel next to it.'); break; }
+      if (kind === 'scene') { appendSystemMessage('This parcel already has a community scene. Empty green parcels are for sale (press M).'); break; }
+      if (kind === 'commons') { appendSystemMessage('The center of Genesis City is commons land: buy at a "PARCEL FOR SALE" sign here, or any empty green parcel farther out (press M).'); break; }
       interactionHooks().buyLand(parcel);
       break;
     }
     case 'lands': {
       const mine = Object.entries(City.landOwners).filter(([, land]) => localDeveloperData && land.owner.toLowerCase() === localDeveloperData.devTag.toLowerCase()).map(([parcel]) => parcel);
-      appendSystemMessage(mine.length ? `🏡 Your parcels: ${mine.join(' · ')}` : '🏡 You do not own land yet. Look for "PARCEL FOR SALE" signs around Genesis City (250 MVC).');
+      appendSystemMessage(mine.length ? `Your parcels: ${mine.join(' · ')}` : 'You do not own land yet. Open the map (M): every green parcel around the districts is for sale (250 MVC).');
       break;
     }
     case 'nick': {
@@ -1517,10 +1539,10 @@ function setupNetwork(session) {
   socket.on('wallet', ({ coins, earned, spent, reason } = {}) => {
     wallet = coins;
     updateWalletChip();
-    if (earned) { appendSystemMessage(`🪙 +${earned} MVC (${reason}). Balance: ${coins} MVC.`); Sound.play('coin'); }
-    if (spent) appendSystemMessage(`🪙 -${spent} MVC (${reason}). Balance: ${coins} MVC.`);
+    if (earned) { appendSystemMessage(`+${earned} MVC (${reason}). Balance: ${coins} MVC.`); Sound.play('coin'); }
+    if (spent) appendSystemMessage(`-${spent} MVC (${reason}). Balance: ${coins} MVC.`);
   });
-  socket.on('lands', (lands) => City.setLandOwners(lands));
+  socket.on('lands', (lands) => { City.setLandOwners(lands); CityMap.refresh(); });
   socket.on('wake_up', () => { if (sleepingLocal) { sleepingLocal = false; document.body.classList.remove('sleeping'); } });
 
   socket.on('local_registration_success', (assignedIdentity) => {
@@ -1722,9 +1744,9 @@ async function copyInviteLink() {
   const link = inviteLink();
   try {
     await navigator.clipboard.writeText(link);
-    appendSystemMessage(`🔗 Invite link copied: ${link}`);
+    appendSystemMessage(`Invite link copied: ${link}`);
   } catch (error) {
-    appendSystemMessage(`🔗 Share this invite link: ${link}`);
+    appendSystemMessage(`Share this invite link: ${link}`);
   }
 }
 
@@ -1751,13 +1773,13 @@ function interactionHooks() {
       try { localStorage.setItem('multiverse-bed', JSON.stringify({ x: spot.x, y: spot.y + 0.6, z: spot.z })); } catch (error) { /* storage blocked */ }
       sleepingLocal = true;
       document.body.classList.add('sleeping');
-      appendSystemMessage('🛏️ Good night! Your spawn point is now this bed (/bed). Move to get up.');
+      appendSystemMessage('Good night! Your spawn point is now this bed (/bed). Move to get up.');
       if (socket && socket.connected) socket.emit('sleep', true);
       else if (currentTicks() > 12500 && currentTicks() < 23500) requestWorldState({ ticks: 0 });
     },
     buyLand: (parcel) => {
       const owner = City.landOwner(parcel);
-      if (owner) { appendSystemMessage(`🏡 Parcel ${parcel} belongs to ${owner}.`); return; }
+      if (owner) { appendSystemMessage(`Parcel ${parcel} belongs to ${owner}.`); return; }
       if (!socket || !socket.connected) { appendSystemMessage('Land can only be bought when connected to the server.'); return; }
       if (window.confirm(`Buy parcel ${parcel} for 250 MVC (in-game coins, not real money)? You have ${wallet} MVC.`)) socket.emit('buy_land', { parcel });
     },
@@ -1768,12 +1790,12 @@ function interactionHooks() {
     openMetro: () => Metro.open(),
     claimReward: () => {
       if (socket && socket.connected) socket.emit('tower_reward');
-      else appendSystemMessage('🏆 You conquered the Gravity Flip tower! (Rewards are saved on the multiplayer server.)');
+      else appendSystemMessage('You conquered the Gravity Flip tower! (Rewards are saved on the multiplayer server.)');
     },
     commit: (lines) => {
       localCommits++;
       if (socket && socket.connected) socket.emit('commit', { lines });
-      else { appendSystemMessage(`✔ Commit #${localCommits} pushed (${lines} lines).`); updateCommitBoards([[localDeveloperData.devTag, localCommits]]); }
+      else { appendSystemMessage(`Commit #${localCommits} pushed (${lines} lines).`); updateCommitBoards([[localDeveloperData.devTag, localCommits]]); }
     },
     broadcast: (text) => {
       if (socket && socket.connected) socket.emit('chat_message', `/me ${text}`);
@@ -1806,8 +1828,8 @@ function lootHooks() {
       teleportToPlace(place);
     },
     revertTeleport: () => {
-      if (!lastPositionBeforeTeleport) { appendSystemMessage('⏪ Nothing to revert: you have not teleported yet.'); return; }
-      flyTo(lastPositionBeforeTeleport.clone(), null, '⏪ git revert: back to where you were.');
+      if (!lastPositionBeforeTeleport) { appendSystemMessage('Nothing to revert: you have not teleported yet.'); return; }
+      flyTo(lastPositionBeforeTeleport.clone(), null, 'git revert: back to where you were.');
     },
     confetti: launchConfetti
   };
@@ -1854,6 +1876,14 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   if (!customized) openAvatarCustomizer();
   LootSystem.init(lootHooks());
   Interactions.init(interactionHooks());
+  CityMap.init({
+    position: () => avatar.position,
+    peers: () => Object.values(remoteMeshPointers).map((record) => ({ x: record.target.x, z: record.target.z, color: record.metadata.color })),
+    jumpTo: (x, z) => flyTo(new THREE.Vector3(x, 0, z), null, 'Jumped in.'),
+    buy: (parcel) => interactionHooks().buyLand(parcel),
+    overheadView: () => setViewMode('map'),
+    releaseKeys: () => keysPressed.clear()
+  });
   TechSquare.init(socket, scene, appendSystemMessage);
   Cafe.init({
     scene,
@@ -1901,16 +1931,16 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
     findPlace,
     placeLanding,
     avatarPosition: () => avatar.position,
-    arrive: (place) => flyTo(placeLanding(place), null, `🚇 Arrived at ${place.name}.`)
+    arrive: (place) => flyTo(placeLanding(place), null, `Arrived at ${place.name}.`)
   });
   document.getElementById('invite-button').addEventListener('click', copyInviteLink);
   document.getElementById('lobby-button').addEventListener('click', createPrivateLobby);
   if (lobbyId) {
-    document.getElementById('lobby-badge').textContent = `🔒 Private lobby ${lobbyId}`;
+    document.getElementById('lobby-badge').textContent = `Private lobby ${lobbyId}`;
     document.getElementById('lobby-badge').style.display = 'inline-block';
-    appendSystemMessage(`🔒 You are in private lobby "${lobbyId}". Only devs with your invite link can see you here.`);
+    appendSystemMessage(`You are in private lobby "${lobbyId}". Only devs with your invite link can see you here.`);
   }
   document.getElementById('logout-button').addEventListener('click', () => Auth.signOut());
   appendSystemMessage(`Welcome to GitHub Multiverse, ${session.username}! Walk with W A S D, jump with Space, run with Shift, drag to look around, M for the map.`);
-  appendSystemMessage('Open chests with E for dev loot (hotbar 1-5, inventory I). Press Enter (or T, or /) to chat. Type /help for every command.');
+  appendSystemMessage('Open chests with E: each one gives a real code file that is downloaded to your computer. Press Enter (or T, or /) to chat. Type /help for every command.');
 });

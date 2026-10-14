@@ -1,7 +1,7 @@
 // ============================================================================
 // AVATAR CUSTOMIZATION: OUTFITS MADE FOR A 3D CURSOR
 // ============================================================================
-// Before entering (and later from the 👕 dock button) devs dress their cursor
+// Before entering (and later from the dock button) devs dress their cursor
 // like a Decentraland backpack: arrow color, classic pixel sunglasses, a
 // jacket cut to the shape of the arrow, hats and more. The look is saved on
 // the account (server) and every dev in the lobby sees it.
@@ -131,7 +131,7 @@ const Avatar = (() => {
         <div class="avatar-preview"><canvas width="360" height="420"></canvas></div>
         <div class="avatar-options">
           <h2>Customize your cursor</h2>
-          <p>Dress your 3D cursor before entering. You can change it later with the 👕 button.</p>
+          <p>Dress your 3D cursor before entering. You can change it later with the shirt button in the menu.</p>
           <div id="avatar-groups"></div>
           <button type="button" id="avatar-enter">Enter GitHub Multiverse</button>
         </div>

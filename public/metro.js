@@ -142,7 +142,7 @@ const Metro = (() => {
     const train = buildTrain();
     hooks.scene.add(train);
     ride = { curve, train, start: performance.now(), place, to };
-    hooks.system(`🚇 All aboard! Next stop: ${place.name}.`);
+    hooks.system(`All aboard! Next stop: ${place.name}.`);
   }
 
   function update(camera, controls) {
