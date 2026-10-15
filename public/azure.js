@@ -11,7 +11,7 @@
 //   helical ramps, and "The Data Stream", a swirling particle column in the
 //   center that boosts you one level up (from the top it cycles to the bottom).
 // - Voxel Sandbox Zone on the top fringe (33 m): a deck of cubes you can mine
-//   (click / F) and build on (Shift+click / B / E on the build pad). The edits
+//   (click / G) and build on (Shift+click / B / E on the build pad). The edits
 //   are kept locally in localStorage "multiverse-azure-voxels".
 // - Cloud Storage Lounge (third floor): walls of blinking data cubes, sync
 //   totems that snapshot your local "multiverse-" progress and puffy sofas of
@@ -80,7 +80,7 @@ const AzureCloud = (() => {
     hint = document.createElement('div');
     hint.id = 'azure-voxel-hint';
     hint.style.cssText = `${style}bottom:118px;font-size:13px;`;
-    hint.textContent = 'Voxel Sandbox: Click a block to mine, Shift+click to place (or F to mine, B to build)';
+    hint.textContent = 'Voxel Sandbox: Click a block to mine, Shift+click to place (or G to mine, B to build)';
     document.body.appendChild(hud);
     document.body.appendChild(hint);
   }
@@ -866,7 +866,7 @@ const AzureCloud = (() => {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
       const k = event.key.toLowerCase();
       if (k === 'b') { const message = placeInFront(); if (message) flashHud(message, 1200); }
-      if (k === 'f') { if (!mineInFront()) flashHud('No block in front of you to mine', 1200); }
+      if (k === 'g') { if (!mineInFront()) flashHud('No block in front of you to mine', 1200); }
     });
 
     animate(group, () => {

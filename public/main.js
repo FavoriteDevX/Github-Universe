@@ -1686,6 +1686,7 @@ function animate() {
   }
   Cafe.update(elapsed);
   LootSystem.update(elapsed, deltaSeconds);
+  if (viewMode === 'explore') Prank.update(avatar.position);
   Interactions.update(avatar.position, !!avatar.moving);
   // District titles fade out when the camera gets close, so they never block the view
   City.districts.forEach((district) => {

@@ -179,42 +179,113 @@ const PropKit = (() => {
   }
 
   // Glass curtain wall: mullions, spandrel bands, sky reflections, a few lit offices
+  // Realistic curtain wall: 4 x 8 windows per tile (same layout as before so
+  // every building keeps its proportions). Each window shows depth (ceiling
+  // light, floor shadow), blinds or curtains, furniture silhouettes in the lit
+  // offices, a sky reflection with cloud streaks, metal mullions, spandrel
+  // panels with seams and rain streaks under the sills.
   function windowsTexture(wallColor, litColor = '#ffe9a8') {
-    return canvasTexture(`windows|${wallColor}|${litColor}`, 256, 512, (ctx, w, h) => {
+    return canvasTexture(`windows|${wallColor}|${litColor}`, 512, 1024, (ctx, w, h) => {
+      let seed = wallColor.length * 131 + litColor.length * 17 + 7;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
       ctx.fillStyle = wallColor;
       ctx.fillRect(0, 0, w, h);
-      let seed = wallColor.length * 131 + 7;
-      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      // Facade grain
+      for (let i = 0; i < 4000; i++) {
+        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.fillRect(random() * w, random() * h, 1 + random() * 2, 1 + random() * 2);
+      }
       const columns = 4;
       const rows = 8;
       const cw = w / columns;
       const rh = h / rows;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < columns; col++) {
-          const x = col * cw + 5;
-          const y = row * rh + 8;
-          const lit = random() < 0.16;
-          const glass = ctx.createLinearGradient(x, y, x + cw, y + rh);
+          const x = col * cw + 8;
+          const y = row * rh + 18;
+          const gw = cw - 16;
+          const gh = rh - 34;
+          const lit = random() < 0.18;
           if (lit) {
-            glass.addColorStop(0, litColor);
-            glass.addColorStop(1, shade(litColor, -0.2));
+            // Lit office: warm ceiling glow fading to the floor, furniture silhouettes
+            const room = ctx.createLinearGradient(0, y, 0, y + gh);
+            room.addColorStop(0, shade(litColor, 0.08));
+            room.addColorStop(0.55, litColor);
+            room.addColorStop(1, shade(litColor, -0.35));
+            ctx.fillStyle = room;
+            ctx.fillRect(x, y, gw, gh);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fillRect(x + gw * 0.15, y + 3, gw * 0.7, 3);
+            ctx.fillStyle = 'rgba(40, 30, 20, 0.45)';
+            ctx.fillRect(x + gw * 0.1, y + gh * 0.68, gw * 0.45, gh * 0.08); // desk
+            ctx.fillRect(x + gw * 0.18, y + gh * 0.5, gw * 0.12, gh * 0.18); // monitor
+            if (random() < 0.5) { ctx.beginPath(); ctx.arc(x + gw * 0.8, y + gh * 0.7, gw * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x + gw * 0.78, y + gh * 0.7, gw * 0.04, gh * 0.3); } // plant
           } else {
-            glass.addColorStop(0, 'rgba(178, 214, 240, 0.95)');
-            glass.addColorStop(0.45, 'rgba(70, 104, 140, 0.95)');
-            glass.addColorStop(1, 'rgba(40, 58, 86, 0.95)');
+            // Dark glass reflecting the sky: a vertical gradient shared by the whole facade
+            const sky = ctx.createLinearGradient(0, 0, 0, h);
+            sky.addColorStop(0, 'rgba(196, 222, 242, 0.96)');
+            sky.addColorStop(0.5, 'rgba(110, 146, 178, 0.96)');
+            sky.addColorStop(1, 'rgba(58, 80, 108, 0.96)');
+            ctx.fillStyle = sky;
+            ctx.fillRect(x, y, gw, gh);
+            // Interior depth seen through the glass
+            ctx.fillStyle = 'rgba(20, 30, 45, 0.28)';
+            ctx.fillRect(x, y + gh * 0.62, gw, gh * 0.38);
+            // Cloud streaks in the reflection
+            for (let c = 0; c < 2; c++) {
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+              ctx.beginPath();
+              ctx.ellipse(x + random() * gw, y + random() * gh * 0.6, gw * (0.25 + random() * 0.3), 4 + random() * 6, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
-          ctx.fillStyle = glass;
-          ctx.fillRect(x, y, cw - 10, rh - 18);
-          // Soft diagonal sky reflection
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-          ctx.beginPath(); ctx.moveTo(x, y + rh * 0.5); ctx.lineTo(x + cw * 0.5, y); ctx.lineTo(x + cw * 0.7, y); ctx.lineTo(x, y + rh * 0.75); ctx.fill();
+          // Blinds (horizontal slats) or a curtain on some windows
+          const cover = random();
+          if (cover < 0.25) {
+            const depth = gh * (0.2 + random() * 0.5);
+            ctx.fillStyle = 'rgba(225, 222, 210, 0.85)';
+            ctx.fillRect(x, y, gw, depth);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            for (let k = 4; k < depth; k += 5) ctx.fillRect(x, y + k, gw, 1);
+          } else if (cover < 0.35) {
+            ctx.fillStyle = 'rgba(240, 236, 225, 0.75)';
+            ctx.fillRect(x, y, gw * 0.28, gh);
+            ctx.fillRect(x + gw * 0.72, y, gw * 0.28, gh);
+          }
+          // Diagonal glare
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.beginPath(); ctx.moveTo(x, y + gh * 0.55); ctx.lineTo(x + gw * 0.5, y); ctx.lineTo(x + gw * 0.68, y); ctx.lineTo(x, y + gh * 0.8); ctx.fill();
+          // Window frame and the vertical split of the pane
+          ctx.strokeStyle = 'rgba(30, 34, 40, 0.75)';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, gw, gh);
+          ctx.fillStyle = 'rgba(30, 34, 40, 0.6)';
+          ctx.fillRect(x + gw / 2 - 1, y, 2, gh);
+          // Sill and rain streaks under it
+          ctx.fillStyle = shade(wallColor, 0.15);
+          ctx.fillRect(x - 3, y + gh + 2, gw + 6, 4);
+          for (let k = 0; k < 4; k++) {
+            const sx = x + random() * gw;
+            const streak = ctx.createLinearGradient(0, y + gh + 6, 0, y + gh + 22);
+            streak.addColorStop(0, 'rgba(0, 0, 0, 0.12)');
+            streak.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = streak;
+            ctx.fillRect(sx, y + gh + 6, 2, 16);
+          }
         }
-        // Spandrel band between floors
-        ctx.fillStyle = shade(wallColor, 0.08);
-        ctx.fillRect(0, row * rh, w, 6);
+        // Spandrel band between floors, with panel seams
+        ctx.fillStyle = shade(wallColor, 0.06);
+        ctx.fillRect(0, row * rh, w, 10);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.fillRect(0, row * rh + 10, w, 2);
       }
-      ctx.fillStyle = shade(wallColor, -0.1);
-      for (let col = 0; col <= columns; col++) ctx.fillRect(col * cw - 2, 0, 4, h);
+      // Mullions with a metallic highlight
+      for (let col = 0; col <= columns; col++) {
+        ctx.fillStyle = shade(wallColor, -0.12);
+        ctx.fillRect(col * cw - 3, 0, 6, h);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.fillRect(col * cw - 3, 0, 1, h);
+      }
     });
   }
 
