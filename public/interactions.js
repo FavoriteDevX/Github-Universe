@@ -115,6 +115,13 @@ function fixBug(bug) {
       case 'glass': hooks.system(`Smart glass: ${object.userData.cycle()}`); break;
       case 'vehicle': Vehicles.mount(object.userData.vehicleKey); break;
       case 'jukebox': hooks.system(object.userData.onInteract()); break;
+      // Generic action for district builders: userData.onInteract(hooks) may
+      // return a chat message; userData.prompt overrides the "Press E" text
+      case 'action': {
+        const message = object.userData.onInteract(hooks, object);
+        if (message) hooks.system(message);
+        break;
+      }
       case 'codeblock': Codify.interact(object); break;
       case 'land': hooks.buyLand(object.userData.parcel); break;
       case 'bed': hooks.sleep(object); break;
@@ -284,7 +291,7 @@ function fixBug(bug) {
       ui.prompt.style.display = 'block';
       if (!nearest) fishing = null;
     } else if (nearest) {
-      ui.prompt.textContent = PROMPTS[nearest.userData.interactable.type] || 'Press E';
+      ui.prompt.textContent = nearest.userData.prompt || PROMPTS[nearest.userData.interactable.type] || 'Press E';
       ui.prompt.style.display = 'block';
     } else {
       ui.prompt.style.display = 'none';

@@ -38,7 +38,7 @@ const lastEmittedPosition = new THREE.Vector3(Infinity, Infinity, Infinity);
 // The local 3D cursor is the avatar: it walks, jumps and climbs like a Decentraland avatar
 const avatar = { position: new THREE.Vector3(0, 0, 0), velocityY: 0, grounded: true };
 let viewMode = 'explore'; // 'explore' (third person) or 'map' (aerial overview)
-let flying = false; // Minecraft creative-style flight: double-tap Space
+let flying = false; // Minecraft creative-style flight: press F
 let tunnelFall = null; // the 5-second fall down the underground water tunnel
 const TUNNEL_FALL_SECONDS = 5;
 let lastAltitudeBlur = 0;
@@ -59,7 +59,8 @@ function wakeUp() {
 function bedSpawn() {
   try { const saved = JSON.parse(localStorage.getItem('multiverse-bed')); return saved ? new THREE.Vector3(saved.x, saved.y, saved.z) : null; } catch (error) { return null; }
 }
-let lastSpaceTap = 0;
+let jumpRequestedAt = -1;
+let lastGroundedAt = 0;
 let localCommits = 0;
 let lastDayPhase = null;
 const FLY_SPEED = 16;
@@ -137,7 +138,12 @@ const Quality = (() => {
     if (!renderer) return;
     renderer.setPixelRatio(pixelRatio());
     renderer.setSize(window.innerWidth, window.innerHeight);
-    scene.traverse((node) => { if (node.isDirectionalLight && node.userData.shadowCapable !== false) { if (node.userData.shadowCapable === undefined) node.userData.shadowCapable = node.castShadow; if (node.userData.shadowCapable) node.castShadow = current >= 2; } });
+    scene.traverse((node) => { if (node.isDirectionalLight && node.userData.shadowCapable !== false) { if (node.userData.shadowCapable === undefined) node.userData.shadowCapable = node.castShadow; if (node.userData.shadowCapable) node.castShadow = current >= 2;
+      // Smaller shadow map on medium: a quarter of the pixels to render every frame
+      if (node.userData.shadowCapable) {
+        const size = current >= 3 ? 2048 : 1024;
+        if (node.shadow.mapSize.x !== size) { node.shadow.mapSize.set(size, size); if (node.shadow.map) { node.shadow.map.dispose(); node.shadow.map = null; } }
+      } } });
   }
 
   function set(level, keepAuto = false) {
@@ -183,7 +189,7 @@ const Quality = (() => {
     return set(level);
   }
 
-  return { pixelRatio, viewDistance, sample, choose, level: () => current, name: () => (auto ? `auto (${NAMES[current]})` : NAMES[current]) };
+  return { pixelRatio, viewDistance, sample, choose, refresh: apply, level: () => current, name: () => (auto ? `auto (${NAMES[current]})` : NAMES[current]) };
 })();
 const worldFullyLoadedFlag = () => worldFullyLoaded;
 
@@ -318,6 +324,7 @@ async function loadUniverse() {
   renderWorldList();
   worldFullyLoaded = true;
   DistanceCulling.prepare();
+  Quality.refresh();
 }
 
 let resolvePlazaReady = () => {};
@@ -427,7 +434,7 @@ function setViewMode(mode) {
 function toggleFlight() {
   flying = !flying;
   avatar.velocityY = 0;
-  appendSystemMessage(flying ? 'Flying! Space = up, Shift = down, double-tap Space to stop.' : 'Flight off.');
+  appendSystemMessage(flying ? 'Flying! Space = up, Shift = down, press F to stop.' : 'Flight off.');
 }
 
 // Place where a teleport lands: the exact spawn for places that define one
@@ -537,16 +544,26 @@ function updateAvatar(deltaSeconds) {
     const flightGround = groundHeightAt(avatar.position.x, avatar.position.z, avatar.position.y + 0.5);
     if (avatar.position.y <= flightGround) {
       avatar.position.y = flightGround;
-      if (vertical < 0) { flying = false; appendSystemMessage('Landed. Double-tap Space to fly again.'); }
+      if (vertical < 0) { flying = false; appendSystemMessage('Landed. Press F to fly again.'); }
     }
     avatar.grounded = false;
   } else if (keysPressed.has(' ') && lootModifiers.jetpack) {
     avatar.velocityY = 9; // Jetpack.js: hold Space to fly
     avatar.grounded = false;
-  } else if (keysPressed.has(' ') && avatar.grounded) {
-    avatar.velocityY = JUMP_SPEED * Math.sqrt(lootModifiers.jump);
-    Sound.play('jump');
-    avatar.grounded = false;
+  } else {
+    // Responsive jump: a press is remembered for 150 ms (jump buffer) and you
+    // can still jump 120 ms after walking off an edge (coyote time); holding
+    // Space keeps jumping on every landing, like Roblox
+    const now = performance.now();
+    if (avatar.grounded) lastGroundedAt = now;
+    const wantsJump = now - jumpRequestedAt < 150 || keysPressed.has(' ');
+    if (wantsJump && now - lastGroundedAt < 120 && avatar.velocityY <= 0.01) {
+      avatar.velocityY = JUMP_SPEED * Math.sqrt(lootModifiers.jump);
+      Sound.play('jump');
+      avatar.grounded = false;
+      lastGroundedAt = 0;
+      jumpRequestedAt = -1;
+    }
   }
   if (!flying) {
     avatar.velocityY -= GRAVITY * gravityScale() * deltaSeconds;
@@ -885,11 +902,9 @@ function bindInputEvents() {
     if (event.key.toLowerCase() === 'e' && Vehicles.isMounted()) { Vehicles.dismount(); appendSystemMessage('You got off the vehicle.'); return; }
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && LootSystem.tryOpen()) return;
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && Interactions.handleKey(event)) return;
-    if (event.key === ' ' && !event.repeat) {
-      const now = performance.now();
-      if (now - lastSpaceTap < 320) toggleFlight();
-      lastSpaceTap = now;
-    }
+    // Space jumps right away (like Roblox); flying moved to F so fast jumps never toggle it
+    if (event.key === ' ' && !event.repeat) jumpRequestedAt = performance.now();
+    if (event.key.toLowerCase() === 'f' && !event.repeat && viewMode === 'explore') { toggleFlight(); return; }
     if (event.key === ' ') event.preventDefault();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(event.key.toLowerCase())) wakeUp();
     keysPressed.add(event.key.toLowerCase());
@@ -1034,7 +1049,10 @@ function updateHud() {
     const kind = City.landAt(position.x, position.z);
     const parcelKey = `${Math.floor(position.x / City.PARCEL_SIZE)},${Math.floor(-position.z / City.PARCEL_SIZE)}`;
     const owner = City.landOwner(parcelKey);
-    if (kind === 'road') outside = 'Genesis City · Road';
+    const water = City.seaAt(position.x, position.z);
+    if (kind === 'sea') outside = water.sea.name || 'Sea';
+    else if (water && water.island) outside = `${water.island.name || 'Island'} · ${owner ? `parcel of ${owner}` : 'for sale (/buyland)'}`;
+    else if (kind === 'road') outside = 'Genesis City · Road';
     else if (kind === 'scene') outside = 'Community scene';
     else if (kind === 'land') outside = owner ? `Parcel of ${owner}` : 'Empty parcel · for sale (/buyland)';
   }
@@ -1178,7 +1196,7 @@ const HELP_PAGES = [
   ['Economy', '/balance | /pay <player> <amount> | /buyland (the parcel you stand on) | /lands — Multiverse Coins are in-game only'],
   ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder>'],
   ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear | /invite'],
-  ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or double-tap Space) | E near laptops, seats, coffee, arcades, fishing spots, art, elevators | /commits'],
+  ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or F) | E near laptops, seats, coffee, arcades, fishing spots, art, elevators | /commits'],
   ['Metro', 'N or /metro opens the transit map | /metro <place> rides the train there | walk through portals in Genesis Plaza'],
   ['Dungeon', '/bugs | /script <gc|try-catch|break|mutex|unit-test|reboot> | click bugs with the Git Commit Hammer'],
   ['Open Source HQ', '/mural <1-4> <code> | /pr <slot 1-8> <tree|lamp|banner|fountain|duck|flag|neon|bench> [hex] | /prs | /approve <n> | /merge <n> | /close <n>'],
@@ -1335,6 +1353,7 @@ function interpretChatCommand(inputBuffer) {
       if (!/^-?\d+,-?\d+$/.test(parcel)) { appendSystemMessage('Stand on a Genesis City parcel to buy it.'); break; }
       const kind = City.landAt(avatar.position.x, avatar.position.z);
       if (kind === 'district') { appendSystemMessage('This parcel is part of a district. Walk to the empty green parcels around the city (press M for the map).'); break; }
+      if (kind === 'sea') { appendSystemMessage('You are in the sea. Islands can be bought; the open water cannot.'); break; }
       if (kind === 'road') { appendSystemMessage('You are on a road. Step onto a green parcel next to it.'); break; }
       if (kind === 'scene') { appendSystemMessage('This parcel already has a community scene. Empty green parcels are for sale (press M).'); break; }
       if (kind === 'commons') { appendSystemMessage('The center of Genesis City is commons land: buy at a "PARCEL FOR SALE" sign here, or any empty green parcel farther out (press M).'); break; }

@@ -77,7 +77,13 @@ const Sound = (() => {
       else if (surface === 'wood') { noiseBurst({ duration: 0.05, volume: 0.18, filter: 900, type: 'bandpass' }); tone(140, 0.06, { volume: 0.08 }); }
       else noiseBurst({ duration: 0.09, volume: 0.16, filter: 700 });
     },
-    jump: () => tone(300, 0.15, { type: 'triangle', volume: 0.12, slide: 300 }),
+    // A quick, bright "bwip": a rising sine with a soft air puff (an original
+    // sound in the spirit of classic platformer jumps; no game audio is copied)
+    jump: () => {
+      tone(320, 0.11, { type: 'sine', volume: 0.16, slide: 520 });
+      tone(640, 0.08, { type: 'triangle', volume: 0.05, slide: 700, delay: 0.015 });
+      noiseBurst({ duration: 0.07, volume: 0.06, filter: 2600, type: 'highpass' });
+    },
     land: () => { noiseBurst({ duration: 0.12, volume: 0.25, filter: 400 }); tone(90, 0.12, { volume: 0.15 }); },
     coin: () => { tone(988, 0.08, { type: 'square', volume: 0.06 }); tone(1319, 0.25, { type: 'square', volume: 0.06, delay: 0.08 }); },
     teleport: () => { tone(200, 0.5, { type: 'sawtooth', volume: 0.05, slide: 1200 }); noiseBurst({ duration: 0.4, volume: 0.1, filter: 3000, type: 'highpass' }); },

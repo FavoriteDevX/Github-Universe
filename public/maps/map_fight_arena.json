@@ -1,0 +1,148 @@
+{
+ "themeName": "The Pit Arena",
+ "backgroundColor": "#101014",
+ "blocks": [
+  {
+   "type": "pit_arena",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    72,
+    12,
+    72
+   ],
+   "color": "#55575a",
+   "label": "The Pit Arena",
+   "rotationY": 1.5708
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    31,
+    3.5,
+    31
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f6e34"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    31,
+    3.5,
+    -31
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f6e34"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -31,
+    3.5,
+    31
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f6e34"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -31,
+    3.5,
+    -31
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f6e34"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -33,
+    3.5,
+    0
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f6e34"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    33.5,
+    3,
+    8.5
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#ffd8c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    33.5,
+    3,
+    -8.5
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#ffd8c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    27,
+    3,
+    22
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#ffd8c4"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    27,
+    3,
+    -22
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#ffd8c4"
+  }
+ ]
+}

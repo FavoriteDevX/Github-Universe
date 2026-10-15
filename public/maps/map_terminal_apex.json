@@ -1,0 +1,447 @@
+{
+ "themeName": "The Terminal Apex",
+ "backgroundColor": "#101014",
+ "blocks": [
+  {
+   "type": "terminal_forecourt",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    94,
+    0.1,
+    94
+   ],
+   "color": "#3d4047",
+   "label": "Terminal Apex forecourt"
+  },
+  {
+   "type": "terminal_apex",
+   "position": [
+    0,
+    0,
+    -22
+   ],
+   "scale": [
+    40,
+    30,
+    18
+   ],
+   "color": "#141418",
+   "label": "The Terminal Apex (The >_ Root)"
+  },
+  {
+   "type": "terminal_sign",
+   "position": [
+    0,
+    0,
+    10
+   ],
+   "scale": [
+    13,
+    3.2,
+    0.6
+   ],
+   "color": "#0c0c0c",
+   "label": "THE TERMINAL APEX  >_ ROOT"
+  },
+  {
+   "type": "terminal_bench",
+   "position": [
+    -13,
+    0.1,
+    2
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.6
+   ],
+   "color": "#4a3a2c",
+   "label": "Bench",
+   "rotationY": 1.5708
+  },
+  {
+   "type": "terminal_bench",
+   "position": [
+    -13,
+    0.1,
+    14
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.6
+   ],
+   "color": "#4a3a2c",
+   "label": "Bench",
+   "rotationY": 1.5708
+  },
+  {
+   "type": "terminal_bench",
+   "position": [
+    -13,
+    0.1,
+    26
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.6
+   ],
+   "color": "#4a3a2c",
+   "label": "Bench",
+   "rotationY": 1.5708
+  },
+  {
+   "type": "terminal_bench",
+   "position": [
+    13,
+    0.1,
+    2
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.6
+   ],
+   "color": "#4a3a2c",
+   "label": "Bench",
+   "rotationY": -1.5708
+  },
+  {
+   "type": "terminal_bench",
+   "position": [
+    13,
+    0.1,
+    14
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.6
+   ],
+   "color": "#4a3a2c",
+   "label": "Bench",
+   "rotationY": -1.5708
+  },
+  {
+   "type": "terminal_bench",
+   "position": [
+    13,
+    0.1,
+    26
+   ],
+   "scale": [
+    2.4,
+    1,
+    0.6
+   ],
+   "color": "#4a3a2c",
+   "label": "Bench",
+   "rotationY": -1.5708
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    -7,
+    0.1,
+    -2
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    -7,
+    0.1,
+    8
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    -7,
+    0.1,
+    18
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    -7,
+    0.1,
+    28
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    -7,
+    0.1,
+    38
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    7,
+    0.1,
+    -2
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    7,
+    0.1,
+    8
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    7,
+    0.1,
+    18
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    7,
+    0.1,
+    28
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "terminal_lamp",
+   "position": [
+    7,
+    0.1,
+    38
+   ],
+   "scale": [
+    1,
+    4.6,
+    1
+   ],
+   "color": "#24262d",
+   "label": "Lamp post"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -30,
+    0.1,
+    -20
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    30,
+    0.1,
+    -20
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -32,
+    0.1,
+    10
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    32,
+    0.1,
+    10
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -28,
+    0.1,
+    34
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    28,
+    0.1,
+    34
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -40,
+    0.1,
+    -40
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    40,
+    0.1,
+    -40
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -20,
+    0.1,
+    42
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    20,
+    0.1,
+    42
+   ],
+   "scale": [
+    3,
+    6,
+    3
+   ],
+   "color": "#3f8f4f",
+   "label": "Tree"
+  }
+ ]
+}

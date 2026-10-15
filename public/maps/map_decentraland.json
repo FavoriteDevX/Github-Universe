@@ -977,10 +977,65 @@
    "scale": [
     60,
     7,
-    11
+    14
    ],
    "color": "#b3001b",
-   "label": "Hall of Internet History"
+   "label": "Hall of Internet History",
+   "southDoors": [
+    -27.5,
+    26
+   ],
+   "doorSigns": [
+    "THE GIG PLAZA  >>",
+    "2000 to today  >>"
+   ]
+  },
+  {
+   "type": "history_wing",
+   "position": [
+    -3,
+    -60,
+    0
+   ],
+   "scale": [
+    54,
+    7,
+    30
+   ],
+   "color": "#24164a",
+   "label": "Hall of Internet History · 2000 to today",
+   "entranceX": 23
+  },
+  {
+   "type": "gig_tunnel",
+   "position": [
+    -33.5,
+    -60,
+    -3
+   ],
+   "scale": [
+    5,
+    5,
+    36
+   ],
+   "color": "#ff9f1c",
+   "label": "To The Gig Plaza"
+  },
+  {
+   "type": "gig_plaza",
+   "position": [
+    -12,
+    -60,
+    -46
+   ],
+   "scale": [
+    50,
+    10,
+    50
+   ],
+   "color": "#ff9f1c",
+   "label": "The Gig Plaza",
+   "entranceX": -21.5
   },
   {
    "type": "minimal_gallery",

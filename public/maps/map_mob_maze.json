@@ -1,0 +1,14 @@
+{
+ "themeName": "The Mob Maze",
+ "backgroundColor": "#101024",
+ "blocks": [
+  {
+   "type": "mobmaze_dungeon",
+   "position": [0, 0, 0],
+   "scale": [80, 12, 80],
+   "color": "#4a5878",
+   "label": "The Mob Maze",
+   "seed": 7741
+  }
+ ]
+}

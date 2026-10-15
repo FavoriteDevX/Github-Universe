@@ -58,6 +58,11 @@ const CityMap = (() => {
         const cx = px * parcelSize() + parcelSize() / 2;
         const cz = -(pz * parcelSize() + parcelSize() / 2);
         const kind = City.landAt(cx, cz);
+        if (kind === 'sea') {
+          ctx.fillStyle = hash(px, pz) < 0.5 ? '#2f86c4' : '#2b7fbb';
+          ctx.fillRect(x, y, step, step);
+          continue;
+        }
         if (kind === 'road') {
           ctx.fillStyle = '#c9c2b4';
           ctx.fillRect(x, y, step, step);
@@ -139,6 +144,7 @@ const CityMap = (() => {
     else if (district) status = district.world.name;
     else if (kind === 'commons') status = owner ? `Owned by ${owner}` : 'Genesis City commons (buy at the PARCEL FOR SALE signs)';
     else if (kind === 'road') status = 'Road';
+    else if (kind === 'sea') status = 'Sea';
     else if (kind === 'scene') status = 'Community scene';
     else if (owner) status = `Owned by ${owner}`;
     else status = 'Empty parcel · for sale · 250 MVC';
@@ -233,7 +239,7 @@ const CityMap = (() => {
     overlay.id = 'citymap-overlay';
     overlay.innerHTML = `
       <header><b>Genesis City</b><span id="citymap-coords"></span>
-        <span class="citymap-legend"><i style="background:#c0392b"></i>Genesis Plaza <i style="background:#3d5a80"></i>Districts <i style="background:#5f9e3f"></i>Empty parcels <i style="background:#c9c2b4"></i>Roads <i style="background:#9775fa"></i>Owned</span>
+        <span class="citymap-legend"><i style="background:#c0392b"></i>Genesis Plaza <i style="background:#3d5a80"></i>Districts <i style="background:#5f9e3f"></i>Empty parcels <i style="background:#c9c2b4"></i>Roads <i style="background:#2f86c4"></i>Sea <i style="background:#9775fa"></i>Owned</span>
         <button type="button" data-act="3d">3D view</button><button type="button" data-act="close" aria-label="Close">&times;</button></header>
       <canvas id="citymap-canvas"></canvas>
       <div id="citymap-selected"><b></b><span></span><div><button type="button" data-act="jump">Jump here</button><button type="button" data-act="buy">Buy · 250 MVC</button></div></div>`;

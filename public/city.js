@@ -72,11 +72,35 @@ const City = (() => {
   function isSceneParcel(px, pz) {
     return parcelHash(px, pz) < landLayout.sceneChance;
   }
-  // What is at a point: 'district', 'road', 'commons' (center), 'scene' (a
-  // community build, not for sale) or 'land' (empty parcel for sale)
+  // Seas: irregular blobs near the edges (maps/land.json) with islands
+  function blobRadius(r, angle, seed) {
+    return r * (1 + 0.16 * Math.sin(3 * angle + seed) + 0.08 * Math.sin(5 * angle + seed * 2));
+  }
+  function insideBlob(x, z, cx, cz, r, seed) {
+    const dx = x - cx;
+    const dz = z - cz;
+    return Math.hypot(dx, dz) < blobRadius(r, Math.atan2(dz, dx), seed);
+  }
+  function seaAt(x, z) {
+    const seas = landLayout.seas || [];
+    for (let i = 0; i < seas.length; i++) {
+      const sea = seas[i];
+      if (!insideBlob(x, z, sea.x, sea.z, sea.r, i + 1)) continue;
+      const island = (sea.islands || []).find((candidate, k) => insideBlob(x, z, candidate.x, candidate.z, candidate.r, i * 7 + k + 3));
+      return island ? { sea, island } : { sea, island: null };
+    }
+    return null;
+  }
+
+  // What is at a point: 'district', 'sea', 'road', 'commons' (center), 'scene'
+  // (a community build, not for sale) or 'land' (empty parcel for sale;
+  // island parcels count as land too)
   function landAt(x, z) {
     if (districtAt(x, z)) return 'district';
+    const water = seaAt(x, z);
+    if (water && !water.island) return 'sea';
     const [px, pz] = parcelOf(x, z);
+    if (water) return 'land';
     if (isRoadParcel(px, pz)) return 'road';
     if (inCore(x, z)) return 'commons';
     return isSceneParcel(px, pz) ? 'scene' : 'land';
@@ -177,7 +201,9 @@ const City = (() => {
         if (overlapsDistrict(px, pz)) continue;
         const [x, z] = parcelCenter(px, pz);
         if (overlapsHole(x, z)) continue;
-        if (isRoadParcel(px, pz)) roadSpots.push([x, z]);
+        const water = seaAt(x, z);
+        if (water && !water.island) continue;
+        if (!water && isRoadParcel(px, pz)) roadSpots.push([x, z]);
         else grassSpots.push([x, z, px, pz]);
       }
     }
@@ -221,7 +247,170 @@ const City = (() => {
       instanced.castShadow = false;
       instanced.userData.alwaysVisible = true;
       scene.add(instanced);
+    });    buildSeas();
+  }
+
+  // Water surfaces, sandy shores and island rims. The water sits 35 cm above
+  // the ground so the avatar wades in it; islands are flat and walkable.
+  let seaWater = null;
+  function blobShape(cx, cz, r, seed, grow = 0) {
+    const shape = new THREE.Shape();
+    for (let i = 0; i <= 72; i++) {
+      const angle = (i / 72) * Math.PI * 2;
+      const radius = blobRadius(r, angle, seed) + grow;
+      // Shape y maps to -z after the ground rotation
+      const x = cx + Math.cos(angle) * radius;
+      const y = -(cz + Math.sin(angle) * radius);
+      if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+    }
+    return shape;
+  }
+  // Decentraland-style palm: a curved trunk of stacked rings and broad,
+  // drooping leaves (one merged geometry, instanced everywhere)
+  const palmSpots = [];
+  function palmGeometry() {
+    const parts = [];
+    let x = 0;
+    let y = 0;
+    for (let i = 0; i < 9; i++) {
+      const ring = new THREE.CylinderGeometry(0.26 - i * 0.012, 0.3 - i * 0.012, 0.8, 7);
+      ring.rotateZ(-0.035 * i);
+      ring.translate(x, y + 0.4, 0);
+      parts.push({ geometry: ring, color: i % 2 ? '#9c7a54' : '#8a6a47' });
+      x += 0.04 * i;
+      y += 0.78;
+    }
+    const top = new THREE.Vector3(x, y, 0);
+    parts.push({ geometry: new THREE.SphereGeometry(0.42, 7, 5).translate(top.x, top.y, top.z), color: '#6b8f3a' });
+    for (let f = 0; f < 8; f++) {
+      const leaf = new THREE.PlaneGeometry(0.9, 3.6, 1, 4);
+      // Bend the leaf down along its length
+      const position = leaf.attributes.position;
+      for (let v = 0; v < position.count; v++) {
+        const along = (position.getY(v) + 1.8) / 3.6;
+        position.setZ(v, -along * along * 1.4);
+        position.setX(v, position.getX(v) * (1 - along * 0.6));
+      }
+      leaf.rotateX(-Math.PI / 2 + 0.35);
+      leaf.translate(0, 0, 1.8);
+      leaf.rotateY((f / 8) * Math.PI * 2);
+      leaf.translate(top.x, top.y, top.z);
+      parts.push({ geometry: leaf, color: f % 2 ? '#4f9a3c' : '#3d8a35' });
+    }
+    return mergeGeometries(parts);
+  }
+  function buildPalms() {
+    // A few palm groves on the commons around Genesis Plaza too
+    const random = seededRandom(2024);
+    for (let g = 0; g < 26; g++) {
+      const angle = random() * Math.PI * 2;
+      const radius = 105 + random() * 260;
+      const cx = Math.cos(angle) * radius;
+      const cz = Math.sin(angle) * radius;
+      for (let t = 0; t < 3; t++) {
+        const x = cx + (random() - 0.5) * 9;
+        const z = cz + (random() - 0.5) * 9;
+        if (insideDistrict(x, z, 4) || nearPath(x, z, 4)) continue;
+        palmSpots.push({ x, z, y: GROUND_LEVEL, size: 0.9 + random() * 0.4, turn: random() * 6.28 });
+      }
+    }
+    if (!palmSpots.length) return;
+    const palms = new THREE.InstancedMesh(palmGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, side: THREE.DoubleSide, flatShading: true }), palmSpots.length);
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    palmSpots.forEach(({ x, y, z, size, turn }, index) => {
+      matrix.compose(new THREE.Vector3(x, y, z), quaternion.setFromAxisAngle(up, turn), new THREE.Vector3(size, size, size));
+      palms.setMatrixAt(index, matrix);
     });
+    palms.castShadow = false;
+    palms.receiveShadow = true;
+    palms.raycast = () => {};
+    palms.userData.alwaysVisible = true;
+    scene.add(palms);
+  }
+
+  function buildSeas() {
+    const seas = landLayout.seas || [];
+    if (!seas.length) return;
+    const ripples = PropKit.kit.canvasTexture('seaRipples', 256, 256, (ctx, w) => {
+      const image = ctx.createImageData(w, w);
+      for (let y = 0; y < w; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = Math.sin((x / w) * Math.PI * 6 + Math.sin((y / w) * Math.PI * 4) * 1.5);
+          const b = Math.cos((y / w) * Math.PI * 8 + Math.sin((x / w) * Math.PI * 2) * 2);
+          const i = (y * w + x) * 4;
+          image.data[i] = 128 + a * 40;
+          image.data[i + 1] = 128 + b * 40;
+          image.data[i + 2] = 255;
+          image.data[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(image, 0, 0);
+    });
+    const normalMap = ripples.clone();
+    normalMap.needsUpdate = true;
+    normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+    normalMap.repeat.set(1 / 14, 1 / 14);
+    const onTop = { polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 };
+    const water = new THREE.MeshStandardMaterial({ color: '#1c7fb5', roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.88, normalMap, normalScale: new THREE.Vector2(0.5, 0.5), ...onTop });
+    const shallow = new THREE.MeshStandardMaterial({ color: '#3fb6c9', roughness: 0.2, transparent: true, opacity: 0.9, ...onTop });
+    const sand = new THREE.MeshStandardMaterial({ color: '#e3cf9f', roughness: 1, ...onTop });
+    const islandGrass = new THREE.MeshStandardMaterial({ color: '#6aa84f', roughness: 1 });
+    const group = new THREE.Group();
+    seas.forEach((sea, i) => {
+      const seed = i + 1;
+      const add = (shape, materialToUse, y) => {
+        const surface = new THREE.Mesh(new THREE.ShapeGeometry(shape), materialToUse);
+        surface.rotation.x = -Math.PI / 2;
+        surface.position.y = y;
+        surface.raycast = () => {};
+        surface.receiveShadow = true;
+        group.add(surface);
+      };
+      add(blobShape(sea.x, sea.z, sea.r, seed, 9), sand, GROUND_LEVEL + 0.02);
+      add(blobShape(sea.x, sea.z, sea.r, seed, 3), shallow, GROUND_LEVEL + 0.3);
+      add(blobShape(sea.x, sea.z, sea.r, seed, 0), water, GROUND_LEVEL + 0.35);
+      (sea.islands || []).forEach((island, k) => {
+        const islandSeed = i * 7 + k + 3;
+        // Flat walkable island: sandy rim and a grass top 0.5 m above the ground
+        const rim = new THREE.Mesh(new THREE.ExtrudeGeometry(blobShape(island.x, island.z, island.r, islandSeed, 3), { depth: 0.45, bevelEnabled: true, bevelSize: 2, bevelThickness: 0.3, bevelSegments: 2, curveSegments: 8 }), sand);
+        rim.rotation.x = -Math.PI / 2;
+        rim.position.y = GROUND_LEVEL;
+        group.add(rim);
+        const top = new THREE.Mesh(new THREE.ShapeGeometry(blobShape(island.x, island.z, island.r, islandSeed, -2)), islandGrass);
+        top.rotation.x = -Math.PI / 2;
+        top.position.y = GROUND_LEVEL + 0.78;
+        top.receiveShadow = true;
+        group.add(top);
+        sharedCollidables.push(rim, top);
+        // Palms on the small islands (the big one hosts a district)
+        if (island.r < 40) {
+          const random = seededRandom(islandSeed * 97);
+          const count = Math.max(2, Math.round(island.r / 5));
+          for (let t = 0; t < count; t++) {
+            const angle = random() * Math.PI * 2;
+            const distance = random() * island.r * 0.65;
+            palmSpots.push({ x: island.x + Math.cos(angle) * distance, z: island.z + Math.sin(angle) * distance, y: GROUND_LEVEL + 0.78, size: 0.8 + random() * 0.5, turn: random() * 6.28 });
+          }
+        }
+      });
+    });
+    // Palms along every shore (on dry land just outside the sand)
+    seas.forEach((sea, i) => {
+      const random = seededRandom(i * 131 + 7);
+      for (let t = 0; t < 40; t++) {
+        const angle = random() * Math.PI * 2;
+        const radius = blobRadius(sea.r, angle, i + 1) + 12 + random() * 10;
+        const x = sea.x + Math.cos(angle) * radius;
+        const z = sea.z + Math.sin(angle) * radius;
+        if (Math.abs(x) > WORLD_LIMIT - 4 || Math.abs(z) > WORLD_LIMIT - 4 || insideDistrict(x, z, 2) || seaAt(x, z)) continue;
+        palmSpots.push({ x, z, y: GROUND_LEVEL, size: 0.85 + random() * 0.5, turn: random() * 6.28 });
+      }
+    });
+    group.userData.alwaysVisible = true;
+    scene.add(group);
+    seaWater = normalMap;
   }
 
   // Community buildings are instanced (no raycast): the avatar physics asks
@@ -749,6 +938,85 @@ const City = (() => {
     });
   }
 
+  // Merges simple non-indexed geometries into one (for instanced trees)
+  function mergeGeometries(parts) {
+    const positions = [];
+    const normals = [];
+    const colors = [];
+    parts.forEach(({ geometry, color }) => {
+      const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+      flat.computeVertexNormals();
+      positions.push(...flat.attributes.position.array);
+      normals.push(...flat.attributes.normal.array);
+      const c = new THREE.Color(color);
+      for (let i = 0; i < flat.attributes.position.count; i++) colors.push(c.r, c.g, c.b);
+    });
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    merged.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    merged.computeBoundingSphere();
+    return merged;
+  }
+
+  // Privacy: belts of Roblox-style layered pines (and a few round trees)
+  // around every district, so each one feels like its own place. Entrances
+  // stay open because no tree grows on a path.
+  function buildDistrictTreeBelts() {
+    const random = seededRandom(31337);
+    const pine = mergeGeometries([
+      { geometry: new THREE.CylinderGeometry(0.28, 0.38, 2.2, 6).translate(0, 1.1, 0), color: '#6b4a2f' },
+      { geometry: new THREE.ConeGeometry(2.6, 3.6, 7).translate(0, 3.4, 0), color: '#2f6b3a' },
+      { geometry: new THREE.ConeGeometry(2.1, 3.1, 7).translate(0, 5.1, 0), color: '#3a7d43' },
+      { geometry: new THREE.ConeGeometry(1.5, 2.6, 7).translate(0, 6.7, 0), color: '#4a8f4c' }
+    ]);
+    const round = mergeGeometries([
+      { geometry: new THREE.CylinderGeometry(0.25, 0.35, 2.6, 6).translate(0, 1.3, 0), color: '#6b4a2f' },
+      { geometry: new THREE.IcosahedronGeometry(2.3, 1).translate(0, 4.2, 0), color: '#4f9a3f' }
+    ]);
+    const pines = [];
+    const rounds = [];
+    districts.forEach((district) => {
+      if (district.world.world || district.world.key === 'plaza') return;
+      const { center, size } = district.layout;
+      [5, 10].forEach((offset, row) => {
+        const halfX = size[0] / 2 + offset;
+        const halfZ = size[1] / 2 + offset;
+        const perimeter = 4 * (halfX + halfZ);
+        const steps = Math.floor(perimeter / (row ? 6.5 : 4.8));
+        for (let i = 0; i < steps; i++) {
+          let t = (i / steps) * perimeter;
+          let x;
+          let z;
+          if (t < 2 * halfX) { x = -halfX + t; z = -halfZ; } else if ((t -= 2 * halfX) < 2 * halfZ) { x = halfX; z = -halfZ + t; } else if ((t -= 2 * halfZ) < 2 * halfX) { x = halfX - t; z = halfZ; } else { t -= 2 * halfX; x = -halfX; z = halfZ - t; }
+          x += center.x + (random() - 0.5) * 2.4;
+          z += center.z + (random() - 0.5) * 2.4;
+          if (random() < 0.12) continue; // natural gaps
+          if (nearPath(x, z, 5.5) || insideDistrict(x, z, 2) || Math.abs(x) > WORLD_LIMIT - 5 || Math.abs(z) > WORLD_LIMIT - 5) continue;
+          const [px, pz] = parcelOf(x, z);
+          if (isRoadParcel(px, pz)) continue;
+          (random() < 0.8 ? pines : rounds).push({ x, z, size: 0.75 + random() * 0.55, turn: random() * Math.PI * 2 });
+        }
+      });
+    });
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    [[pine, pines], [round, rounds]].forEach(([geometry, spots]) => {
+      if (!spots.length) return;
+      const trees = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), spots.length);
+      spots.forEach(({ x, z, size, turn }, index) => {
+        matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion.setFromAxisAngle(up, turn), new THREE.Vector3(size, size * (0.9 + (index % 5) * 0.06), size));
+        trees.setMatrixAt(index, matrix);
+      });
+      trees.castShadow = false; // thousands of instances: the shadow pass would draw them all again
+      trees.receiveShadow = true;
+      trees.raycast = () => {};
+      trees.userData.alwaysVisible = true;
+      scene.add(trees);
+    });
+  }
+
   // Organic scatter of points of interest around the scenes
   function buildNeighborhoods() {
     const { box, cylinder, sphere, mesh, glow: glowMaterial, interactive, labelTexture } = PropKit.kit;
@@ -783,14 +1051,27 @@ const City = (() => {
       { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
       { type: 'promenade', scale: [14, 1, 54], color: '#b9b4d6', radius: 150, angle: 3.9, face: true },
       { type: 'promenade', scale: [14, 1, 54], color: '#d6c7b4', radius: 165, angle: 0.15, face: true },
-      { type: 'promenade', scale: [12, 1, 46], color: '#c5d6e0', radius: 180, angle: 5.2, face: true }
+      { type: 'promenade', scale: [12, 1, 46], color: '#c5d6e0', radius: 180, angle: 5.2, face: true },
+      // Open squares near the spawn (squares.js)
+      { type: 'round_pavilion', scale: [30, 8, 30], label: 'The Round Pavilion', radius: 118, angle: 2.55, face: true },
+      { type: 'wave_cube', scale: [16, 16, 16], label: 'The Wave Cube', radius: 122, angle: 1.95, face: true },
+      { type: 'retro_arcade', scale: [26, 9, 16], label: 'Retro Arcade', radius: 128, angle: 3.75, face: true },
+      { type: 'screen_amphitheater', scale: [34, 12, 34], label: 'Open Stage', radius: 135, angle: 1.25, face: true },
+      { type: 'ring_colosseum', scale: [26, 12, 26], label: 'The Ring', radius: 150, angle: 4.35, face: true },
+      // More firepits with benches and "Fry your Code" around the commons
+      { type: 'firepit', scale: [16, 1, 16], radius: 112, angle: 3.1 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 140, angle: 0.95 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 160, angle: 5.75 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 200, angle: 2.25 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 230, angle: 4.0 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 260, angle: 0.4 }
     ];
     const placedLandmarks = coworkSpots.map(({ x, z }) => ({ x, z, size: 13, landmark: null }));
     LANDMARKS.forEach((landmark) => {
       const size = landmark.reserve || Math.max(landmark.scale[0], landmark.scale[2]) / 2 + 3;
-      for (let attempt = 0; attempt < 60; attempt++) {
-        const angle = landmark.angle + attempt * 0.13;
-        const radius = landmark.radius + (attempt % 5) * 12;
+      for (let attempt = 0; attempt < 160; attempt++) {
+        const angle = landmark.angle + attempt * 0.11;
+        const radius = landmark.radius + (attempt % 8) * 13;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         if (insideDistrict(x, z, size) || nearPath(x, z, size) || placedLandmarks.some((other) => Math.hypot(other.x - x, other.z - z) < other.size + size)) continue;
@@ -1172,6 +1453,7 @@ const City = (() => {
   }
 
   function updateEnvironment({ ticks, weather, camera, focus, deltaSeconds, time }) {
+    if (seaWater) seaWater.offset.set(time * 0.012, time * 0.008);
     const colors = skyAt(ticks);
     const stormFactor = weather === 'clear' ? 1 : weather === 'thunder' ? 0.45 : 0.65;
     const gray = new THREE.Color('#7b8794');
@@ -1467,14 +1749,16 @@ const City = (() => {
     prepareGround();
     buildLand();
     buildPaths();
+    buildDistrictTreeBelts();
     buildNeighborhoods();
+    buildPalms();
     buildOutskirts();
     buildSkyline();
     buildHorizon();
   }
 
   return {
-    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, CORE_HALF, paths, setLandOwners, prepareGround, landAt, isRoadParcel, isSceneParcel, setLandLayout, solidAt,
+    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, CORE_HALF, seaAt, paths, setLandOwners, prepareGround, landAt, isRoadParcel, isSceneParcel, setLandLayout, solidAt,
     landOwner: (parcel) => (landOwners[parcel] ? landOwners[parcel].owner : null),
     get landOwners() { return landOwners; },
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,

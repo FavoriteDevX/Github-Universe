@@ -305,6 +305,125 @@
   "color": "#ff8fd8"
  },
  {
+  "key": "arena",
+  "file": "map_fight_arena.json",
+  "name": "The Pit Arena",
+  "description": "Half-sunken fight club stadium: concrete ring, red light line, spotlight truss and stands",
+  "region": {
+   "center": [
+    -440,
+    200
+   ],
+   "size": [
+    72,
+    72
+   ]
+  },
+  "color": "#e03131"
+ },
+ {
+  "key": "candles",
+  "file": "map_candlestick_maze.json",
+  "name": "The Candlestick Maze",
+  "description": "Holographic glass walls rise and fall with the live price of MANA, ETH and Bitcoin; the floor glows green or red",
+  "region": {
+   "center": [
+    540,
+    200
+   ],
+   "size": [
+    96,
+    96
+   ]
+  },
+  "color": "#2f9e44"
+ },
+ {
+  "key": "terminal",
+  "file": "map_terminal_apex.json",
+  "name": "The Terminal Apex",
+  "description": "The >_ Root: a building shaped like the terminal icon, code rain walls, Commit Pod elevators, Bug Bounty Dungeons and a Jobs Board",
+  "region": {
+   "center": [
+    200,
+    -560
+   ],
+   "size": [
+    96,
+    96
+   ]
+  },
+  "color": "#4c6ef5"
+ },
+ {
+  "key": "metablock",
+  "file": "map_metablock_estates.json",
+  "name": "MetaBlock Estates",
+  "description": "Hypermodern suburb: demo mansions to test drive, a customization garage, residential scripts and a brokers hub",
+  "region": {
+   "center": [
+    -250,
+    560
+   ],
+   "size": [
+    220,
+    160
+   ]
+  },
+  "color": "#20c997"
+ },
+ {
+  "key": "orchard",
+  "file": "map_orchard_nexus.json",
+  "name": "The Orchard Nexus",
+  "description": "A floating glass cube on beams of light over a circular park: Vision Pro quest, smart home demos and the Genius Bar AI",
+  "region": {
+   "center": [
+    250,
+    580
+   ],
+   "size": [
+    160,
+    140
+   ]
+  },
+  "color": "#adb5bd"
+ },
+ {
+  "key": "azure",
+  "file": "map_azure_cloud.json",
+  "name": "The Azure Cloud Core",
+  "description": "A giant glowing data cloud floating over Azure Island: upload beam entrance, Data Stream core, voxel sandbox on top and the Cloud Storage Lounge",
+  "region": {
+   "center": [
+    -760,
+    -250
+   ],
+   "size": [
+    64,
+    64
+   ]
+  },
+  "color": "#1c7ed6"
+ },
+ {
+  "key": "mobmaze",
+  "file": "map_mob_maze.json",
+  "name": "The Mob Maze",
+  "description": "A blocky voxel dungeon maze: stone brick halls, checkered floors, glowing pressure plates, lanterns and traps",
+  "region": {
+   "center": [
+    -560,
+    -560
+   ],
+   "size": [
+    80,
+    80
+   ]
+  },
+  "color": "#7048e8"
+ },
+ {
   "key": "museum",
   "file": "map_museum.json",
   "name": "Museum of Forgotten Tech",

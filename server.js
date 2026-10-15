@@ -67,6 +67,16 @@ function parcelHash(px, pz) {
 }
 const isRoadParcel = (px, pz) => landLayout.roadsX.includes(px) || landLayout.roadsZ.includes(pz);
 const isSceneParcel = (px, pz) => parcelHash(px, pz) < landLayout.sceneChance;
+// Seas (open water is not for sale; island parcels are)
+function inSea(px, pz) {
+  const x = px * 16 + 8;
+  const z = -(pz * 16 + 8);
+  const blob = (cx, cz, r, seed) => {
+    const angle = Math.atan2(z - cz, x - cx);
+    return Math.hypot(x - cx, z - cz) < r * (1 + 0.16 * Math.sin(3 * angle + seed) + 0.08 * Math.sin(5 * angle + seed * 2));
+  };
+  return (landLayout.seas || []).some((sea, i) => blob(sea.x, sea.z, sea.r, i + 1) && !(sea.islands || []).some((island, k) => blob(island.x, island.z, island.r, i * 7 + k + 3)));
+}
 function walletOf(account) {
   if (typeof account.coins !== 'number') account.coins = STARTING_COINS;
   return account.coins;
@@ -146,6 +156,81 @@ app.post('/api/logout', (req, res) => {
   delete accounts.sessions[req.get('x-session-token')];
   saveAccounts();
   res.json({ ok: true });
+});
+
+// ----------------------------------------------------------------------------
+// Genius Bar AI (The Orchard Nexus, public/orchard.js): answers questions about
+// 3D optimization, spatial audio and SDK scripting. With ANTHROPIC_API_KEY set
+// it asks Claude (the key never leaves the server); without it, it answers
+// offline with a curated tip picked by keyword.
+// ----------------------------------------------------------------------------
+const GENIUS_MAX_QUESTION = 500;
+const GENIUS_SYSTEM_PROMPT = 'You are the Genius Bar AI in GitHub Multiverse, a developer metaverse. Answer concisely about 3D optimization, spatial audio and metaverse SDK scripting.';
+const GENIUS_TIPS = [
+  { keywords: ['gltf', 'glb', 'model', 'export', 'blender', 'file size'], answer: 'glTF optimization: export .glb (binary), apply transforms, remove unused nodes, materials and animations, merge meshes that share a material, and run gltf-transform (dedup, prune, weld, quantize) before shipping. Keep each scene file small so it streams fast.' },
+  { keywords: ['draco', 'compress', 'meshopt', 'geometry size'], answer: 'Draco (or meshoptimizer) compresses glTF geometry 5-10x. Use gltf-transform draco (or meshopt) and load it with DRACOLoader/MeshoptDecoder in three.js. Decoding costs a little CPU on load, so keep it for heavy meshes, not tiny props.' },
+  { keywords: ['texture', 'atlas', 'ktx2', 'basis', 'mipmap', 'png', 'jpg'], answer: 'Texture atlases pack many small textures into one image so many meshes can share one material (fewer draw calls). Use power-of-two sizes (512-2048), KTX2/Basis Universal for GPU-compressed textures, and keep mipmaps on to avoid shimmering.' },
+  { keywords: ['lod', 'level of detail', 'distance', 'far away', 'polygon', 'poly'], answer: 'Levels of detail (LODs): ship 2-3 versions of heavy models (100%, ~40%, ~10% triangles) and switch by camera distance (THREE.LOD in three.js). Past a certain distance, replace the model with an impostor billboard or hide it completely.' },
+  { keywords: ['instanc', 'draw call', 'repeated', 'many objects', 'trees', 'grass'], answer: 'Instancing: anything repeated more than ~30 times (trees, chairs, lamps) should be one THREE.InstancedMesh with a matrix per copy. That turns hundreds of draw calls into one. Update instanceMatrix only when copies move and set needsUpdate = true.' },
+  { keywords: ['spatial audio', 'rolloff', 'panner', 'hrtf', 'positional', 'distance model'], answer: 'Spatial audio rolloff: use a PannerNode (THREE.PositionalAudio) with panningModel "HRTF", distanceModel "inverse", refDistance about 1-2 m, rolloffFactor about 1 and a maxDistance where the sound should fade out. Linear rolloff sounds unnatural; exponential suits small loud sources.' },
+  { keywords: ['audio', 'sound', 'music', 'reverb', 'occlusion', 'listener'], answer: 'Spatial audio basics: attach the AudioListener to the camera, give every sound source a position, add a ConvolverNode reverb per room type, and lower the volume with a low-pass filter when a wall blocks the line of sight (cheap occlusion). Stream long music, preload short effects.' },
+  { keywords: ['sdk7', 'decentraland', 'component', 'system', 'ecs', 'entity'], answer: 'Decentraland SDK7 is ECS: entities are ids, components hold data (Transform, MeshRenderer, custom components via engine.defineComponent) and systems are functions run every frame (engine.addSystem((dt) => {...})). Query entities with engine.getEntitiesWith(Component) and keep systems small and data-driven.' },
+  { keywords: ['collider', 'collision', 'physics', 'raycast', 'walk'], answer: 'Colliders: never collide against the render mesh of a detailed model. Use simple invisible boxes (MeshCollider box/plane in SDK7, or a low-poly proxy) on the collision layer, and disable collisions on decorative and transparent objects so raycasts stay cheap.' },
+  { keywords: ['pointer', 'click', 'interact', 'input', 'button', 'event'], answer: 'SDK interactions: in SDK7 use pointerEventsSystem.onPointerDown({ entity, opts: { button: InputAction.IA_PRIMARY, hoverText: "Open" } }, callback). Keep the hover text short, give feedback (sound, animation) immediately and validate anything important on the server.' },
+  { keywords: ['performance', 'fps', 'slow', 'lag', 'optimi', 'frame'], answer: 'Performance checklist: count draw calls (renderer.info), merge static meshes by material, instance repeated props, limit real-time lights and shadow casters, cap pixel ratio at 1.5-2, and run per-frame logic only for objects near the player.' },
+  { keywords: ['light', 'shadow', 'bake', 'emissive', 'lightmap'], answer: 'Lighting: bake static lighting into lightmaps or vertex colors, fake lamps with emissive materials and additive light cones, and keep one directional light with a tight shadow camera. Point and spot lights are expensive in forward renderers.' }
+];
+const geniusRequests = new Map();
+
+function geniusRateLimited(ip) {
+  const now = Date.now();
+  const entry = geniusRequests.get(ip) || { count: 0, resetAt: now + 60 * 1000 };
+  if (entry.resetAt < now) { entry.count = 0; entry.resetAt = now + 60 * 1000; }
+  entry.count++;
+  geniusRequests.set(ip, entry);
+  return entry.count > 10;
+}
+
+function geniusOfflineAnswer(question) {
+  const text = question.toLowerCase();
+  let best = null;
+  let bestScore = 0;
+  GENIUS_TIPS.forEach((tip) => {
+    const score = tip.keywords.filter((keyword) => text.includes(keyword)).length;
+    if (score > bestScore) { best = tip; bestScore = score; }
+  });
+  if (best) return best.answer;
+  return 'I can help with 3D optimization (glTF, Draco, texture atlases, LODs, instancing), spatial audio (rolloff, HRTF, occlusion) and SDK scripting (SDK7 components and systems, colliders, pointer events). Try asking about one of those.';
+}
+
+app.post('/api/genius', async (req, res) => {
+  if (geniusRateLimited(req.ip)) return res.status(429).json({ error: 'The Genius Bar is busy. Try again in a minute.' });
+  const raw = req.body && typeof req.body.question === 'string' ? req.body.question.trim() : '';
+  if (!raw) return res.status(400).json({ error: 'Ask a question first.' });
+  const question = raw.slice(0, GENIUS_MAX_QUESTION);
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.json({ answer: geniusOfflineAnswer(question), offline: true });
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 600,
+        system: GENIUS_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: question }]
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!response.ok) throw new Error(`Anthropic API status ${response.status}`);
+    const data = await response.json();
+    const answer = (data.content || []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim();
+    if (!answer || data.stop_reason === 'refusal') return res.json({ answer: geniusOfflineAnswer(question), offline: true });
+    res.json({ answer });
+  } catch (error) {
+    console.error('[GENIUS] AI request failed:', error.message);
+    res.json({ answer: geniusOfflineAnswer(question), offline: true });
+  }
 });
 
 const MAX_CHAT_LENGTH = 200;
@@ -606,6 +691,7 @@ io.on('connection', (socket) => {
     const [px, pz] = parcel.split(',').map(Number);
     if (px < -MAX_PARCEL || px >= MAX_PARCEL || pz < -MAX_PARCEL || pz >= MAX_PARCEL) { socket.emit('system_message', 'That parcel is outside Genesis City.'); return; }
     const inCore = px >= -CORE_PARCELS && px < CORE_PARCELS && pz >= -CORE_PARCELS && pz < CORE_PARCELS;
+    if (inSea(px, pz)) { socket.emit('system_message', 'That parcel is open sea. Islands can be bought, the water cannot.'); return; }
     if (isRoadParcel(px, pz)) { socket.emit('system_message', 'That parcel is a road. Pick a green parcel next to it.'); return; }
     if (!inCore && isSceneParcel(px, pz)) { socket.emit('system_message', 'That parcel already has a community scene.'); return; }
     if (accounts.lands[parcel]) { socket.emit('system_message', `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`); return; }
