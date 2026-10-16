@@ -795,6 +795,9 @@
     FLOORS.forEach((floor, index) => {
       const slab = roundedSlab(W - 0.6, SLAB, D - 0.6, R - 0.3, index === 1 ? darkFloor : floorMaterial);
       slab.position.y = floor.y - SLAB;
+      // Top-down UVs (the slab's wall-wrapping UVs streak on a floor)
+      const slabPosition = slab.geometry.attributes.position;
+      for (let i = 0; i < slabPosition.count; i++) slab.geometry.attributes.uv.setXY(i, slabPosition.getX(i) / 4, slabPosition.getZ(i) / 4);
       inside.add(slab);
     });
 
@@ -897,7 +900,7 @@
       inside.add(cylinder(0.6, 0.45, 0.9, pot, x, y + 0.45, z, 12));
       inside.add(sphere(0.95, leaves, x, y + 1.6, z, 10));
     });
-    const welcome = textSprite('THE TERMINAL APEX · lobby (main)', { width: 7, background: 'rgba(12,12,12,0.85)', color: PALETTE.white });
+    const welcome = textSprite('LOBBY · main', { width: 4, background: 'rgba(12,12,12,0.85)', color: PALETTE.white });
     welcome.position.set(6, y + 2.6, -3);
     inside.add(welcome);
   }
@@ -1041,7 +1044,7 @@
     trophy.userData.info = 'Awarded for clearing the five Bug Bounty Dungeons: reentrancy, integer overflow, tx.origin, front-running and unchecked call return values. In-game badge stored in this browser (multiverse-badges). It unlocks the production penthouse.';
     inside.add(interactive(trophy, 'inspect', 'Certified Auditor'));
 
-    const entrySign = textSprite('BUG BOUNTY DUNGEONS · answer each terminal to drop the firewall', { width: 9, background: 'rgba(40, 6, 10, 0.88)', color: '#ff8a95' });
+    const entrySign = textSprite('BUG BOUNTY DUNGEONS', { width: 5.5, background: 'rgba(40, 6, 10, 0.88)', color: '#ff8a95' });
     entrySign.position.set(-12, y + 3.4, 1);
     inside.add(entrySign);
 
@@ -1079,7 +1082,7 @@
     });
     inside.add(cylinder(1, 1, 0.08, material('#d9dde3', { roughness: 0.25 }), 0, y + 0.45, 5.3, 20));
     inside.add(cylinder(0.12, 0.2, 0.42, material('#1b1c22'), 0, y + 0.21, 5.3, 8));
-    const loungeSign = textSprite('STACK OVERFLOW LOUNGE & JOBS BOARD', { width: 8, background: 'rgba(30, 18, 8, 0.88)', color: '#f48024' });
+    const loungeSign = textSprite('STACK OVERFLOW LOUNGE', { width: 5.5, background: 'rgba(30, 18, 8, 0.88)', color: '#f48024' });
     loungeSign.position.set(0, y + 3.5, 6.8);
     inside.add(loungeSign);
 
@@ -1206,7 +1209,7 @@
     positions.forEach(([x, z], i) => { matrix.makeTranslation(x, y + 1.5, z); racks.setMatrixAt(i, matrix); });
     racks.instanceMatrix.needsUpdate = true;
     inside.add(racks);
-    const sign = textSprite('STAGING · BUILD FARM (CI runners)', { width: 6, background: 'rgba(8, 24, 28, 0.88)', color: PALETTE.cyan });
+    const sign = textSprite('STAGING · BUILD FARM', { width: 5, background: 'rgba(8, 24, 28, 0.88)', color: PALETTE.cyan });
     sign.position.set(4.5, y + 3.6, 0);
     inside.add(sign);
   }
@@ -1270,7 +1273,7 @@
     cube.add(noRaycast(cylinder(0.05, 0.05, 2.5, material('#8a8f98', { metalness: 0.8 }), 0, 2.4, 0, 6)));
     inside.add(cube);
     animate(cube, (time) => { cube.rotation.y = time * 0.12; });
-    const sign = textSprite('PRODUCTION · Certified Auditors only', { width: 7, background: 'rgba(26, 8, 30, 0.88)', color: '#e599f7' });
+    const sign = textSprite('PRODUCTION', { width: 4, background: 'rgba(26, 8, 30, 0.88)', color: '#e599f7' });
     sign.position.set(-8, y + 3.2, 3);
     inside.add(sign);
   }
@@ -1311,7 +1314,7 @@
     group.add(cylinder(0.09, 0.12, h, metal, 0, h / 2, 0, 8));
     group.add(box(0.9, 0.18, 0.3, metal, 0.35, h, 0));
     group.add(noRaycast(box(0.7, 0.06, 0.22, glow('#d8f5ff', 2.2), 0.4, h - 0.11, 0)));
-    const cone = new THREE.Mesh(lightCone, new THREE.MeshBasicMaterial({ color: '#9fe8ff', transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    const cone = new THREE.Mesh(lightCone, new THREE.MeshBasicMaterial({ color: '#9fe8ff', transparent: true, opacity: 0.035, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
     cone.position.set(0.4, h - 2.2, 0);
     group.add(noRaycast(cone));
   }
@@ -1320,10 +1323,10 @@
     const face = canvasTexture('terminalNameSign', 1024, 256, (ctx, tw, th) => {
       ctx.fillStyle = '#0c0c0c'; ctx.fillRect(0, 0, tw, th);
       ctx.fillStyle = '#3c3c45'; ctx.fillRect(0, 0, tw, 44);
-      ctx.fillStyle = PALETTE.white; ctx.font = 'bold 92px "Segoe UI", Arial, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-      ctx.fillText('THE TERMINAL APEX', tw / 2 - 90, 140);
-      ctx.fillStyle = PALETTE.green; ctx.font = `bold 72px ${MONO}`;
-      ctx.fillText('>_ ROOT', tw / 2 + 380, 210);
+      ctx.fillStyle = PALETTE.white; ctx.font = 'bold 84px "Segoe UI", Arial, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      ctx.fillText('THE TERMINAL APEX', tw / 2, 122);
+      ctx.fillStyle = PALETTE.green; ctx.font = `bold 64px ${MONO}`;
+      ctx.fillText('>_ ROOT', tw / 2, 206);
     });
     const body = material('#1b1c22', { metalness: 0.6, roughness: 0.35 });
     const front = new THREE.MeshBasicMaterial({ map: face });

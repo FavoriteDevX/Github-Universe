@@ -69,6 +69,13 @@ accounts.lands = accounts.lands || {}; // parcel "x,z" -> { owner, boughtAt }
 // Multiverse Coins (MVC) are earned by playing and spent on land parcels.
 const STARTING_COINS = 100;
 const LAND_PRICE = 250;
+// The Underground Tech Hub: the hall under The Glass Cube district (worlds.json)
+const glassCube = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'worlds.json'), 'utf8')).find((world) => world.key === 'glasscube');
+function inTechHub(position) {
+  if (!glassCube || !position) return false;
+  const [cx, cz] = glassCube.region.center;
+  return Math.abs(position.x - cx) < 20 && Math.abs(position.z - cz) < 17 && position.y < -6 && position.y > -14;
+}
 const pendingParcels = new Set(); // parcels being paid on-chain right now
 const claimsInProgress = new Set(); // usernames with a mint in flight (memory only)
 const MAX_PARCEL = 60; // Genesis City spans parcels -60..59 (16 m each, up to 960 m)
@@ -336,6 +343,73 @@ function spawnSupplyDrop() {
   }, 5 * 60 * 1000);
 }
 setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
+
+// ----------------------------------------------------------------------------
+// Community events (public/maps/events.json): the board lists them, stages
+// stream them, and a background validator rewards presence. Every 15 s the
+// server checks where each developer is (the position the game reports); a
+// player who stays inside the stage radius of a LIVE event for N continuous
+// minutes gets the reward once per event (stored in the account).
+// ----------------------------------------------------------------------------
+const EVENTS_FILE = path.join(PUBLIC_DIR, 'maps', 'events.json');
+let eventsCache = { mtime: -1, data: { attendance: { radius: 28, minutes: 5, reward: 100 }, events: [] } };
+function loadEvents() {
+  try {
+    const mtime = fs.statSync(EVENTS_FILE).mtimeMs;
+    if (mtime !== eventsCache.mtime) {
+      const data = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8'));
+      const events = (Array.isArray(data.events) ? data.events : []).filter((event) => event && typeof event.id === 'string'
+        && !Number.isNaN(Date.parse(event.dataHoraInicio)) && !Number.isNaN(Date.parse(event.dataHoraFim))
+        && event.coordenadasDestino && Number.isFinite(event.coordenadasDestino.x) && Number.isFinite(event.coordenadasDestino.y));
+      eventsCache = { mtime, data: { attendance: { radius: 28, minutes: 5, reward: 100, ...(data.attendance || {}) }, events } };
+    }
+  } catch (error) {
+    console.error('[EVENTS] Could not read events.json:', error.message);
+  }
+  return eventsCache.data;
+}
+
+app.get('/api/events', (req, res) => {
+  const { attendance, events } = loadEvents();
+  res.set('Cache-Control', 'no-cache');
+  // serverTime lets every browser correct its own clock for the countdowns
+  res.json({ serverTime: Date.now(), attendance, events });
+});
+
+const attendanceTimers = new Map(); // "username|eventId" -> { since, lastSeen }
+setInterval(() => {
+  const { attendance, events } = loadEvents();
+  const now = Date.now();
+  const live = events.filter((event) => Date.parse(event.dataHoraInicio) <= now && now < Date.parse(event.dataHoraFim));
+  if (!live.length) return;
+  for (const [socketId, dev] of Object.entries(activeDevelopers)) {
+    const socket = io.sockets.sockets.get(socketId);
+    const account = socket && accounts.users[socket.data.userKey];
+    if (!account) continue;
+    account.eventRewards = account.eventRewards || {};
+    for (const event of live) {
+      if (account.eventRewards[event.id]) continue;
+      const key = `${account.username}|${event.id}`;
+      const target = event.coordenadasDestino;
+      const inside = Math.hypot(dev.position.x - target.x, dev.position.z - target.y) < attendance.radius && dev.position.y > -20;
+      if (!inside) { attendanceTimers.delete(key); continue; }
+      const entry = attendanceTimers.get(key);
+      if (!entry || now - entry.lastSeen > 40000) {
+        attendanceTimers.set(key, { since: now, lastSeen: now });
+        socket.emit('event_presence', { eventId: event.id, title: event.titulo, minutes: attendance.minutes });
+        continue;
+      }
+      entry.lastSeen = now;
+      if (now - entry.since < attendance.minutes * 60000) continue;
+      attendanceTimers.delete(key);
+      account.eventRewards[event.id] = now;
+      account.coins = walletOf(account) + attendance.reward;
+      saveAccounts();
+      socket.emit('wallet', { coins: account.coins, earned: attendance.reward, reason: `attendance at ${event.titulo}` });
+      socket.emit('event_reward', { eventId: event.id, title: event.titulo, reward: attendance.reward });
+    }
+  }
+}, 15000);
 
 // Underground Cafe menu (prices are read here so the client cannot change them)
 const cafeMenu = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'cafe_menu.json'), 'utf8'));
@@ -845,8 +919,10 @@ io.on('connection', (socket) => {
     if (!dev || !(lines >= 3) || now - (dev.lastCommitAt || 0) < 5000) return;
     dev.lastCommitAt = now;
     account.commits = (account.commits || 0) + 1;
-    account.coins = walletOf(account) + 3;
-    socket.emit('wallet', { coins: account.coins, earned: 3, reason: 'commit' });
+    // Commits typed in the Underground Tech Hub (below The Glass Cube) give +5
+    const bonus = inTechHub(dev.position) ? 5 : 3;
+    account.coins = walletOf(account) + bonus;
+    socket.emit('wallet', { coins: account.coins, earned: bonus, reason: bonus === 5 ? 'commit in the Tech Hub' : 'commit' });
     saveAccounts();
     io.to(room).emit('system_message', `${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
     io.emit('commit_leaderboard', commitLeaderboard());

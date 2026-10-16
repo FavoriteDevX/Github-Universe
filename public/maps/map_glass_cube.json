@@ -1,0 +1,21 @@
+{
+ "themeName": "The Glass Cube",
+ "backgroundColor": "#dfe7ef",
+ "blocks": [
+  {
+   "type": "glass_cube_store",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    52,
+    10,
+    52
+   ],
+   "label": "The Glass Cube",
+   "hole": 10
+  }
+ ]
+}

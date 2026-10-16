@@ -27,7 +27,7 @@
 //   builder studios and a reception desk that grants the Resident pass.
 // No real money, wallets, NFTs or smart contracts: everything is in-game.
 const MetaBlock = (() => {
-  const { mesh, box, cylinder, sphere, animate, textSprite, interactive, seat, canvasTexture, labelTexture } = PropKit.kit;
+  const { mesh, cylinder, sphere, animate, textSprite, interactive, seat, canvasTexture, labelTexture } = PropKit.kit;
   const DISTRICT_KEY = 'metablock';
   const BADGE = 'metablock-resident';
   const RADIO_URL = 'https://ice1.somafm.com/groovesalad-128-mp3';
@@ -269,7 +269,46 @@ const MetaBlock = (() => {
   function slab(w, h, d, slabMaterial, x, y, z, tile = 3) {
     return mesh(archGeometry(w, h, d, tile), slabMaterial, x, y, z);
   }
-  const noRaycast = (object) => { object.raycast = () => {}; return object; };
+  const noRaycast = (object) => { object.raycast = () => {}; object.userData.noRaycast = true; return object; };
+
+  // Merges the static direct-child meshes of a builder group, one mesh per
+  // material (keeps the draw calls and the mesh count low). Interactive and
+  // animated parts live in sub-groups or carry userData.keep, so they stay.
+  function mergeStatic(group) {
+    const buckets = new Map();
+    group.children.slice().forEach((node) => {
+      if (!node.isMesh || node.isInstancedMesh || Array.isArray(node.material) || node.userData.keep || node.userData.interactable) return;
+      const key = node.material.uuid + (node.userData.noRaycast ? '|ghost' : '|solid');
+      if (!buckets.has(key)) buckets.set(key, { material: node.material, ghost: !!node.userData.noRaycast, nodes: [] });
+      buckets.get(key).nodes.push(node);
+    });
+    buckets.forEach(({ material: bucketMaterial, ghost, nodes }) => {
+      if (nodes.length < 2) return;
+      const geometries = nodes.map((node) => {
+        node.updateMatrix();
+        const geometry = node.geometry.index ? node.geometry.toNonIndexed() : node.geometry.clone();
+        geometry.applyMatrix4(node.matrix);
+        return geometry;
+      });
+      const total = geometries.reduce((sum, geometry) => sum + geometry.attributes.position.count, 0);
+      const output = new THREE.BufferGeometry();
+      [['position', 3], ['normal', 3], ['uv', 2]].forEach(([name, size]) => {
+        const array = new Float32Array(total * size);
+        let offset = 0;
+        geometries.forEach((geometry) => {
+          if (geometry.attributes[name]) array.set(geometry.attributes[name].array, offset);
+          offset += geometry.attributes.position.count * size;
+        });
+        output.setAttribute(name, new THREE.BufferAttribute(array, size));
+      });
+      geometries.forEach((geometry) => geometry.dispose());
+      const merged = mesh(output, bucketMaterial);
+      merged.castShadow = nodes.some((node) => node.castShadow);
+      if (ghost) noRaycast(merged);
+      nodes.forEach((node) => group.remove(node));
+      group.add(merged);
+    });
+  }
 
   // --------------------------------------------------------------------------
   // Shared state: badge, player name, district center
@@ -462,6 +501,7 @@ const MetaBlock = (() => {
     group.add(instanced(new THREE.CylinderGeometry(0.085, 0.085, 0.12, 8).translate(0, 0.62, 0), MAT.glow('#ffe3b0', 1.8), bollards));
     // Ripples on the shared water material
     const water = MAT.water();
+    mergeStatic(group);
     animate(group, (time) => {
       water.normalMap.offset.set(time * 0.03, time * 0.017);
       water.normalScale.set(0.7 + Math.sin(time * 0.8) * 0.15, 0.7 + Math.cos(time * 0.6) * 0.15);
@@ -768,6 +808,7 @@ const MetaBlock = (() => {
     const record = { id, group, name: variant.name, price: variant.price, parts, stats: null };
     mansions.set(id, record);
     group.userData.label = variant.name;
+    mergeStatic(group);
   }
 
   function tvTexture(name) {
@@ -1256,6 +1297,7 @@ const MetaBlock = (() => {
       if (distance > 10 && openPanel && openPanel.id === 'mb-garage-panel') closePanel();
     });
     group.userData.label = 'The Customization Garage';
+    mergeStatic(group);
   }
 
   // --------------------------------------------------------------------------
@@ -1347,6 +1389,7 @@ const MetaBlock = (() => {
     slats.wrapS = THREE.RepeatWrapping;
     slats.repeat.set(10, 1);
     const gatePanel = mesh(new THREE.BoxGeometry(19.2, 2.4, 0.12), new THREE.MeshStandardMaterial({ map: slats, transparent: true, alphaTest: 0.5, metalness: 0.6, roughness: 0.4 }), 0, 1.3, -0.8);
+    gatePanel.userData.keep = true;
     group.add(gatePanel);
     group.add(slab(19.2, 0.08, 0.2, MAT.steel(), 0, 0.04, -0.8, 1)); // track
     const sign = textSprite('Residents Lane · MetaBlock Resident pass required', { width: 8, background: 'rgba(18, 20, 24, 0.85)' });
@@ -1381,11 +1424,16 @@ const MetaBlock = (() => {
     interactive(panelSpot, 'action', 'Security camera panel');
     kiosk.add(panelSpot);
 
+    mergeStatic(group);
+    mergeStatic(kiosk);
     const local = new THREE.Vector3();
     let previousZ = null;
     let lastWarning = 0;
     let lastMonitor = 0;
+    let lastTime = null;
     animate(group, (time) => {
+      const dt = lastTime === null ? 0 : Math.min(0.5, Math.max(0, time - lastTime));
+      lastTime = time;
       const me = avatarRef();
       let wantOpen = false;
       if (me) {
@@ -1401,8 +1449,9 @@ const MetaBlock = (() => {
         if (previousZ !== null && previousZ < 0 && local.z >= 0 && Math.abs(local.x) < 10.5 && local.y < 4) addLog({ name: playerName(), time: Date.now(), pass: hasPass() });
         previousZ = local.z;
       }
-      gateState.open += ((wantOpen ? 1 : 0) - gateState.open) * 0.04;
-      if (Math.abs(gateState.open - (wantOpen ? 1 : 0)) < 0.002) gateState.open = wantOpen ? 1 : 0;
+      // Slides at a constant speed: fully open in about 3 seconds
+      const goal = wantOpen ? 1 : 0;
+      gateState.open += Math.sign(goal - gateState.open) * Math.min(Math.abs(goal - gateState.open), dt / 3);
       gatePanel.position.x = gateState.open * 19.6;
       pillarGlow.emissive.set(gateState.open > 0.5 ? '#51cf66' : '#fa5252');
       pillarGlow.color.copy(pillarGlow.emissive);
@@ -1540,6 +1589,7 @@ const MetaBlock = (() => {
     [[-20, -14], [20, -14], [-20, 14], [20, 14]].forEach(([x, z]) => group.add(slab(2.4, 0.6, 2.4, MAT.concrete(), x, 0.3, z, 2)));
     trees(group, [[-20, -14, 0.9], [20, -14, 0.9], [-20, 14, 0.9], [20, 14, 0.9]], 41);
     group.userData.label = 'Brokers Hub';
+    mergeStatic(group);
   }
 
   PropKit.registerBuilder(/^mb_streetscape$/, 'mbStreetscape', streetscape);

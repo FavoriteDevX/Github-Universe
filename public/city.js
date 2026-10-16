@@ -567,8 +567,9 @@ const City = (() => {
 
   function undergroundHoles() {
     const holes = [];
-    districts.forEach((district) => district.mapData.blocks.filter((block) => block.type === 'square_pool').forEach((block) => {
-      holes.push({ x: district.layout.center.x + block.position[0], z: district.layout.center.z + block.position[2], size: block.scale[0] });
+    // Square pools and blocks with a "hole" (stair shafts going underground)
+    districts.forEach((district) => district.mapData.blocks.filter((block) => block.type === 'square_pool' || block.hole).forEach((block) => {
+      holes.push({ x: district.layout.center.x + block.position[0], z: district.layout.center.z + block.position[2], size: block.hole || block.scale[0] });
     }));
     return holes;
   }
@@ -1763,6 +1764,8 @@ const City = (() => {
     get landOwners() { return landOwners; },
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,
     // Objects the walking avatar can stand on or bump into around a point
+    // Objects added at runtime (event stages...) that the avatar can stand on
+    addCollidable(object) { sharedCollidables.push(object); },
     collidablesAt(x, z) {
       const district = districtAt(x, z);
       return district ? [district.root, ...sharedCollidables] : sharedCollidables;

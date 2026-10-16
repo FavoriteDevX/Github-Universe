@@ -424,6 +424,23 @@
   "color": "#7048e8"
  },
  {
+  "key": "glasscube",
+  "file": "map_glass_cube.json",
+  "name": "The Glass Cube",
+  "description": "A Fifth Avenue-style glass cube on a granite plaza. A spiral staircase goes down to the Underground Tech Hub, where commits give +5 MVC",
+  "region": {
+   "center": [
+    240,
+    40
+   ],
+   "size": [
+    56,
+    56
+   ]
+  },
+  "color": "#dee2e6"
+ },
+ {
   "key": "museum",
   "file": "map_museum.json",
   "name": "Museum of Forgotten Tech",

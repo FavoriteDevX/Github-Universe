@@ -222,6 +222,16 @@ const MobMaze = (() => {
     return result;
   }
 
+  // Instance placement helper (shared scratch objects)
+  const matrix = new THREE.Matrix4();
+  const identity = new THREE.Quaternion();
+  const turn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+  const scaleOne = new THREE.Vector3(1, 1, 1);
+  const scratch = new THREE.Vector3();
+  function place(target, index, x, y, z, rotated = false, scale = scaleOne) {
+    target.setMatrixAt(index, matrix.compose(scratch.set(x, y, z), rotated ? turn : identity, scale));
+  }
+
   // --------------------------------------------------------------------------
   // Maze generation (seeded recursive backtracker, the room is carved apart)
   // --------------------------------------------------------------------------
@@ -301,15 +311,7 @@ const MobMaze = (() => {
     const gateMat = new THREE.MeshStandardMaterial({ map: brick, color: '#8a6a9e', emissive: '#3a1460', emissiveIntensity: 0.35, roughness: 0.8 });
     const trailMat = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
 
-    const matrix = new THREE.Matrix4();
-    const quaternion = new THREE.Quaternion();
-    const turn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-    const scaleOne = new THREE.Vector3(1, 1, 1);
-    const v = new THREE.Vector3();
     const color = new THREE.Color();
-    const place = (target, index, x, y, z, rotated = false, scale = scaleOne) => {
-      target.setMatrixAt(index, matrix.compose(v.set(x, y, z), rotated ? turn : quaternion.identity(), scale));
-    };
 
     // ---- Base slab and gallery floor ----
     const base = new THREE.Mesh(new THREE.BoxGeometry(80, 0.45, 80), slabMat);

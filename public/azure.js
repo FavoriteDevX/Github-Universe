@@ -1012,7 +1012,7 @@ const AzureCloud = (() => {
       ctx.fillStyle = '#e8fbff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = 'bold 84px Segoe UI, Arial, sans-serif';
+      ctx.font = 'bold 72px Segoe UI, Arial, sans-serif';
       ctx.fillText('THE AZURE CLOUD CORE', width / 2, height * 0.4);
       ctx.fillStyle = '#7fe6ff';
       ctx.font = '600 34px Segoe UI, Arial, sans-serif';

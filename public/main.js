@@ -1935,6 +1935,14 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   });
   TechSquare.init(socket, scene, appendSystemMessage);
   initWeb3();
+  plazaReady.then(() => CommunityEvents.init({
+    scene,
+    socket,
+    system: appendSystemMessage,
+    flyTo: (target, message) => flyTo(target, null, message),
+    releaseKeys: () => keysPressed.clear(),
+    avatarPosition: () => avatar.position
+  })).catch((error) => console.warn('[EVENTS] disabled:', error));
   Cafe.init({
     scene,
     socket,
