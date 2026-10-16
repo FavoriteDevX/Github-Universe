@@ -1778,6 +1778,33 @@ function createPrivateLobby() {
   location.href = url.toString();
 }
 
+// Optional MVC token on a testnet: the wallet bundle is loaded only when the
+// server has it configured, after the world is running (never blocks loading)
+let web3Enabled = false;
+async function initWeb3() {
+  if (!socket) return;
+  try {
+    const config = await (await fetch('/api/web3/config')).json();
+    if (!config.enabled) return;
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'vendor/web3.js';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('wallet bundle missing (run npm run build:web3)'));
+      document.head.appendChild(script);
+    });
+    web3Enabled = await window.MultiverseWeb3.init(config, {
+      socket,
+      system: appendSystemMessage,
+      wallet: () => wallet,
+      releaseKeys: () => keysPressed.clear()
+    });
+  } catch (error) {
+    web3Enabled = false;
+    console.warn('[WEB3] disabled in this browser:', error.message);
+  }
+}
+
 function interactionHooks() {
   return {
     system: appendSystemMessage,
@@ -1801,6 +1828,8 @@ function interactionHooks() {
       const owner = City.landOwner(parcel);
       if (owner) { appendSystemMessage(`Parcel ${parcel} belongs to ${owner}.`); return; }
       if (!socket || !socket.connected) { appendSystemMessage('Land can only be bought when connected to the server.'); return; }
+      // With the MVC token configured, land is paid on-chain from the player's wallet
+      if (web3Enabled && window.MultiverseWeb3) { MultiverseWeb3.buyLand(parcel); return; }
       if (window.confirm(`Buy parcel ${parcel} for 250 MVC (in-game coins, not real money)? You have ${wallet} MVC.`)) socket.emit('buy_land', { parcel });
     },
     inspect: (title, info) => { ui.infoTitle.textContent = title; ui.infoType.textContent = info; ui.infoCard.style.display = 'block'; },
@@ -1905,6 +1934,7 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
     releaseKeys: () => keysPressed.clear()
   });
   TechSquare.init(socket, scene, appendSystemMessage);
+  initWeb3();
   Cafe.init({
     scene,
     socket,

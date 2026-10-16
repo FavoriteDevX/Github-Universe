@@ -4,11 +4,15 @@
   "description": "GitHub Multiverse is an online Decentraland-like dimension where devs from all platforms can work on interactive maps and explore the dimensions.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "prestart": "npm run build:web3",
+    "build:web3": "esbuild web3/client.js --bundle --minify --format=iife --platform=browser --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --outfile=public/vendor/web3.js --log-level=warning"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "thirdweb": "^5.122.0",
+    "esbuild": "^0.24.2"
   },
   "author": "claudecoded",
   "license": "MIT"

@@ -144,3 +144,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Web3 browser bundle (built by npm run build:web3 / npm start)
+public/vendor/web3.js

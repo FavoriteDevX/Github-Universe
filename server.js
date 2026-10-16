@@ -3,6 +3,14 @@ const app = express();
 const fs = require('fs');
 const crypto = require('crypto');
 const TechFeeds = require('./feeds');
+// Optional .env file (KEY=VALUE lines) for the Web3 settings, without extra dependencies
+try {
+  require('fs').readFileSync(require('path').join(__dirname, '.env'), 'utf8').split(/\r?\n/).forEach((line) => {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (match && !(match[1] in process.env)) process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
+  });
+} catch (error) { /* no .env file */ }
+const Web3 = require('./web3/server'); // optional MVC token on a testnet (see web3/server.js)
 const path = require('path'); // Core module to handle absolute system directory paths smoothly
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
@@ -19,6 +27,14 @@ app.use(express.json({ limit: '10kb' }));
 // the client loads exactly the files that exist, whatever their format
 // (.png, .jpg, .jpeg, .webp, .svg), instead of guessing and causing 404s
 const OWNER_ASSET_FOLDERS = ['ads', 'ads/brands', 'store', 'logos'];
+// Public Web3 settings for the browser (enabled only when configured)
+app.get('/api/web3/config', (req, res) => {
+  const config = Web3.publicConfig();
+  if (config.enabled) config.landPrice = LAND_PRICE;
+  res.set('Cache-Control', 'no-cache');
+  res.json(config);
+});
+
 app.get('/api/owner-assets', (req, res) => {
   const listing = {};
   OWNER_ASSET_FOLDERS.forEach((folder) => {
@@ -53,6 +69,8 @@ accounts.lands = accounts.lands || {}; // parcel "x,z" -> { owner, boughtAt }
 // Multiverse Coins (MVC) are earned by playing and spent on land parcels.
 const STARTING_COINS = 100;
 const LAND_PRICE = 250;
+const pendingParcels = new Set(); // parcels being paid on-chain right now
+const claimsInProgress = new Set(); // usernames with a mint in flight (memory only)
 const MAX_PARCEL = 60; // Genesis City spans parcels -60..59 (16 m each, up to 960 m)
 // Around the central districts the land is a grid of parcels split by roads
 // (one parcel wide, every 8 parcels): road parcels cannot be bought
@@ -92,6 +110,10 @@ function saveAccounts() {
     });
   }, 300);
 }
+
+Web3.init();
+Web3.loadUsedTransactions(accounts.web3UsedTransactions);
+
 
 function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
@@ -685,24 +707,107 @@ io.on('connection', (socket) => {
   // Economy: wallet, land parcels and transfers between devs
   socket.emit('wallet', { coins: walletOf(account) });
   socket.emit('lands', accounts.lands);
+  // Why a parcel cannot be bought right now (null when it can)
+  function landProblem(parcel) {
+    if (typeof parcel !== 'string' || !/^-?\d{1,3},-?\d{1,3}$/.test(parcel)) return 'Invalid parcel.';
+    const [px, pz] = parcel.split(',').map(Number);
+    if (px < -MAX_PARCEL || px >= MAX_PARCEL || pz < -MAX_PARCEL || pz >= MAX_PARCEL) return 'That parcel is outside Genesis City.';
+    const inCore = px >= -CORE_PARCELS && px < CORE_PARCELS && pz >= -CORE_PARCELS && pz < CORE_PARCELS;
+    if (inSea(px, pz)) return 'That parcel is open sea. Islands can be bought, the water cannot.';
+    if (isRoadParcel(px, pz)) return 'That parcel is a road. Pick a green parcel next to it.';
+    if (!inCore && isSceneParcel(px, pz)) return 'That parcel already has a community scene.';
+    if (accounts.lands[parcel]) return `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`;
+    if (pendingParcels.has(parcel)) return `Someone is buying parcel ${parcel} right now.`;
+    return null;
+  }
+
+  function grantParcel(parcel, how) {
+    accounts.lands[parcel] = { owner: account.username, boughtAt: Date.now(), ...how };
+    saveAccounts();
+    io.emit('lands', accounts.lands);
+    io.emit('system_message', `${developer().devTag} bought parcel ${parcel} in Genesis City!`);
+  }
+
   socket.on('buy_land', ({ parcel } = {}) => {
     const dev = developer();
-    if (!dev || typeof parcel !== 'string' || !/^-?\d{1,3},-?\d{1,3}$/.test(parcel)) return;
-    const [px, pz] = parcel.split(',').map(Number);
-    if (px < -MAX_PARCEL || px >= MAX_PARCEL || pz < -MAX_PARCEL || pz >= MAX_PARCEL) { socket.emit('system_message', 'That parcel is outside Genesis City.'); return; }
-    const inCore = px >= -CORE_PARCELS && px < CORE_PARCELS && pz >= -CORE_PARCELS && pz < CORE_PARCELS;
-    if (inSea(px, pz)) { socket.emit('system_message', 'That parcel is open sea. Islands can be bought, the water cannot.'); return; }
-    if (isRoadParcel(px, pz)) { socket.emit('system_message', 'That parcel is a road. Pick a green parcel next to it.'); return; }
-    if (!inCore && isSceneParcel(px, pz)) { socket.emit('system_message', 'That parcel already has a community scene.'); return; }
-    if (accounts.lands[parcel]) { socket.emit('system_message', `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`); return; }
+    if (!dev) return;
+    const problem = landProblem(parcel);
+    if (problem) { socket.emit('system_message', problem); return; }
     if (walletOf(account) < LAND_PRICE) { socket.emit('system_message', `You need ${LAND_PRICE} MVC to buy a parcel (you have ${account.coins}). Earn coins with commits, chests and supply drops.`); return; }
     account.coins -= LAND_PRICE;
-    accounts.lands[parcel] = { owner: account.username, boughtAt: Date.now() };
-    saveAccounts();
     socket.emit('wallet', { coins: account.coins, spent: LAND_PRICE, reason: `parcel ${parcel}` });
-    io.emit('lands', accounts.lands);
-    io.emit('system_message', `${dev.devTag} bought parcel ${parcel} in Genesis City!`);
+    grantParcel(parcel, { paidWith: 'in-game' });
   });
+
+  // --------------------------------------------------------------------------
+  // Web3 (testnet MVC token): link wallet, claim coins, buy land on-chain
+  // --------------------------------------------------------------------------
+  socket.emit('web3_account', { wallet: account.wallet || null });
+  socket.on('web3_account_request', () => socket.emit('web3_account', { wallet: account.wallet || null }));
+
+  socket.on('web3_link_request', () => {
+    if (!Web3.enabled) { socket.emit('web3_error', { action: 'link', message: 'The MVC token is not configured on this server.' }); return; }
+    socket.emit('web3_link_message', { message: Web3.bindingMessage(account.username) });
+  });
+
+  socket.on('web3_link', async ({ address, message, signature } = {}) => {
+    if (!Web3.enabled || typeof message !== 'string' || typeof signature !== 'string' || message.length > 500) return;
+    try {
+      account.wallet = await Web3.verifyBinding(account.username, String(address), message, signature);
+      saveAccounts();
+      socket.emit('web3_account', { wallet: account.wallet });
+    } catch (error) {
+      socket.emit('web3_error', { action: 'link', message: error.message });
+    }
+  });
+
+  // Claim: turns in-game MVC into real testnet MVC in the linked wallet
+  socket.on('web3_claim', async ({ amount } = {}) => {
+    if (!Web3.enabled) { socket.emit('web3_error', { action: 'claim', message: 'The MVC token is not configured on this server.' }); return; }
+    if (!account.wallet) { socket.emit('web3_error', { action: 'claim', message: 'Link your wallet first.' }); return; }
+    if (claimsInProgress.has(account.username)) { socket.emit('web3_error', { action: 'claim', message: 'A claim is already in progress.' }); return; }
+    const value = Math.floor(Number(amount));
+    if (!(value >= 1)) { socket.emit('web3_error', { action: 'claim', message: 'Choose how many MVC to claim.' }); return; }
+    if (value > Web3.maxClaim) { socket.emit('web3_error', { action: 'claim', message: `You can claim at most ${Web3.maxClaim} MVC at a time.` }); return; }
+    if (walletOf(account) < value) { socket.emit('web3_error', { action: 'claim', message: `You only have ${account.coins} MVC in the game.` }); return; }
+    // Reserve the coins first so they cannot be spent twice while the mint is pending
+    claimsInProgress.add(account.username);
+    account.coins -= value;
+    saveAccounts();
+    socket.emit('wallet', { coins: account.coins, spent: value, reason: 'claim to wallet (pending)' });
+    try {
+      const transactionHash = await Web3.mint(account.wallet, value);
+      socket.emit('web3_claimed', { amount: value, transactionHash });
+    } catch (error) {
+      account.coins += value; // refund: nothing was minted
+      saveAccounts();
+      socket.emit('wallet', { coins: account.coins, earned: value, reason: 'claim refunded' });
+      socket.emit('web3_error', { action: 'claim', message: `The claim failed and your ${value} MVC were returned to the game. (${error.message})` });
+    } finally {
+      claimsInProgress.delete(account.username);
+    }
+  });
+
+  // Land paid on-chain: the client sends the MVC transfer, the server checks it
+  socket.on('buy_land_onchain', async ({ parcel, transactionHash } = {}) => {
+    const dev = developer();
+    if (!dev || !Web3.enabled) return;
+    if (!account.wallet) { socket.emit('web3_error', { action: 'land', parcel, message: 'Link your wallet first.' }); return; }
+    const problem = landProblem(parcel);
+    if (problem) { socket.emit('web3_error', { action: 'land', parcel, message: `${problem} If you already paid, contact the game admin with your transaction hash.` }); return; }
+    pendingParcels.add(parcel);
+    try {
+      await Web3.verifyPayment(String(transactionHash), account.wallet, LAND_PRICE);
+      accounts.web3UsedTransactions = Web3.usedTransactions();
+      grantParcel(parcel, { paidWith: 'mvc-token', transactionHash });
+      socket.emit('web3_land_bought', { parcel, transactionHash });
+    } catch (error) {
+      socket.emit('web3_error', { action: 'land', parcel, message: error.message });
+    } finally {
+      pendingParcels.delete(parcel);
+    }
+  });
+
   socket.on('pay', ({ to, amount } = {}) => {
     const dev = developer();
     const value = Math.floor(Number(amount));
