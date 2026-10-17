@@ -215,6 +215,9 @@ const MobMaze = (() => {
   function instanced(geometry, meshMaterial, count, { shadow = false, solid = true } = {}) {
     const result = new THREE.InstancedMesh(geometry, meshMaterial, Math.max(1, count));
     result.count = count;
+    // Every instanced mesh gets an instance color (white by default): in r128 a
+    // material shared with a colored instanced mesh crashes on one without it
+    result.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, count) * 3).fill(1), 3);
     result.frustumCulled = false; // r128 culls instances with the base geometry's bounds
     result.castShadow = shadow;
     result.receiveShadow = true;

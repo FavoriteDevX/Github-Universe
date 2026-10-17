@@ -7,6 +7,7 @@
 const City = (() => {
   const PARCEL_SIZE = 16;
   const CELL_SIZE = 64; // 4x4 parcels per city block
+  const DISTRICT_GROWTH = 1.5; // grid districts (not the plaza) are built 1.5x bigger
   const ROAD_WIDTH = 8;
   const WORLD_LIMIT = 960; // last walkable coordinate of Genesis City (meters)
   // Like Decentraland, the whole city is one grid of 16 m parcels: districts
@@ -464,12 +465,15 @@ const City = (() => {
     }
     const [cellX, cellZ] = world.cell;
     const [spanX, spanZ] = world.span || [1, 1];
+    // Districts around the plaza are 50% bigger than the original grid cell
+    // (more realistic scale); Genesis Plaza keeps its own size
+    const cellSize = world.key === 'plaza' ? CELL_SIZE : CELL_SIZE * DISTRICT_GROWTH;
     // Scenes are nudged off the grid so Genesis City feels like one organic place
     const jitter = world.key === 'plaza' ? [0, 0] : (() => { const random = seededRandom(world.key.split('').reduce((sum, c) => sum * 31 + c.charCodeAt(0), 7)); return [(random() - 0.5) * 18, (random() - 0.5) * 18]; })();
     const spread = 1.25; // extra room between scenes for paths and gardens
     return {
-      center: new THREE.Vector3((cellX + (spanX - 1) / 2) * CELL_SIZE * (world.key === 'plaza' ? 1 : spread) + jitter[0], world.elevation || 0, (cellZ + (spanZ - 1) / 2) * CELL_SIZE * (world.key === 'plaza' ? 1 : spread) + jitter[1]),
-      size: [spanX * CELL_SIZE - ROAD_WIDTH, spanZ * CELL_SIZE - ROAD_WIDTH],
+      center: new THREE.Vector3((cellX + (spanX - 1) / 2) * cellSize * (world.key === 'plaza' ? 1 : spread) + jitter[0], world.elevation || 0, (cellZ + (spanZ - 1) / 2) * cellSize * (world.key === 'plaza' ? 1 : spread) + jitter[1]),
+      size: [spanX * cellSize - ROAD_WIDTH, spanZ * cellSize - ROAD_WIDTH],
       cells: { minX: cellX, maxX: cellX + spanX - 1, minZ: cellZ, maxZ: cellZ + spanZ - 1 }
     };
   }
@@ -500,7 +504,7 @@ const City = (() => {
 
     // Some scenes from the original maps were built small: "scale" in worlds.json
     // enlarges the whole scene (positions and sizes) to human scale
-    const sceneScale = world.scale || 1;
+    const sceneScale = (world.scale || 1) * (world.cell && world.key !== 'plaza' ? DISTRICT_GROWTH : 1);
     const scaled = (value) => (Array.isArray(value) ? value.map((v) => v * sceneScale) : typeof value === 'number' ? value * sceneScale : value);
     mapData.blocks.forEach((blockData) => root.add(PropKit.buildBlock(sceneScale === 1 ? blockData : { ...blockData, position: scaled(blockData.position), scale: scaled(blockData.scale) })));
 
@@ -1046,7 +1050,7 @@ const City = (() => {
       { type: 'column_hall', scale: [20, 10, 14], color: '#cdb4db', label: 'Gallery of Open Source', radius: 190, angle: 2.0, face: true },
       { type: 'light_pavilion', scale: [24, 16, 24], label: 'Pavilion of Light', radius: 140, angle: 1.55, face: true },
       { type: 'mini_hotel', scale: [10, 6, 10], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
-      { type: 'lodge_hotel', scale: [20, 10, 16], label: 'The Hotel', radius: 215, angle: 3.3, face: true, reserve: 34 },
+      { type: 'lodge_hotel', scale: [20, 10, 16], label: 'The Hotel', radius: 250, angle: 3.3, face: true, reserve: 62 },
       { type: 'forest_garden', scale: [30, 1, 30], label: 'Multiverse Forest', radius: 175, angle: 1.05, face: true },
       { type: 'forest_garden', scale: [26, 1, 26], label: 'Multiverse Forest II', radius: 240, angle: 4.75, face: true },
       { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
@@ -1590,7 +1594,7 @@ const City = (() => {
   }
 
   function buildSkyline() {
-    const ringRadius = (CITY_RADIUS + 0.5) * CELL_SIZE + 90;
+    const ringRadius = 600; // brand towers stand on the land around the bigger districts
     const random = seededRandom(4242);
     const towerTexture = repeated(windowsTexture('#2b2f3a', '#ffe9a8'), 3, 10);
     const towerMaterial = new THREE.MeshStandardMaterial({ map: towerTexture, emissiveMap: towerTexture, emissive: '#000000', roughness: 0.4, metalness: 0.4 });

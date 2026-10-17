@@ -43,6 +43,8 @@ let tunnelFall = null; // the 5-second fall down the underground water tunnel
 const TUNNEL_FALL_SECONDS = 5;
 let lastAltitudeBlur = 0;
 let lastAnimatedRefresh = -1;
+const firepitProbe = new THREE.Vector3();
+let lastFireDistance = Infinity;
 const nearbyAnimated = [];
 let animatedProbe = null;
 let lastEdgeWarning = 0;
@@ -303,7 +305,12 @@ async function loadUniverse() {
   worldRegistry = registry;
   City.setLandLayout(landLayout);
   window.MULTIVERSE_WORLDS = worldRegistry; // used by the Events Wall to build its JUMP IN cards
-  const maps = await Promise.all(worldRegistry.map((world) => fetch(`maps/${world.file}`).then((response) => response.json())));
+  // District maps come bundled in maps/districts.json; maps that are not in the
+  // bundle (new ones, or Genesis Plaza) are loaded from their own maps/<file>
+  const bundled = await fetch('maps/districts.json').then((response) => (response.ok ? response.json() : { maps: {} })).catch(() => ({ maps: {} }));
+  const maps = await Promise.all(worldRegistry.map((world) => bundled.maps[world.file] || fetch(`maps/${world.file}`)
+    .then((response) => (response.ok ? response.json() : { blocks: [] }))
+    .catch(() => ({ blocks: [] }))));
   // Genesis Plaza is built first so devs can enter right away; the rest of the
   // world is assembled district by district in the background (one per frame)
   const nextFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -820,6 +827,8 @@ function showChatBubble(record, text) {
 // INPUT: CURSOR RAYCASTING, CAMERA WALKING, CLICKS
 // ============================================================================
 function bindInputEvents() {
+  // The minimap is on by default, right under the coin counter (the dock map button hides it)
+  document.body.classList.add('show-map');
   const soundDockButton = document.querySelector('#dock [data-action="sound"]');
   if (soundDockButton) soundDockButton.classList.toggle('muted', !Sound.isEnabled());
   const canvas = renderer.domElement;
@@ -1682,7 +1691,15 @@ function animate() {
     const here = City.districtAt(avatar.position.x, avatar.position.z);
     const surface = avatar.position.y < -20 ? 'cave' : here && ['plaza', 'techsquare', 'festival', 'apple', 'hotel'].includes(here.world.key) ? 'stone' : here && ['lobby', 'house', 'arcade', 'gallery'].includes(here.world.key) ? 'wood' : 'grass';
     const ticks = currentTicks();
-    Sound.update(deltaSeconds, { moving: avatar.moving && viewMode === 'explore', grounded: avatar.grounded || flying, running: keysPressed.has('shift'), surface, night: ticks > 13000 && ticks < 23000 && avatar.position.y > -20 });
+    // Distance to the nearest firepit (for the crackling fire sound)
+    let fireDistance = Infinity;
+    if (window.firepits && hudFrame % 6 === 0) {
+      window.firepits.forEach((pit) => { pit.getWorldPosition(firepitProbe); fireDistance = Math.min(fireDistance, firepitProbe.distanceTo(avatar.position)); });
+      lastFireDistance = fireDistance;
+    }
+    // Streets and paved plazas sound like stone; the land parcels sound like grass
+    const onGrass = !here && avatar.position.y > -20 && City.landAt(avatar.position.x, avatar.position.z) !== 'road';
+    Sound.update(deltaSeconds, { moving: avatar.moving && viewMode === 'explore', grounded: avatar.grounded || flying, running: keysPressed.has('shift'), surface: onGrass ? 'grass' : surface === 'grass' && !here ? 'stone' : surface, night: ticks > 13000 && ticks < 23000 && avatar.position.y > -20, fireDistance: lastFireDistance, day: ticks < 12000 && avatar.position.y > -20 });
   }
   Cafe.update(elapsed);
   LootSystem.update(elapsed, deltaSeconds);

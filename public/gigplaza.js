@@ -147,7 +147,7 @@
   // --------------------------------------------------------------------------
   let marker = null;
   function dropOffPoint() {
-    const districts = (window.City && City.districts) || [];
+    const districts = (typeof City !== 'undefined' && City.districts) || [];
     const target = districts.find((d) => d.world.key === 'metablock');
     if (!target) return null;
     const center = target.layout.center;
@@ -720,7 +720,7 @@
       }
       group.add(square);
       // String lights across the square (instanced bulbs)
-      const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 8, 6), glow('#ffe8a3', 2), 96);
+      const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshStandardMaterial({ color: '#ffe8a3', emissive: '#ffe8a3', emissiveIntensity: 2 }), 96);
       const matrix = new THREE.Matrix4();
       let bulb = 0;
       [[-hw + 1, -hd + 1, hw - 1, hd - 1], [-hw + 1, hd - 1, hw - 1, -hd + 1], [-hw + 1, 0, hw - 1, 0]].forEach(([x1, z1, x2, z2]) => {

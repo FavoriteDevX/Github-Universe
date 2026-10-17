@@ -70,12 +70,20 @@ const Sound = (() => {
     oscillator.stop(start + duration + 0.05);
   }
 
+  // Footsteps: a soft heel thump plus a surface texture, each step slightly
+  // different in pitch and loudness so walking never sounds mechanical
+  const vary = (value, amount) => value * (1 - amount / 2 + Math.random() * amount);
   const EFFECTS = {
     step: (surface) => {
-      if (surface === 'stone') noiseBurst({ duration: 0.06, volume: 0.22, filter: 2400, type: 'bandpass' });
-      else if (surface === 'cave') noiseBurst({ duration: 0.07, volume: 0.22, filter: 1500, type: 'bandpass', echo: true });
-      else if (surface === 'wood') { noiseBurst({ duration: 0.05, volume: 0.18, filter: 900, type: 'bandpass' }); tone(140, 0.06, { volume: 0.08 }); }
-      else noiseBurst({ duration: 0.09, volume: 0.16, filter: 700 });
+      tone(vary(85, 0.2), 0.07, { volume: vary(0.07, 0.4) });
+      if (surface === 'stone') noiseBurst({ duration: 0.05, volume: vary(0.2, 0.3), filter: vary(2600, 0.25), type: 'bandpass' });
+      else if (surface === 'cave') noiseBurst({ duration: 0.06, volume: vary(0.2, 0.3), filter: vary(1500, 0.2), type: 'bandpass', echo: true });
+      else if (surface === 'wood') { noiseBurst({ duration: 0.05, volume: vary(0.16, 0.3), filter: vary(900, 0.2), type: 'bandpass' }); tone(vary(150, 0.15), 0.07, { volume: 0.07, type: 'triangle' }); }
+      else { noiseBurst({ duration: 0.11, volume: vary(0.13, 0.3), filter: vary(1800, 0.3), type: 'highpass' }); noiseBurst({ duration: 0.08, volume: vary(0.08, 0.3), filter: 500 }); }
+    },
+    bird: () => {
+      const base = 2200 + Math.random() * 1600;
+      for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) tone(base + Math.random() * 400, 0.09, { type: 'sine', volume: 0.025, slide: 600 - Math.random() * 1200, delay: i * 0.13 });
     },
     // A quick, bright "bwip": a rising sine with a soft air puff (an original
     // sound in the spirit of classic platformer jumps; no game audio is copied)
@@ -97,9 +105,56 @@ const Sound = (() => {
     EFFECTS[name](argument);
   }
 
+  // Crackling campfire: a looping bed of low rumble and random pops and
+  // crackles (generated once), louder as you get closer to a firepit
+  let fire = null;
+  function fireLoop() {
+    const ctx = ensure();
+    if (!ctx) return null;
+    if (fire) return fire;
+    const seconds = 4;
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let brown = 0;
+    for (let i = 0; i < data.length; i++) {
+      brown = (brown + (Math.random() * 2 - 1) * 0.02) / 1.02; // brown noise: the roar of the flames
+      data[i] = brown * 3.2;
+    }
+    // Crackles: short bright bursts at random moments
+    for (let c = 0; c < 70; c++) {
+      const at = Math.floor(Math.random() * (data.length - 2000));
+      const length = 150 + Math.floor(Math.random() * 900);
+      const loud = 0.15 + Math.random() * 0.5;
+      for (let i = 0; i < length; i++) data[at + i] += (Math.random() * 2 - 1) * loud * Math.pow(1 - i / length, 3);
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 3200;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    source.connect(filter).connect(gain).connect(master);
+    source.start();
+    fire = { gain };
+    return fire;
+  }
+
+  let birdTimer = 3;
   // Called every frame with the avatar state
-  function update(deltaSeconds, { moving, grounded, running, surface, night }) {
-    if (!enabled) return;
+  function update(deltaSeconds, { moving, grounded, running, surface, night, fireDistance = Infinity, day = false }) {
+    if (!enabled) { if (fire) fire.gain.gain.value = 0; return; }
+    // Fire volume: full at the fire, silent beyond 22 m
+    const fireVolume = fireDistance < 22 ? Math.pow(1 - fireDistance / 22, 2) * 0.55 : 0;
+    if (fireVolume > 0 || fire) {
+      const loop = fireLoop();
+      if (loop) loop.gain.gain.setTargetAtTime(fireVolume, context.currentTime, 0.3);
+    }
+    if (day) {
+      birdTimer -= deltaSeconds;
+      if (birdTimer <= 0) { play('bird'); birdTimer = 4 + Math.random() * 9; }
+    }
     if (!grounded) airborneFor += deltaSeconds;
     else {
       if (airborneFor > 0.45) play('land');

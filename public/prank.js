@@ -150,14 +150,15 @@ const Prank = (() => {
       box.querySelectorAll('button, .close').forEach((button) => button.addEventListener('click', () => { for (let i = 0; i < 3; i++) later(spawn, i * 60); }));
       errorBeep();
       count++;
-      if (count < 70) later(spawn, Math.max(45, 380 - count * 9));
-      else later(blueScreen, 900);
+      if (count < 70 && !bsodShown) later(spawn, Math.max(45, 380 - count * 9));
     };
     spawn();
+    // The blue screen comes after ~10 s whatever the frame rate (timers can be slow on weak PCs)
+    later(blueScreen, 10000);
     // The screen stutters more and more
     let shake = 0;
     const stutter = () => {
-      if (!running || !layer) return;
+      if (!running || !layer || bsodShown) { document.body.style.transform = ''; return; }
       shake = Math.min(6, shake + 0.25);
       document.body.style.transform = `translate(${(Math.random() - 0.5) * shake}px, ${(Math.random() - 0.5) * shake}px)`;
       later(stutter, 90);
@@ -166,7 +167,10 @@ const Prank = (() => {
   }
 
   // Step 3: the blue screen with a real percentage, then back to the game
+  let bsodShown = false;
   function blueScreen() {
+    if (bsodShown) return;
+    bsodShown = true;
     document.body.style.transform = '';
     const screen = document.createElement('div');
     screen.id = 'prank-bsod';
@@ -196,6 +200,7 @@ const Prank = (() => {
     document.body.style.cursor = '';
     document.body.style.transform = '';
     running = false;
+    bsodShown = false;
     timers.forEach(clearTimeout);
     timers.length = 0;
     if (window.appendSystemMessage) appendSystemMessage('Repair complete. You found the Mail Time prank! (It only happens once every 10 minutes.)');

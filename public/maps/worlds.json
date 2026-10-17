@@ -172,12 +172,19 @@
   "key": "beach",
   "file": "map_beach.json",
   "name": "Tropical Beach",
-  "description": "Palm trees, chairs and umbrellas",
-  "cell": [
-   -2,
-   -1
-  ],
-  "color": "#ffeaa7"
+  "description": "Palm trees, chairs and umbrellas On the shore of the West Sea, at the edge of Genesis City.",
+  "color": "#ffeaa7",
+  "region": {
+   "center": [
+    -512,
+    -90
+   ],
+   "size": [
+    84,
+    84
+   ]
+  },
+  "scale": 1.5
  },
  {
   "key": "zen",
@@ -346,7 +353,7 @@
   "region": {
    "center": [
     200,
-    -560
+    -650
    ],
    "size": [
     96,
@@ -363,7 +370,7 @@
   "region": {
    "center": [
     -250,
-    560
+    700
    ],
    "size": [
     220,
@@ -379,8 +386,8 @@
   "description": "A floating glass cube on beams of light over a circular park: Vision Pro quest, smart home demos and the Genius Bar AI",
   "region": {
    "center": [
-    250,
-    580
+    230,
+    610
    ],
    "size": [
     160,
@@ -430,8 +437,8 @@
   "description": "A Fifth Avenue-style glass cube on a granite plaza. A spiral staircase goes down to the Underground Tech Hub, where commits give +5 MVC",
   "region": {
    "center": [
-    240,
-    40
+    370,
+    20
    ],
    "size": [
     56,
@@ -695,5 +702,41 @@
    0,
    150
   ]
+ },
+ {
+  "key": "cryptovalley",
+  "file": "map_crypto_valley.json",
+  "name": "Crypto Valley",
+  "description": "Next to Silicon Valley: a crypto-futurist district of HQs, NFT art galleries and financial towers with live market LED screens, floating buildings and a central networking plaza",
+  "world": true,
+  "region": {
+   "center": [
+    14000,
+    520
+   ],
+   "size": [
+    320,
+    240
+   ]
+  },
+  "color": "#f59f00"
+ },
+ {
+  "key": "jpegworld",
+  "file": "map_jpeg_world.json",
+  "name": ".jpeg World",
+  "description": "A world built from real photographs: photo-textured blocks, plain white signs. Enter through the world border at the north edge of Genesis City",
+  "world": true,
+  "region": {
+   "center": [
+    16500,
+    0
+   ],
+   "size": [
+    160,
+    160
+   ]
+  },
+  "color": "#ffffff"
  }
 ]

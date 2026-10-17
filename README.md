@@ -327,7 +327,7 @@ Deep links drop you straight into a place, e.g. `http://localhost:3000/#applepar
 
 ## 🧱 Adding a map
 
-1. Create `public/maps/map_<name>.json`:
+1. Create `public/maps/map_<name>.json` (the existing district maps are bundled in `public/maps/districts.json` under their file names; a new map can go in its own file or as a new entry in that bundle):
    ```json
    {
      "themeName": "My District",
@@ -339,7 +339,7 @@ Deep links drop you straight into a place, e.g. `http://localhost:3000/#applepar
    }
    ```
    `position` and `scale` are `[x, y, z]` in meters relative to the district center. `label` shows on hover and in the info card.
-2. Register it in `public/maps/worlds.json`. A small scene takes a free `cell` on the city grid (each cell is 64m = 4×4 parcels):
+2. Register it in `public/maps/worlds.json`. A small scene takes a free `cell` on the city grid (districts are built 1.5× the 64 m cell, so a cell district is about 88 m wide), or an exact `region` anywhere on the parcel grid:
    ```json
    { "key": "mydistrict", "file": "map_my_district.json", "name": "My District", "description": "...", "cell": [-3, 2], "color": "#ff2d7a" }
    ```
