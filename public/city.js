@@ -982,7 +982,8 @@ const City = (() => {
     const pines = [];
     const rounds = [];
     districts.forEach((district) => {
-      if (district.world.world || district.world.key === 'plaza') return;
+      // The plaza and the beach stay open (the beach looks out to the sea)
+      if (district.world.world || district.world.key === 'plaza' || district.world.key === 'beach') return;
       const { center, size } = district.layout;
       [5, 10].forEach((offset, row) => {
         const halfX = size[0] / 2 + offset;
@@ -1050,7 +1051,6 @@ const City = (() => {
       { type: 'column_hall', scale: [20, 10, 14], color: '#cdb4db', label: 'Gallery of Open Source', radius: 190, angle: 2.0, face: true },
       { type: 'light_pavilion', scale: [24, 16, 24], label: 'Pavilion of Light', radius: 140, angle: 1.55, face: true },
       { type: 'mini_hotel', scale: [10, 6, 10], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
-      { type: 'lodge_hotel', scale: [20, 10, 16], label: 'The Hotel', radius: 250, angle: 3.3, face: true, reserve: 62 },
       { type: 'forest_garden', scale: [30, 1, 30], label: 'Multiverse Forest', radius: 175, angle: 1.05, face: true },
       { type: 'forest_garden', scale: [26, 1, 26], label: 'Multiverse Forest II', radius: 240, angle: 4.75, face: true },
       { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },

@@ -754,38 +754,333 @@
       window.undergroundEntrances.push({ group, size, depth });
     },
 
-    // Underground hall under the pool: closed rock cave around a Welcome Hall,
-    // a cozy bar/cafe social area, an elevator back to the surface
+    // Underground hall under the pool, styled like a Decentraland welcome
+    // lounge: a big round hall with warm plank floors, curved wooden-slat walls,
+    // a sloped wooden ceiling with large openings onto a painted sky, a ring
+    // balcony with glass railings (stairs + warp pads), a non-blocking glass
+    // water column with the "Welcome to the Multiverse" ring, dark red rugs,
+    // round tables, hanging orange spotlight cans, plants and palms. Keeps the
+    // cafe, the elevator back to the surface and the opening (+x) into the
+    // Hall of Internet History (which leads on to the Gig Plaza).
     undergroundHall(group, { w, h, label }) {
       const radius = w / 2;
-      builders.welcomeHall(group, { w, h, label: label || 'Welcome to the Underground', data: { openCenter: true } });
-      const rock = new THREE.MeshStandardMaterial({ color: '#5d4a3a', roughness: 1, flatShading: true, side: THREE.DoubleSide });
-      // Rock wall with an opening at +x where the history corridor starts
-      const gap = 2 * Math.asin(5.5 / (radius + 4));
-      group.add(mesh(new THREE.CylinderGeometry(radius + 4, radius + 4, h + 4, 24, 1, true, Math.PI / 2 + gap / 2, Math.PI * 2 - gap), rock, 0, h / 2, 0));
-      // Rock floor between the hall and the cave wall, plus a landing into the corridor
-      const caveFloor = material('#4a3b2e', { roughness: 1 });
-      group.add(cylinder(radius + 4, radius + 4, 0.3, caveFloor, 0, 0.12, 0, 48));
-      group.add(box(6, 0.3, 11, caveFloor, radius + 3, 0.12, 0));
-      // Ceiling with a square opening for the tunnel
-      const ceiling = new THREE.Shape();
-      ceiling.absarc(0, 0, radius + 4, 0, Math.PI * 2, false);
-      const opening = new THREE.Path();
-      opening.moveTo(-7.2, -7.2); opening.lineTo(7.2, -7.2); opening.lineTo(7.2, 7.2); opening.lineTo(-7.2, 7.2); opening.closePath();
-      ceiling.holes.push(opening);
-      const roof = mesh(new THREE.ShapeGeometry(ceiling, 24), rock, 0, h + 2, 0);
+      const outer = radius + 4; // wall radius
+      const gapAngle = 2 * Math.asin(5.5 / outer); // corridor opening at +x (angle 0)
+      // In three.js cylinders, theta 0 points to +z and PI/2 to +x
+      const openStart = Math.PI / 2 + gapAngle / 2;
+      const openLength = Math.PI * 2 - gapAngle;
+      const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
+
+      // Realistic wood planks (our own canvas): varied boards, grain, seams
+      const planks = PropKit.kit.canvasTexture('lounge|planks', 512, 512, (ctx, cw, ch) => {
+        const rows = 8;
+        const rowH = ch / rows;
+        for (let r = 0; r < rows; r++) {
+          let x = -((r * 97) % 180);
+          while (x < cw) {
+            const length = 160 + ((r * 53 + x * 7) % 140);
+            const tone = ((r * 31 + Math.abs(x) * 3) % 5) - 2;
+            ctx.fillStyle = shade('#a8693a', tone * 0.035);
+            ctx.fillRect(x, r * rowH, length, rowH);
+            for (let g = 0; g < 7; g++) {
+              ctx.strokeStyle = `rgba(60, 30, 10, ${0.08 + (g % 3) * 0.04})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              const gy = r * rowH + 6 + g * (rowH - 12) / 6;
+              ctx.moveTo(x, gy);
+              ctx.bezierCurveTo(x + length * 0.3, gy + 3, x + length * 0.6, gy - 3, x + length, gy + 1);
+              ctx.stroke();
+            }
+            if ((r + x) % 3 === 0) { ctx.fillStyle = 'rgba(70, 35, 12, 0.35)'; ctx.beginPath(); ctx.ellipse(x + length * 0.6, r * rowH + rowH / 2, 6, 3, 0, 0, Math.PI * 2); ctx.fill(); }
+            ctx.fillStyle = 'rgba(30, 15, 5, 0.55)';
+            ctx.fillRect(x, r * rowH, 2, rowH);
+            x += length;
+          }
+          ctx.fillStyle = 'rgba(30, 15, 5, 0.5)';
+          ctx.fillRect(0, r * rowH, cw, 2);
+        }
+      });
+      const slats = PropKit.kit.canvasTexture('lounge|slats', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#2a170b'; ctx.fillRect(0, 0, cw, ch);
+        for (let i = 0; i < 8; i++) {
+          ctx.fillStyle = shade('#b9824f', ((i * 3) % 5 - 2) * 0.03);
+          ctx.fillRect(i * 32 + 4, 0, 24, ch);
+          ctx.fillStyle = 'rgba(80, 40, 10, 0.15)';
+          for (let g = 0; g < 5; g++) ctx.fillRect(i * 32 + 6 + g * 4, 0, 1, ch);
+        }
+      });
+      const sky = PropKit.kit.canvasTexture('lounge|sky', 512, 512, (ctx, cw, ch) => {
+        const gradient = ctx.createRadialGradient(cw / 2, ch / 2, 40, cw / 2, ch / 2, cw / 2);
+        gradient.addColorStop(0, '#bfe6ff'); gradient.addColorStop(1, '#4a9ee8');
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, cw, ch);
+        for (let i = 0; i < 26; i++) {
+          const cx = (i * 137) % cw;
+          const cy = (i * 211) % ch;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+          [0, 1, 2, 3].forEach((k) => { ctx.beginPath(); ctx.arc(cx + k * 14, cy + (k % 2) * 6, 14 + (k % 2) * 6, 0, Math.PI * 2); ctx.fill(); });
+        }
+      });
+      const floorWood = new THREE.MeshStandardMaterial({ map: repeated(planks, outer / 4, outer / 4), roughness: 0.55, metalness: 0.02 });
+      const slatWall = new THREE.MeshStandardMaterial({ map: repeated(slats, 26, 4), roughness: 0.75, side: THREE.DoubleSide });
+      const ceilingWood = new THREE.MeshStandardMaterial({ map: repeated(slats, 30, 1), roughness: 0.8, side: THREE.DoubleSide });
+      const darkWood = material('#3a2416', { roughness: 0.6 });
+      const glass = material('#d7f0ff', { transparent: true, opacity: 0.28, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide });
+
+      // Floor (also covers the old cave ring) and the landing into the corridor
+      group.add(cylinder(outer, outer, 0.3, floorWood, 0, 0.15, 0, 64));
+      group.add(box(6, 0.3, 11, floorWood, outer - 1, 0.15, 0));
+      // Curved wooden-slat wall, open toward the corridor
+      group.add(mesh(new THREE.CylinderGeometry(outer, outer, h + 3, 64, 1, true, openStart, openLength), slatWall, 0, (h + 3) / 2, 0));
+      [-1, 1].forEach((side) => {
+        const [x, z] = toXZ(Math.PI / 2 + side * gapAngle / 2, outer);
+        group.add(box(0.8, h + 3, 0.8, darkWood, x, (h + 3) / 2, z));
+      });
+      group.add(box(0.8, h + 3 - 7.2, 11.8, darkWood, outer, 7.2 + (h + 3 - 7.2) / 2, 0));
+      // Sloped wooden ceiling (a cone from the wall up toward the shaft) with
+      // four big open sections that look out onto a painted sky
+      const ceilingLow = h + 1;
+      const ceilingHigh = h + 3;
+      const innerR = 10.4;
+      const sectors = 4;
+      for (let i = 0; i < sectors; i++) {
+        const start = i * (Math.PI * 2 / sectors);
+        const piece = mesh(new THREE.CylinderGeometry(innerR, outer, ceilingHigh - ceilingLow, 24, 1, true, start, Math.PI * 2 / sectors * 0.62), ceilingWood, 0, (ceilingLow + ceilingHigh) / 2, 0);
+        group.add(piece);
+      }
+      // Glulam ribs across the openings
+      for (let i = 0; i < 12; i++) {
+        const angle = i * Math.PI / 6;
+        const [x1, z1] = toXZ(angle, outer);
+        const [x2, z2] = toXZ(angle, innerR);
+        const length = Math.hypot(x2 - x1, z2 - z1, ceilingHigh - ceilingLow);
+        const rib = box(0.35, 0.5, length, darkWood, (x1 + x2) / 2, (ceilingLow + ceilingHigh) / 2 - 0.2, (z1 + z2) / 2);
+        rib.rotation.set(0, Math.atan2(x2 - x1, z2 - z1), 0);
+        rib.rotateX(-Math.atan2(ceilingHigh - ceilingLow, Math.hypot(x2 - x1, z2 - z1)));
+        group.add(rib);
+      }
+      // Flat wooden ring around the pool shaft (square hole for the jump-in)
+      const ring = new THREE.Shape();
+      ring.absarc(0, 0, innerR + 0.2, 0, Math.PI * 2, false);
+      const hole = new THREE.Path();
+      hole.moveTo(-7.2, -7.2); hole.lineTo(7.2, -7.2); hole.lineTo(7.2, 7.2); hole.lineTo(-7.2, 7.2); hole.closePath();
+      ring.holes.push(hole);
+      const roof = mesh(new THREE.ShapeGeometry(ring, 32), ceilingWood, 0, ceilingHigh, 0);
       roof.rotation.x = Math.PI / 2;
       group.add(roof);
-      // Glowing light where the tunnel enters
-      const skylight = box(14.4, 0.2, 14.4, glow('#bfeaff', 1.2), 0, h + 1.9, 0);
+      const skylight = box(14.4, 0.2, 14.4, glow('#bfeaff', 1.2), 0, ceilingHigh + 0.1, 0);
       skylight.raycast = () => {};
       group.add(skylight);
-      // Warm hanging lamps all around the cave
-      for (let i = 0; i < 10; i++) {
-        const angle = (i / 10) * Math.PI * 2;
-        group.add(sphere(0.45, glow('#ffb703', 1.8), Math.cos(angle) * (radius + 1.5), h - 1, Math.sin(angle) * (radius + 1.5), 10));
+      // Painted sky seen through the open sections (decorative, never blocks)
+      const skyDome = mesh(new THREE.RingGeometry(innerR - 0.2, outer + 1, 48), new THREE.MeshBasicMaterial({ map: sky, side: THREE.DoubleSide }), 0, ceilingHigh + 1.2, 0);
+      skyDome.rotation.x = Math.PI / 2;
+      skyDome.raycast = () => {};
+      skyDome.castShadow = false;
+      group.add(skyDome);
+      const skyBand = mesh(new THREE.CylinderGeometry(outer + 0.5, outer + 0.5, 2.6, 48, 1, true), new THREE.MeshBasicMaterial({ color: '#7cc0f5', side: THREE.BackSide }), 0, ceilingHigh, 0);
+      skyBand.raycast = () => {};
+      group.add(skyBand);
+
+      // Central glass column with falling water and the rotating ring sign
+      // (the player lands here from the pool: nothing in it blocks walking)
+      const tube = cylinder(3.2, 3.2, h, glass, 0, h / 2 + 0.3, 0, 32);
+      tube.raycast = () => {};
+      tube.castShadow = false;
+      group.add(tube);
+      const rainTexture = PropKit.kit.canvasTexture('hallRain', 128, 256, (ctx, cw, ch) => {
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        for (let i = 0; i < 40; i++) ctx.fillRect((i * 29) % cw, (i * 53) % ch, 2, 18 + (i % 4) * 6);
+      });
+      const rainMap = repeated(rainTexture, 4, 2);
+      const rain = cylinder(2.9, 2.9, h - 0.4, new THREE.MeshBasicMaterial({ map: rainMap, transparent: true, depthWrite: false, side: THREE.DoubleSide, color: '#bfe9ff' }), 0, h / 2 + 0.3, 0, 24);
+      rain.castShadow = false;
+      rain.raycast = () => {};
+      group.add(rain);
+      animate(rain, (time) => { rainMap.offset.y = time * 1.2; });
+      const basin = cylinder(3.6, 3.8, 0.2, glow('#4dabf7', 0.5), 0, 0.35, 0, 32);
+      basin.castShadow = false;
+      group.add(basin);
+      const signTexture = PropKit.kit.canvasTexture('loungeRing|multiverse', 2048, 128, (ctx, cw, ch) => {
+        ctx.fillStyle = '#1b1208';
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = '#ffb347';
+        ctx.font = 'bold 80px Segoe UI, Arial, sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#ff8c00'; ctx.shadowBlur = 18;
+        const text = 'Welcome to the Multiverse   •   ';
+        ctx.fillText(text + text, 0, ch / 2);
+      });
+      const ringSign = new THREE.Group();
+      ringSign.add(mesh(new THREE.CylinderGeometry(3.7, 3.7, 1.2, 48, 1, true), new THREE.MeshBasicMaterial({ map: signTexture, side: THREE.FrontSide })));
+      const mirrored = signTexture.clone();
+      mirrored.needsUpdate = true;
+      mirrored.wrapS = THREE.RepeatWrapping;
+      mirrored.repeat.x = -1;
+      ringSign.add(mesh(new THREE.CylinderGeometry(3.68, 3.68, 1.2, 48, 1, true), new THREE.MeshBasicMaterial({ map: mirrored, side: THREE.BackSide })));
+      [-0.66, 0.66].forEach((y) => ringSign.add(mesh(new THREE.TorusGeometry(3.72, 0.06, 6, 64), glow('#ff9f1c', 1.8), 0, y, 0)));
+      ringSign.children.slice(2).forEach((torus) => { torus.rotation.x = Math.PI / 2; });
+      ringSign.traverse((node) => { node.raycast = () => {}; });
+      ringSign.position.y = 6.4;
+      group.add(ringSign);
+      animate(ringSign, (time) => { ringSign.rotation.y = time * 0.25; });
+
+      // Ring balcony (mezzanine) with a glass railing, open over the corridor
+      const balconyY = 6.4;
+      const balconyIn = 17;
+      const balconyGap = 0.5;
+      const balconyStart = Math.PI / 2 + balconyGap;
+      const balconyLength = Math.PI * 2 - balconyGap * 2;
+      const deck = mesh(new THREE.RingGeometry(balconyIn, outer - 0.2, 64, 1, balconyStart - Math.PI / 2, balconyLength), floorWood, 0, balconyY, 0);
+      deck.rotation.x = -Math.PI / 2;
+      deck.material = new THREE.MeshStandardMaterial({ map: repeated(planks, 6, 6), roughness: 0.55, side: THREE.DoubleSide });
+      group.add(deck);
+      group.add(mesh(new THREE.CylinderGeometry(balconyIn, balconyIn, 0.45, 64, 1, true, balconyStart, balconyLength), darkWood, 0, balconyY - 0.22, 0));
+      const stairAngle = Math.PI * 1.1; // stairs arrive at this angle (gap in the railing)
+      const stairGap = 0.24;
+      const railing = (start, length) => {
+        if (length <= 0) return;
+        const pane = mesh(new THREE.CylinderGeometry(balconyIn, balconyIn, 1.1, 48, 1, true, start, length), glass, 0, balconyY + 0.55, 0);
+        pane.castShadow = false;
+        group.add(pane);
+        group.add(mesh(new THREE.CylinderGeometry(balconyIn + 0.05, balconyIn + 0.05, 0.08, 48, 1, true, start, length), darkWood, 0, balconyY + 1.12, 0));
+      };
+      railing(balconyStart, stairAngle - stairGap - balconyStart);
+      railing(stairAngle + stairGap, balconyStart + balconyLength - stairAngle - stairGap);
+      // Curved staircase just inside the balcony, rising to the railing gap
+      const steps = 20;
+      for (let i = 0; i < steps; i++) {
+        const angle = stairAngle - 0.06 - (steps - i) * 0.055;
+        const [x, z] = toXZ(angle, balconyIn - 1.4);
+        const step = box(1.4, 0.3, 2.6, floorWood, x, (balconyY * (i + 1)) / steps - 0.15, z);
+        step.rotation.y = angle;
+        group.add(step);
       }
-      // Underground cafe: curved counter with stools, espresso machine, menu board, tables
+      const [lx, lz] = toXZ(stairAngle, balconyIn - 1.4);
+      group.add(box(2.6, 0.3, 2.6, floorWood, lx, balconyY - 0.15, lz));
+      // Warp pads as a shortcut between floor and balcony
+      const warpUp = new THREE.Group();
+      warpUp.add(cylinder(0.9, 0.9, 0.1, glow('#ff9f1c', 1), 0, 0.35, 0, 24));
+      const [ux, uz] = toXZ(Math.PI * 1.75, 14.5);
+      warpUp.position.set(ux, 0, uz);
+      const [bx, bz] = toXZ(Math.PI * 1.75, 21);
+      warpUp.userData.destination = new THREE.Vector3(bx - ux, balconyY + 0.5, bz - uz);
+      const upLabel = textSprite('Balcony (E)', { width: 3, background: 'rgba(255, 159, 28, 0.9)' });
+      upLabel.position.y = 2.4;
+      warpUp.add(upLabel);
+      group.add(PropKit.kit.interactive(warpUp, 'warp', 'Up to the balcony'));
+      const warpDown = new THREE.Group();
+      warpDown.add(cylinder(0.9, 0.9, 0.1, glow('#ff9f1c', 1), 0, 0.08, 0, 24));
+      warpDown.position.set(bx, balconyY, bz);
+      warpDown.userData.destination = new THREE.Vector3(ux - bx, 0.5 - balconyY, uz - bz);
+      group.add(PropKit.kit.interactive(warpDown, 'warp', 'Down to the lounge'));
+      // Lounge chairs on the balcony
+      for (let i = 0; i < 5; i++) {
+        const angle = Math.PI * 0.95 + i * 0.32;
+        const [x, z] = toXZ(angle, 23.5);
+        const chair = new THREE.Group();
+        chair.add(box(1.0, 0.4, 0.9, material('#7a1f2b', { roughness: 0.9 }), 0, 0.45, 0));
+        chair.add(box(1.0, 0.7, 0.2, material('#7a1f2b', { roughness: 0.9 }), 0, 0.85, -0.4));
+        chair.position.set(x, balconyY, z);
+        chair.rotation.y = angle + Math.PI;
+        group.add(PropKit.kit.interactive(chair, 'sit', 'Balcony armchair'));
+      }
+
+      // Dark red rugs with round tables and chairs
+      const rug = new THREE.MeshStandardMaterial({ map: PropKit.kit.canvasTexture('lounge|rug', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#5c0f1a'; ctx.fillRect(0, 0, cw, ch);
+        ctx.strokeStyle = '#8a1c2b'; ctx.lineWidth = 10; ctx.strokeRect(14, 14, cw - 28, ch - 28);
+        ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 3; ctx.strokeRect(30, 30, cw - 60, ch - 60);
+        for (let i = 0; i < 1500; i++) { ctx.fillStyle = `rgba(0,0,0,${(i % 5) * 0.03})`; ctx.fillRect((i * 37) % cw, (i * 71) % ch, 2, 2); }
+      }), roughness: 1 });
+      const tableTop = material('#c08a5b', { roughness: 0.4 });
+      const metal = material('#2b2d33', { metalness: 0.7, roughness: 0.4 });
+      [Math.PI * 0.05, Math.PI * 0.75, Math.PI * 1.0, Math.PI * 1.55].forEach((angle) => {
+        const [x, z] = toXZ(angle, 11.5);
+        const carpet = mesh(new THREE.PlaneGeometry(6.5, 5), rug, x, 0.31, z);
+        carpet.rotation.x = -Math.PI / 2;
+        carpet.rotation.z = angle;
+        carpet.castShadow = false;
+        group.add(carpet);
+        group.add(cylinder(0.8, 0.8, 0.06, tableTop, x, 1.12, z, 24));
+        group.add(cylinder(0.06, 0.3, 0.8, metal, x, 0.7, z, 10));
+        [[-1.4, 0], [1.4, 0], [0, -1.4], [0, 1.4]].forEach(([dx, dz]) => {
+          const chair = new THREE.Group();
+          chair.add(box(0.55, 0.08, 0.55, material('#8a5a33'), 0, 0.75, 0));
+          chair.add(box(0.55, 0.6, 0.06, material('#8a5a33'), 0, 1.08, -0.25));
+          chair.add(cylinder(0.04, 0.04, 0.45, metal, 0, 0.5, 0, 6));
+          chair.position.set(x + dx, 0, z + dz);
+          chair.rotation.y = Math.atan2(-dx, -dz);
+          group.add(PropKit.kit.interactive(chair, 'sit', 'Lounge chair'));
+        });
+      });
+
+      // Orange spotlight cans hanging on cables (instanced) with soft beams
+      const spots = [];
+      for (let i = 0; i < 14; i++) spots.push(toXZ(i * (Math.PI * 2 / 14) + 0.2, i % 2 ? 9 : 14));
+      const canGeometry = new THREE.CylinderGeometry(0.28, 0.4, 0.7, 12);
+      const cans = new THREE.InstancedMesh(canGeometry, new THREE.MeshStandardMaterial({ color: '#e8590c', metalness: 0.5, roughness: 0.4 }), spots.length);
+      const cables = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.015, 1, 4), new THREE.MeshStandardMaterial({ color: '#111111' }), spots.length);
+      const lenses = new THREE.InstancedMesh(new THREE.CircleGeometry(0.33, 12), new THREE.MeshStandardMaterial({ color: '#ffd8a8', emissive: '#ffb347', emissiveIntensity: 2.2, side: THREE.DoubleSide }), spots.length);
+      const beams = new THREE.InstancedMesh(new THREE.ConeGeometry(1.8, 6, 16, 1, true), new THREE.MeshBasicMaterial({ color: '#ffb35c', transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), spots.length);
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      const flip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+      spots.forEach(([x, z], i) => {
+        const r = Math.hypot(x, z);
+        const ceilingAt = ceilingLow + (ceilingHigh - ceilingLow) * (outer - r) / (outer - innerR);
+        const canY = 9 + (i % 3) * 0.6;
+        const cableLength = ceilingAt - canY;
+        m.compose(new THREE.Vector3(x, canY + cableLength / 2, z), q.identity(), new THREE.Vector3(1, cableLength, 1));
+        cables.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(x, canY, z), q.identity(), new THREE.Vector3(1, 1, 1));
+        cans.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(x, canY - 0.36, z), flip, new THREE.Vector3(1, 1, 1));
+        lenses.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(x, canY - 3.4, z), q.identity(), new THREE.Vector3(1, 1, 1));
+        beams.setMatrixAt(i, m);
+      });
+      [cans, cables, lenses, beams].forEach((instanced) => { instanced.raycast = () => {}; instanced.castShadow = false; group.add(instanced); });
+
+      // Potted plants (instanced) and a few palm trees
+      const plantSpots = [];
+      for (let i = 0; i < 12; i++) plantSpots.push(toXZ(Math.PI / 2 + gapAngle / 2 + 0.25 + i * ((Math.PI * 2 - gapAngle - 0.5) / 11), outer - 1));
+      const pots = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.5, 0.38, 0.8, 12), new THREE.MeshStandardMaterial({ color: '#d9cbb3', roughness: 0.8 }), plantSpots.length);
+      const leaves = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.8, 0), new THREE.MeshStandardMaterial({ color: '#2f9e44', roughness: 0.9, flatShading: true }), plantSpots.length);
+      plantSpots.forEach(([x, z], i) => {
+        m.makeTranslation(x, 0.7, z); pots.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(x, 1.5, z), q.identity(), new THREE.Vector3(1, 1.2 + (i % 3) * 0.2, 1)); leaves.setMatrixAt(i, m);
+      });
+      group.add(pots, leaves);
+      const trunk = material('#8d6e4a', { roughness: 0.9 });
+      const frond = material('#2b8a3e', { roughness: 0.8, side: THREE.DoubleSide });
+      [1.9, 2.75, 4.4, 5.6].forEach((angle) => {
+        const [x, z] = toXZ(angle, 7.5);
+        const palm = new THREE.Group();
+        palm.add(cylinder(0.7, 0.6, 0.7, material('#5c4033'), 0, 0.65, 0, 14));
+        for (let s = 0; s < 6; s++) palm.add(cylinder(0.16 - s * 0.012, 0.19 - s * 0.012, 0.9, trunk, s * 0.06, 1.4 + s * 0.85, 0, 8));
+        for (let f = 0; f < 7; f++) {
+          const leaf = mesh(new THREE.PlaneGeometry(0.7, 2.6), frond, 0, 0, 0);
+          leaf.position.set(0.3 + Math.cos(f / 7 * Math.PI * 2) * 1.0, 6.2, Math.sin(f / 7 * Math.PI * 2) * 1.0);
+          leaf.rotation.set(-Math.PI / 2 + 0.5, -f / 7 * Math.PI * 2 + Math.PI / 2, 0, 'YXZ');
+          leaf.castShadow = false;
+          palm.add(leaf);
+        }
+        palm.position.set(x, 0, z);
+        group.add(palm);
+      });
+
+      // Glass-railed walkway along the corridor landing
+      [-1, 1].forEach((side) => {
+        const pane = box(7, 1.1, 0.06, glass, outer - 1, 0.85, side * 5.4);
+        pane.castShadow = false;
+        group.add(pane);
+        group.add(box(7, 0.06, 0.12, darkWood, outer - 1, 1.42, side * 5.4));
+      });
+      const corridorSign = textSprite('Hall of Internet History  >  Gig Plaza', { width: 8, background: 'rgba(58, 36, 22, 0.92)' });
+      corridorSign.position.set(outer - 3, 5.2, 0);
+      group.add(corridorSign);
+
+      // Underground cafe: curved counter with stools, espresso machine, menu board
       const counterWood = new THREE.MeshStandardMaterial({ map: repeated(plankTexture('#6b3f22'), 6, 1), side: THREE.DoubleSide });
       const counter = mesh(new THREE.CylinderGeometry(6, 6, 1.2, 32, 1, true, Math.PI * 0.15, Math.PI * 0.7), counterWood, radius * 0.45, 0.9, radius * 0.3);
       group.add(counter);
@@ -812,6 +1107,7 @@
       elevator.add(caption);
       elevator.position.set(-radius * 0.6, 0, -radius * 0.45);
       group.add(PropKit.kit.interactive(elevator, 'jump', 'plaza'));
+      group.userData.label = label || 'Welcome to the Underground';
     },
 
     // Firepit: circular fire surrounded by concentric rings of benches

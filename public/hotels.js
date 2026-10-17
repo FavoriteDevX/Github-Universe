@@ -400,7 +400,7 @@
     exitSign.position.set(0, 3.6, -d / 2 + 0.6);
     group.add(exitSign);
     if (data && data.backyard !== false) buildBackyard(group, { w, d });
-    if (data && data.backyard !== false) buildLodgeForest(group, { w, d });
+    if (data && data.forest) buildLodgeForest(group, { w, d });
     const titleText = (data && data.title) || 'The Hotel';
     let inside = false;
     const center = new THREE.Vector3();

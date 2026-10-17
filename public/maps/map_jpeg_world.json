@@ -1,5 +1,116 @@
 {
  "themeName": ".jpeg World",
  "backgroundColor": "#ffffff",
- "blocks": []
+ "blocks": [
+  {
+   "type": "jpeg_world",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    160,
+    1,
+    160
+   ],
+   "entrance": [
+    0,
+    0,
+    62
+   ],
+   "label": ".jpeg World"
+  },
+  {
+   "type": "jpeg_border_gate",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ],
+   "label": "World border (Genesis City north edge)"
+  },
+  {
+   "type": "jpeg_exit_door",
+   "position": [
+    0,
+    0,
+    72
+   ],
+   "scale": [
+    4,
+    4,
+    1
+   ],
+   "rotationY": 3.14159,
+   "label": "Exit"
+  },
+  {
+   "type": "jpeg_artifact_panel",
+   "position": [
+    -14,
+    0,
+    36
+   ],
+   "scale": [
+    10,
+    7.5,
+    0.3
+   ],
+   "rotationY": 1.5708,
+   "variant": 0,
+   "label": "IMG_0042.jpg"
+  },
+  {
+   "type": "jpeg_artifact_panel",
+   "position": [
+    14,
+    0,
+    36
+   ],
+   "scale": [
+    10,
+    7.5,
+    0.3
+   ],
+   "rotationY": -1.5708,
+   "variant": 1,
+   "label": "IMG_0059.jpg"
+  },
+  {
+   "type": "jpeg_artifact_panel",
+   "position": [
+    -44,
+    0,
+    10
+   ],
+   "scale": [
+    10,
+    7.5,
+    0.3
+   ],
+   "variant": 2,
+   "label": "IMG_0076.jpg"
+  },
+  {
+   "type": "jpeg_artifact_panel",
+   "position": [
+    44,
+    0,
+    10
+   ],
+   "scale": [
+    10,
+    7.5,
+    0.3
+   ],
+   "variant": 3,
+   "label": "IMG_0093.jpg"
+  }
+ ]
 }

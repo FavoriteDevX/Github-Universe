@@ -448,6 +448,23 @@
   "color": "#dee2e6"
  },
  {
+  "key": "lodge",
+  "file": "map_the_hotel_lodge.json",
+  "name": "The Hotel",
+  "description": "A two-floor log chalet alone in a clearing of a dense pine forest, with a backyard bunker and the ventilation-duct maze",
+  "region": {
+   "center": [
+    -300,
+    -620
+   ],
+   "size": [
+    130,
+    130
+   ]
+  },
+  "color": "#5a3a24"
+ },
+ {
   "key": "museum",
   "file": "map_museum.json",
   "name": "Museum of Forgotten Tech",
