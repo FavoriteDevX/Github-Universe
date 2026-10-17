@@ -292,7 +292,13 @@ function worldStatePayload(extra = {}) {
 }
 
 // Debug Dungeon monsters are read from the map file so the server owns their health
-const dungeonMap = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'map_debug_dungeon.json'), 'utf8'));
+// District maps live in public/maps/districts.json (a separate file wins if it exists)
+function readMap(file) {
+  const separate = path.join(PUBLIC_DIR, 'maps', file);
+  if (fs.existsSync(separate)) return JSON.parse(fs.readFileSync(separate, 'utf8'));
+  return JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'districts.json'), 'utf8')).maps[file];
+}
+const dungeonMap = readMap('map_debug_dungeon.json');
 const monsters = {};
 dungeonMap.blocks.filter((block) => block.id && block.hp).forEach((block) => {
   monsters[block.id] = { name: block.label, maxHp: block.hp, hp: block.hp, alive: true };

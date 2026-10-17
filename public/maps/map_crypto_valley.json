@@ -1,5 +1,389 @@
 {
  "themeName": "Crypto Valley",
  "backgroundColor": "#ffffff",
- "blocks": []
+ "blocks": [
+  {
+   "type": "cv_streets",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    320,
+    0.3,
+    240
+   ],
+   "label": "Crypto Valley streets",
+   "avoid": [
+    [
+     -122,
+     -92,
+     70,
+     48
+    ],
+    [
+     -40,
+     -92,
+     32,
+     24
+    ],
+    [
+     40,
+     -92,
+     30,
+     24
+    ],
+    [
+     122,
+     -92,
+     32,
+     32
+    ],
+    [
+     -122,
+     -25,
+     24,
+     32
+    ],
+    [
+     -122,
+     28,
+     24,
+     30
+    ],
+    [
+     122,
+     -25,
+     30,
+     30
+    ],
+    [
+     122,
+     30,
+     30,
+     30
+    ],
+    [
+     -122,
+     92,
+     32,
+     24
+    ],
+    [
+     -40,
+     92,
+     32,
+     24
+    ],
+    [
+     40,
+     92,
+     30,
+     30
+    ],
+    [
+     122,
+     92,
+     40,
+     40
+    ]
+   ]
+  },
+  {
+   "type": "cv_plaza",
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    64,
+    1,
+    64
+   ],
+   "label": "Crypto Valley Plaza"
+  },
+  {
+   "type": "cv_hq",
+   "position": [
+    -40,
+    0,
+    -92
+   ],
+   "scale": [
+    28,
+    26,
+    20
+   ],
+   "color": "#3fa9f5",
+   "label": "Ledgerline Labs",
+   "tagline": "Open ledger research since block one",
+   "info": "Ledgerline Labs (fictional) researches open, auditable record keeping. Its lobby hosts meetups for the valley's builders."
+  },
+  {
+   "type": "cv_hq",
+   "position": [
+    40,
+    0,
+    -92
+   ],
+   "scale": [
+    26,
+    34,
+    20
+   ],
+   "color": "#ff8c42",
+   "label": "Blockforge Foundation",
+   "tagline": "Tools for builders of the open web",
+   "info": "Blockforge Foundation (fictional) funds open-source developer tooling and hackathons in Crypto Valley."
+  },
+  {
+   "type": "cv_hq",
+   "position": [
+    -122,
+    0,
+    -25
+   ],
+   "scale": [
+    28,
+    30,
+    20
+   ],
+   "color": "#9b7bff",
+   "label": "Nodeway Protocol",
+   "rotationY": 1.5707963267948966,
+   "tagline": "Every node, one network",
+   "info": "Nodeway Protocol (fictional) studies peer-to-peer networking. The panel shows a mock network map, nothing more."
+  },
+  {
+   "type": "cv_hq",
+   "position": [
+    -122,
+    0,
+    28
+   ],
+   "scale": [
+    26,
+    22,
+    20
+   ],
+   "color": "#00bfa5",
+   "label": "Hashgrove Collective",
+   "rotationY": 1.5707963267948966,
+   "tagline": "A collective of open builders",
+   "info": "Hashgrove Collective (fictional) is a community of designers and developers. Membership here is just a story: there is no token or DAO vote."
+  },
+  {
+   "type": "cv_fin_tower",
+   "position": [
+    122,
+    0,
+    -92
+   ],
+   "scale": [
+    22,
+    92,
+    22
+   ],
+   "label": "Quorum Tower",
+   "symbolOffset": 0
+  },
+  {
+   "type": "cv_fin_tower",
+   "position": [
+    122,
+    0,
+    -25
+   ],
+   "scale": [
+    20,
+    76,
+    20
+   ],
+   "label": "Merkle Center",
+   "rotationY": -1.5707963267948966,
+   "symbolOffset": 1
+  },
+  {
+   "type": "cv_fin_tower",
+   "position": [
+    122,
+    0,
+    30
+   ],
+   "scale": [
+    20,
+    64,
+    20
+   ],
+   "label": "Genesis Block Tower",
+   "rotationY": -1.5707963267948966,
+   "symbolOffset": 2
+  },
+  {
+   "type": "cv_gallery",
+   "position": [
+    -122,
+    0,
+    92
+   ],
+   "scale": [
+    30,
+    7,
+    20
+   ],
+   "label": "WHITE CUBE GALLERY",
+   "rotationY": 3.141592653589793,
+   "seed": 1
+  },
+  {
+   "type": "cv_gallery",
+   "position": [
+    -40,
+    0,
+    92
+   ],
+   "scale": [
+    30,
+    7,
+    20
+   ],
+   "label": "GENERATIVE HALL",
+   "rotationY": 3.141592653589793,
+   "seed": 2,
+   "sculpture": true
+  },
+  {
+   "type": "cv_floating",
+   "position": [
+    40,
+    0,
+    92
+   ],
+   "scale": [
+    26,
+    14,
+    26
+   ],
+   "label": "Aether Pavilion",
+   "lift": 14
+  },
+  {
+   "type": "cv_floating",
+   "position": [
+    118,
+    0,
+    86
+   ],
+   "scale": [
+    24,
+    16,
+    24
+   ],
+   "label": "Helix Spire",
+   "lift": 14,
+   "spiral": true
+  },
+  {
+   "type": "cv_construction",
+   "position": [
+    -122,
+    0,
+    -92
+   ],
+   "scale": [
+    66,
+    1,
+    44
+   ],
+   "label": "COMING SOON: MERIDIAN TOWER"
+  },
+  {
+   "type": "cv_bridge",
+   "position": [
+    0,
+    0,
+    -120
+   ],
+   "scale": [
+    14,
+    3,
+    215
+   ],
+   "label": "VALLEY LINK BRIDGE"
+  },
+  {
+   "type": "cv_kiosk",
+   "position": [
+    -92,
+    0,
+    0
+   ],
+   "scale": [
+    2,
+    2,
+    2
+   ],
+   "color": "#3fa9f5",
+   "label": "HQ Sector Directory",
+   "rotationY": 1.5707963267948966,
+   "kind": "hq",
+   "info": "The corporate HQ sector hosts fictional web3 projects. Walk into any lobby and press E on the panel next to the reception desk."
+  },
+  {
+   "type": "cv_kiosk",
+   "position": [
+    -60,
+    0,
+    72
+   ],
+   "scale": [
+    2,
+    2,
+    2
+   ],
+   "color": "#f472b6",
+   "label": "Gallery Guide",
+   "rotationY": 3.141592653589793,
+   "kind": "galleries",
+   "info": "Two white-cube galleries show generative art drawn live in canvas code. The pieces are in-game art only, not NFTs, and cannot be bought or sold."
+  },
+  {
+   "type": "cv_kiosk",
+   "position": [
+    92,
+    0,
+    0
+   ],
+   "scale": [
+    2,
+    2,
+    2
+   ],
+   "color": "#ffd166",
+   "label": "Market Wall",
+   "rotationY": -1.5707963267948966,
+   "kind": "finance",
+   "info": "The financial center towers are wrapped in LED screens with candlestick charts and tickers for BTC, ETH and MANA. The numbers are a simulated random walk, refreshed every 2 seconds; they are not real prices and no trading exists."
+  },
+  {
+   "type": "cv_kiosk",
+   "position": [
+    16,
+    0,
+    72
+   ],
+   "scale": [
+    2,
+    2,
+    2
+   ],
+   "color": "#a78bfa",
+   "label": "Warp Pad Map",
+   "rotationY": 3.141592653589793,
+   "kind": "floating",
+   "info": "The floating buildings hover on glowing pylons. Stand on a cyan warp pad and press E to move between the ground and the upper levels, or climb the Helix stairs."
+  }
+ ]
 }

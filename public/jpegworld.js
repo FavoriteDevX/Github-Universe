@@ -16,7 +16,7 @@
 // - Solid: a 4 m thick floor slab and invisible (colorWrite: false, opacity 1)
 //   walls around the edges, so the avatar never falls or walks out.
 // - Entrance: a Minecraft-style world border (animated blue/purple diagonal
-//   stripes) at the north edge of Genesis City (x = 0, z = -955). Walking up to
+//   stripes) at the north edge of Genesis City (x = 0, z = -953). Walking up to
 //   it turns the wall into a giant image-search result card (a monarch
 //   butterfly PNG on a transparent checkerboard, "Visit >" button and a very
 //   long redirect URL), then teleports the player into .jpeg World. A white
@@ -45,7 +45,7 @@
     uvgrid: 'uv_grid_opengl.jpg'
   };
   const SIGN_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
-  const BORDER = { x: 0, z: -955, width: 40, height: 60, triggerDistance: 3 };
+  const BORDER = { x: 0, z: -953, width: 40, height: 60, triggerDistance: 3 };
   const RETURN_POINT = new THREE.Vector3(0, 0, -930);
   const FALLBACK_ENTRANCE = new THREE.Vector3(16500, 0, 62);
 
@@ -59,7 +59,10 @@
   function photoMaterial(name, repeatX = 1, repeatY = repeatX, options = {}) {
     const key = `${name}|${repeatX}|${repeatY}|${JSON.stringify(options)}`;
     if (!photoMaterials.has(key)) {
-      const result = new THREE.MeshStandardMaterial({ color: '#cfcfcf', roughness: 0.85, metalness: 0, ...options });
+      // Neutral placeholder: a light gray, slightly different per photo so
+      // shapes stay readable before (or without) the photos
+      const tone = 0.7 + ((name.length * 7 + name.charCodeAt(0)) % 9) * 0.02;
+      const result = new THREE.MeshStandardMaterial({ color: new THREE.Color(tone, tone, tone * 1.02), roughness: 0.85, metalness: 0, ...options });
       photoMaterials.set(key, { material: result, file: PHOTOS[name], repeat: [repeatX, repeatY] });
     }
     return photoMaterials.get(key).material;
