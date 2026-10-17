@@ -660,6 +660,194 @@ const PropKit = (() => {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // Realistic trees: one texture atlas (bark | dense foliage | leaf cluster
+  // with transparent gaps) and merged tree geometries with UVs into each
+  // region. Crowns are an organic leafy core plus crossed "leaf cards" cut
+  // out with alphaTest, like trees in real games. One material for all trees.
+  // --------------------------------------------------------------------------
+  const treeAtlases = new Map();
+  const LEAF_PALETTES = {
+    green: ['#2f5d23', '#3b7029', '#4a8532', '#5d9a3a', '#6fae46', '#2a4f1f', '#86bf55'],
+    blossom: ['#d6336c', '#e64980', '#f06595', '#f783ac', '#faa2c1', '#c2255c', '#fcc2d7'],
+    autumn: ['#a33a0b', '#c2410c', '#e8590c', '#f08c00', '#fab005', '#862e0b', '#ffd43b']
+  };
+  function treeAtlas(variant = 'green') {
+    if (treeAtlases.has(variant)) return treeAtlases.get(variant);
+    let treeAtlasTexture = null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1536;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    let seed = 99;
+    const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    // Bark (0..512): vertical fissures and plates
+    ctx.fillStyle = '#5a4331';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 260; i++) {
+      const x = random() * 512;
+      ctx.strokeStyle = random() < 0.5 ? 'rgba(30, 20, 12, 0.55)' : 'rgba(150, 125, 100, 0.25)';
+      ctx.lineWidth = 1 + random() * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      for (let y = 0; y <= 512; y += 32) ctx.lineTo(x + Math.sin(y * 0.05 + i) * 4 + (random() - 0.5) * 3, y);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 40; i++) {
+      ctx.fillStyle = 'rgba(90, 110, 60, 0.18)';
+      ctx.beginPath(); ctx.ellipse(random() * 512, random() * 512, 6 + random() * 18, 3 + random() * 8, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Leaves are drawn as small pointed ellipses with a midrib
+    const leaf = (x, y, size, angle, color) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, -size);
+      ctx.quadraticCurveTo(size * 0.55, 0, 0, size);
+      ctx.quadraticCurveTo(-size * 0.55, 0, 0, -size);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 230, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -size * 0.9); ctx.lineTo(0, size * 0.9); ctx.stroke();
+      ctx.restore();
+    };
+    const greens = LEAF_PALETTES[variant] || LEAF_PALETTES.green;
+    // Dense foliage (512..1024): fully covered, darker inside, light on top
+    ctx.fillStyle = greens[0];
+    ctx.fillRect(512, 0, 512, 512);
+    for (let i = 0; i < 5200; i++) {
+      const y = random() * 512;
+      const shadeIndex = Math.min(greens.length - 1, Math.floor(random() * 4 + (1 - y / 512) * 3));
+      leaf(512 + random() * 512, y, 5 + random() * 7, random() * Math.PI * 2, greens[shadeIndex]);
+    }
+    // Leaf cluster cut-out (1024..1536): a few twigs full of leaves, transparent gaps
+    ctx.clearRect(1024, 0, 512, 512);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(1024, 0, 512, 512); ctx.clip();
+    for (let cluster = 0; cluster < 9; cluster++) {
+      const cx = 1024 + 70 + random() * 372;
+      const cy = 70 + random() * 372;
+      ctx.strokeStyle = '#4a3726';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(1024 + 256, 500); ctx.quadraticCurveTo(cx, cy + 120, cx, cy); ctx.stroke();
+      for (let i = 0; i < 160; i++) {
+        const angle = random() * Math.PI * 2;
+        const distance = Math.pow(random(), 0.7) * 85;
+        leaf(cx + Math.cos(angle) * distance, cy + Math.sin(angle) * distance, 7 + random() * 8, angle + Math.PI / 2, greens[Math.floor(random() * greens.length)]);
+      }
+    }
+    ctx.restore();
+    treeAtlasTexture = new THREE.CanvasTexture(canvas);
+    treeAtlasTexture.encoding = THREE.sRGBEncoding;
+    treeAtlasTexture.anisotropy = 4;
+    treeAtlases.set(variant, treeAtlasTexture);
+    return treeAtlasTexture;
+  }
+
+  // variant: 'green' (default), 'blossom' (pink cherry trees) or 'autumn'
+  const treeMaterials = new Map();
+  function treeMaterial(variant = 'green') {
+    if (!treeMaterials.has(variant)) treeMaterials.set(variant, new THREE.MeshStandardMaterial({ map: treeAtlas(variant), vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.85 }));
+    return treeMaterials.get(variant);
+  }
+
+  // Merges parts { geometry, region: 0 bark | 1 foliage | 2 leaf cards, color }
+  function mergeTreeParts(parts) {
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const colors = [];
+    parts.forEach(({ geometry, region, color }) => {
+      const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+      if (!flat.attributes.normal) flat.computeVertexNormals();
+      positions.push(...flat.attributes.position.array);
+      normals.push(...flat.attributes.normal.array);
+      const uv = flat.attributes.uv.array;
+      for (let i = 0; i < uv.length; i += 2) uvs.push((region + Math.min(0.999, Math.max(0.001, uv[i]))) / 3, uv[i + 1]);
+      const tint = new THREE.Color(color || '#ffffff');
+      for (let i = 0; i < flat.attributes.position.count; i++) colors.push(tint.r, tint.g, tint.b);
+    });
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    merged.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    merged.computeBoundingSphere();
+    return merged;
+  }
+
+  // A lumpy, organic crown core (an icosphere pushed in and out)
+  function leafyCore(radius, seed) {
+    const core = new THREE.IcosahedronGeometry(radius, 1);
+    const position = core.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      const v = new THREE.Vector3(position.getX(i), position.getY(i), position.getZ(i));
+      const n = 1 + 0.16 * Math.sin(v.x * 2.1 + seed) * Math.cos(v.y * 1.7 + seed * 2) + 0.08 * Math.sin(v.z * 3.3 + seed);
+      v.multiplyScalar(n);
+      v.y *= 0.85;
+      position.setXYZ(i, v.x, v.y, v.z);
+    }
+    core.computeVertexNormals();
+    return core;
+  }
+
+  const treeGeometryCache = new Map();
+  // kind: 'broadleaf' (round crown) or 'pine'. Height about 7-9 m at scale 1.
+  function realisticTreeGeometry(kind = 'broadleaf') {
+    if (treeGeometryCache.has(kind)) return treeGeometryCache.get(kind);
+    const parts = [];
+    if (kind === 'pine') {
+      parts.push({ geometry: new THREE.CylinderGeometry(0.22, 0.38, 7.5, 8).translate(0, 3.75, 0), region: 0, color: '#d8cfc6' });
+      [[2.9, 3.4, 2.6], [2.4, 3.1, 4.4], [1.9, 2.8, 6.0], [1.3, 2.4, 7.5]].forEach(([radius, height, y], i) => {
+        parts.push({ geometry: new THREE.ConeGeometry(radius, height, 10, 1, true).translate(0, y, 0), region: 1, color: i % 2 ? '#a9c9a0' : '#c2dcb6' });
+        // Drooping needle cards around each tier
+        for (let k = 0; k < 6; k++) {
+          const card = new THREE.PlaneGeometry(radius * 1.1, height * 0.8);
+          card.rotateX(-0.5);
+          card.translate(0, y - height * 0.15, radius * 0.55);
+          card.rotateY((k / 6) * Math.PI * 2 + i * 0.4);
+          parts.push({ geometry: card, region: 2, color: '#8fb07f' });
+        }
+      });
+    } else {
+      parts.push({ geometry: new THREE.CylinderGeometry(0.2, 0.34, 4.2, 8).translate(0, 2.1, 0), region: 0, color: '#ffffff' });
+      // Branches reaching into the crown
+      [[0.9, 0.6], [-0.8, 2.2], [0.3, 4.1]].forEach(([tilt, turn]) => {
+        const branch = new THREE.CylinderGeometry(0.07, 0.13, 2.4, 6).translate(0, 1.2, 0);
+        branch.rotateZ(tilt);
+        branch.rotateY(turn);
+        branch.translate(0, 3.4, 0);
+        parts.push({ geometry: branch, region: 0, color: '#ffffff' });
+      });
+      parts.push({ geometry: leafyCore(2.5, 1.3).translate(0, 5.6, 0), region: 1, color: '#ffffff' });
+      parts.push({ geometry: leafyCore(1.6, 2.7).translate(1.3, 6.4, 0.6), region: 1, color: '#e6f2d8' });
+      parts.push({ geometry: leafyCore(1.5, 4.1).translate(-1.2, 6.2, -0.8), region: 1, color: '#d6e8c6' });
+      // Leaf cards sticking out of the crown (they break the round silhouette)
+      for (let k = 0; k < 14; k++) {
+        const card = new THREE.PlaneGeometry(2.8, 2.8);
+        card.rotateX((k % 3 - 1) * 0.6);
+        card.rotateY((k / 14) * Math.PI * 2 * 3);
+        const angle = (k / 14) * Math.PI * 2;
+        card.translate(Math.cos(angle) * 2.2, 4.8 + (k % 4) * 0.7, Math.sin(angle) * 2.2);
+        parts.push({ geometry: card, region: 2, color: '#ffffff' });
+      }
+    }
+    const geometry = mergeTreeParts(parts);
+    treeGeometryCache.set(kind, geometry);
+    return geometry;
+  }
+
+  // A single (non-instanced) realistic tree, scaled to `height` meters
+  function realisticTree(kind = 'broadleaf', height = 7, variant = 'green') {
+    const tree = new THREE.Mesh(realisticTreeGeometry(kind), treeMaterial(variant));
+    tree.scale.setScalar(height / (kind === 'pine' ? 8.8 : 8));
+    tree.castShadow = true;
+    tree.receiveShadow = true;
+    return tree;
+  }
+
   // Box with rounded vertical edges (softer, less "blocky" buildings)
   function roundedSlab(w, h, d, radius, slabMaterial) {
     const r = Math.min(radius, w / 2 - 0.01, d / 2 - 0.01);
@@ -1526,7 +1714,14 @@ const PropKit = (() => {
       group.add(inner);
     },
 
-    plant(group, { w, h, color }) {
+    plant(group, { w, h, color, type }) {
+      // Trees ("round_tree", "pine_tree"...) are realistic leafy trees standing on the ground
+      if (/tree/.test(type || '')) {
+        const tree = realisticTree(/pine|conifer|fir/.test(type) ? 'pine' : 'broadleaf', Math.max(3, h * 1.15));
+        tree.position.y = -h / 2;
+        group.add(tree);
+        return;
+      }
       group.add(cylinder(w * 0.35, w * 0.28, h * 0.3, material('#dfe4ea'), 0, -h * 0.35, 0, 10));
       group.add(mesh(new THREE.IcosahedronGeometry(w * 0.55, 0), material(color, { flatShading: true }), 0, h * 0.1, 0));
       group.add(mesh(new THREE.IcosahedronGeometry(w * 0.4, 0), material(shade(color, 0.08), { flatShading: true }), 0, h * 0.38, 0));
@@ -1670,7 +1865,8 @@ const PropKit = (() => {
   const kit = {
     material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, seat, roundedBoxGeometry,
     labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture,
-    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive
+    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive,
+    treeMaterial, realisticTreeGeometry, realisticTree
   };
 
   return { buildBlock, registerBuilder, kit, textSprite, material, glow, animatedObjects, interactables };

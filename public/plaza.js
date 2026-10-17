@@ -755,21 +755,22 @@
     },
 
     // Underground hall under the pool, styled like a Decentraland welcome
-    // lounge: a big round hall with warm plank floors, curved wooden-slat walls,
-    // a sloped wooden ceiling with large openings onto a painted sky, a ring
-    // balcony with glass railings (stairs + warp pads), a non-blocking glass
-    // water column with the "Welcome to the Multiverse" ring, dark red rugs,
-    // round tables, hanging orange spotlight cans, plants and palms. Keeps the
-    // cafe, the elevator back to the surface and the opening (+x) into the
-    // Hall of Internet History (which leads on to the Gig Plaza).
+    // lounge, fully enclosed: a big round hall with warm plank floors, curved
+    // wooden-slat walls and a sloped wooden ceiling whose "skylights" are
+    // illuminated painted-sky panels (no real openings). A full UPPER FLOOR
+    // (ring mezzanine, reached by stairs with 0.4 m steps or warp pads) holds a
+    // reading lounge, a lookout over the glass water column, a small arcade and
+    // a gallery express. Keeps the cafe, the elevator back to the surface and
+    // the portal (+x) into the ring-shaped Hall of Internet History.
     undergroundHall(group, { w, h, label }) {
       const radius = w / 2;
       const outer = radius + 4; // wall radius
-      const gapAngle = 2 * Math.asin(5.5 / outer); // corridor opening at +x (angle 0)
+      const gapAngle = 2 * Math.asin(5.5 / outer); // portal opening at +x (angle PI/2)
       // In three.js cylinders, theta 0 points to +z and PI/2 to +x
       const openStart = Math.PI / 2 + gapAngle / 2;
       const openLength = Math.PI * 2 - gapAngle;
       const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
+      const decor = new THREE.Group(); // static parts, merged at the end
 
       // Realistic wood planks (our own canvas): varied boards, grain, seams
       const planks = PropKit.kit.canvasTexture('lounge|planks', 512, 512, (ctx, cw, ch) => {
@@ -809,54 +810,62 @@
           for (let g = 0; g < 5; g++) ctx.fillRect(i * 32 + 6 + g * 4, 0, 1, ch);
         }
       });
-      const sky = PropKit.kit.canvasTexture('lounge|sky', 512, 512, (ctx, cw, ch) => {
-        const gradient = ctx.createRadialGradient(cw / 2, ch / 2, 40, cw / 2, ch / 2, cw / 2);
-        gradient.addColorStop(0, '#bfe6ff'); gradient.addColorStop(1, '#4a9ee8');
+      // Painted sky for the fake skylights (unlit, so it reads as daylight)
+      const sky = PropKit.kit.canvasTexture('lounge|skypanel', 512, 256, (ctx, cw, ch) => {
+        const gradient = ctx.createLinearGradient(0, 0, 0, ch);
+        gradient.addColorStop(0, '#8fd0ff'); gradient.addColorStop(1, '#d9f1ff');
         ctx.fillStyle = gradient; ctx.fillRect(0, 0, cw, ch);
-        for (let i = 0; i < 26; i++) {
+        for (let i = 0; i < 14; i++) {
           const cx = (i * 137) % cw;
-          const cy = (i * 211) % ch;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-          [0, 1, 2, 3].forEach((k) => { ctx.beginPath(); ctx.arc(cx + k * 14, cy + (k % 2) * 6, 14 + (k % 2) * 6, 0, Math.PI * 2); ctx.fill(); });
+          const cy = 30 + (i * 71) % (ch - 60);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          [0, 1, 2, 3].forEach((k) => { ctx.beginPath(); ctx.arc(cx + k * 16, cy + (k % 2) * 6, 14 + (k % 2) * 6, 0, Math.PI * 2); ctx.fill(); });
         }
+        ctx.strokeStyle = '#3a2416'; ctx.lineWidth = 10; ctx.strokeRect(0, 0, cw, ch);
+        ctx.fillStyle = '#3a2416'; for (let x = cw / 4; x < cw; x += cw / 4) ctx.fillRect(x - 3, 0, 6, ch);
       });
       const floorWood = new THREE.MeshStandardMaterial({ map: repeated(planks, outer / 4, outer / 4), roughness: 0.55, metalness: 0.02 });
+      const upperWood = new THREE.MeshStandardMaterial({ map: repeated(planks, 7, 7), roughness: 0.55, side: THREE.DoubleSide });
       const slatWall = new THREE.MeshStandardMaterial({ map: repeated(slats, 26, 4), roughness: 0.75, side: THREE.DoubleSide });
       const ceilingWood = new THREE.MeshStandardMaterial({ map: repeated(slats, 30, 1), roughness: 0.8, side: THREE.DoubleSide });
+      const skyPanel = new THREE.MeshBasicMaterial({ map: repeated(sky, 4, 1), side: THREE.DoubleSide });
       const darkWood = material('#3a2416', { roughness: 0.6 });
       const glass = material('#d7f0ff', { transparent: true, opacity: 0.28, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide });
+      const metal = material('#2b2d33', { metalness: 0.7, roughness: 0.4 });
 
-      // Floor (also covers the old cave ring) and the landing into the corridor
+      // Floor and the curved wooden-slat wall (open only toward the history portal)
       group.add(cylinder(outer, outer, 0.3, floorWood, 0, 0.15, 0, 64));
-      group.add(box(6, 0.3, 11, floorWood, outer - 1, 0.15, 0));
-      // Curved wooden-slat wall, open toward the corridor
       group.add(mesh(new THREE.CylinderGeometry(outer, outer, h + 3, 64, 1, true, openStart, openLength), slatWall, 0, (h + 3) / 2, 0));
       [-1, 1].forEach((side) => {
         const [x, z] = toXZ(Math.PI / 2 + side * gapAngle / 2, outer);
-        group.add(box(0.8, h + 3, 0.8, darkWood, x, (h + 3) / 2, z));
+        decor.add(box(0.8, h + 3, 0.8, darkWood, x, (h + 3) / 2, z));
       });
-      group.add(box(0.8, h + 3 - 7.2, 11.8, darkWood, outer, 7.2 + (h + 3 - 7.2) / 2, 0));
-      // Sloped wooden ceiling (a cone from the wall up toward the shaft) with
-      // four big open sections that look out onto a painted sky
+      decor.add(box(0.8, h + 3 - 6.2, 11.8, darkWood, outer, 6.2 + (h + 3 - 6.2) / 2, 0));
+
+      // Solid sloped ceiling: wooden sectors alternating with illuminated
+      // painted-sky skylights (no real openings anywhere)
       const ceilingLow = h + 1;
       const ceilingHigh = h + 3;
       const innerR = 10.4;
-      const sectors = 4;
+      const sectors = 8;
       for (let i = 0; i < sectors; i++) {
         const start = i * (Math.PI * 2 / sectors);
-        const piece = mesh(new THREE.CylinderGeometry(innerR, outer, ceilingHigh - ceilingLow, 24, 1, true, start, Math.PI * 2 / sectors * 0.62), ceilingWood, 0, (ceilingLow + ceilingHigh) / 2, 0);
-        group.add(piece);
+        const step = Math.PI * 2 / sectors;
+        group.add(mesh(new THREE.CylinderGeometry(innerR, outer, ceilingHigh - ceilingLow, 12, 1, true, start, step * 0.6), ceilingWood, 0, (ceilingLow + ceilingHigh) / 2, 0));
+        const panel = mesh(new THREE.CylinderGeometry(innerR, outer, ceilingHigh - ceilingLow, 8, 1, true, start + step * 0.6, step * 0.4), skyPanel, 0, (ceilingLow + ceilingHigh) / 2, 0);
+        panel.castShadow = false;
+        group.add(panel);
       }
-      // Glulam ribs across the openings
-      for (let i = 0; i < 12; i++) {
-        const angle = i * Math.PI / 6;
+      // Glulam ribs
+      for (let i = 0; i < 16; i++) {
+        const angle = i * Math.PI / 8;
         const [x1, z1] = toXZ(angle, outer);
         const [x2, z2] = toXZ(angle, innerR);
         const length = Math.hypot(x2 - x1, z2 - z1, ceilingHigh - ceilingLow);
-        const rib = box(0.35, 0.5, length, darkWood, (x1 + x2) / 2, (ceilingLow + ceilingHigh) / 2 - 0.2, (z1 + z2) / 2);
+        const rib = box(0.35, 0.5, length, darkWood, (x1 + x2) / 2, (ceilingLow + ceilingHigh) / 2 - 0.25, (z1 + z2) / 2);
         rib.rotation.set(0, Math.atan2(x2 - x1, z2 - z1), 0);
         rib.rotateX(-Math.atan2(ceilingHigh - ceilingLow, Math.hypot(x2 - x1, z2 - z1)));
-        group.add(rib);
+        decor.add(rib);
       }
       // Flat wooden ring around the pool shaft (square hole for the jump-in)
       const ring = new THREE.Shape();
@@ -870,15 +879,6 @@
       const skylight = box(14.4, 0.2, 14.4, glow('#bfeaff', 1.2), 0, ceilingHigh + 0.1, 0);
       skylight.raycast = () => {};
       group.add(skylight);
-      // Painted sky seen through the open sections (decorative, never blocks)
-      const skyDome = mesh(new THREE.RingGeometry(innerR - 0.2, outer + 1, 48), new THREE.MeshBasicMaterial({ map: sky, side: THREE.DoubleSide }), 0, ceilingHigh + 1.2, 0);
-      skyDome.rotation.x = Math.PI / 2;
-      skyDome.raycast = () => {};
-      skyDome.castShadow = false;
-      group.add(skyDome);
-      const skyBand = mesh(new THREE.CylinderGeometry(outer + 0.5, outer + 0.5, 2.6, 48, 1, true), new THREE.MeshBasicMaterial({ color: '#7cc0f5', side: THREE.BackSide }), 0, ceilingHigh, 0);
-      skyBand.raycast = () => {};
-      group.add(skyBand);
 
       // Central glass column with falling water and the rotating ring sign
       // (the player lands here from the pool: nothing in it blocks walking)
@@ -917,92 +917,216 @@
       mirrored.wrapS = THREE.RepeatWrapping;
       mirrored.repeat.x = -1;
       ringSign.add(mesh(new THREE.CylinderGeometry(3.68, 3.68, 1.2, 48, 1, true), new THREE.MeshBasicMaterial({ map: mirrored, side: THREE.BackSide })));
-      [-0.66, 0.66].forEach((y) => ringSign.add(mesh(new THREE.TorusGeometry(3.72, 0.06, 6, 64), glow('#ff9f1c', 1.8), 0, y, 0)));
-      ringSign.children.slice(2).forEach((torus) => { torus.rotation.x = Math.PI / 2; });
+      [-0.66, 0.66].forEach((y) => { const torus = mesh(new THREE.TorusGeometry(3.72, 0.06, 6, 64), glow('#ff9f1c', 1.8), 0, y, 0); torus.rotation.x = Math.PI / 2; ringSign.add(torus); });
       ringSign.traverse((node) => { node.raycast = () => {}; });
-      ringSign.position.y = 6.4;
+      ringSign.position.y = 9.6;
       group.add(ringSign);
       animate(ringSign, (time) => { ringSign.rotation.y = time * 0.25; });
 
-      // Ring balcony (mezzanine) with a glass railing, open over the corridor
-      const balconyY = 6.4;
-      const balconyIn = 17;
-      const balconyGap = 0.5;
-      const balconyStart = Math.PI / 2 + balconyGap;
-      const balconyLength = Math.PI * 2 - balconyGap * 2;
-      const deck = mesh(new THREE.RingGeometry(balconyIn, outer - 0.2, 64, 1, balconyStart - Math.PI / 2, balconyLength), floorWood, 0, balconyY, 0);
+      // ---- Upper floor: a full ring mezzanine (r 14 to the wall) -------------
+      const upperY = 6.4;
+      const upperIn = 14;
+      const stairTop = Math.PI * 1.1; // the stairs arrive here (gap in the railing)
+      const stairGap = 0.2;
+      // RingGeometry angle phi maps to cylinder theta as phi = theta - PI/2
+      const deck = mesh(new THREE.RingGeometry(upperIn, outer - 0.1, 96, 1), upperWood, 0, upperY, 0);
       deck.rotation.x = -Math.PI / 2;
-      deck.material = new THREE.MeshStandardMaterial({ map: repeated(planks, 6, 6), roughness: 0.55, side: THREE.DoubleSide });
       group.add(deck);
-      group.add(mesh(new THREE.CylinderGeometry(balconyIn, balconyIn, 0.45, 64, 1, true, balconyStart, balconyLength), darkWood, 0, balconyY - 0.22, 0));
-      const stairAngle = Math.PI * 1.1; // stairs arrive at this angle (gap in the railing)
-      const stairGap = 0.24;
+      decor.add(mesh(new THREE.CylinderGeometry(upperIn, upperIn, 0.5, 96, 1, true), darkWood, 0, upperY - 0.25, 0));
       const railing = (start, length) => {
-        if (length <= 0) return;
-        const pane = mesh(new THREE.CylinderGeometry(balconyIn, balconyIn, 1.1, 48, 1, true, start, length), glass, 0, balconyY + 0.55, 0);
+        const pane = mesh(new THREE.CylinderGeometry(upperIn, upperIn, 1.1, 64, 1, true, start, length), glass, 0, upperY + 0.55, 0);
         pane.castShadow = false;
         group.add(pane);
-        group.add(mesh(new THREE.CylinderGeometry(balconyIn + 0.05, balconyIn + 0.05, 0.08, 48, 1, true, start, length), darkWood, 0, balconyY + 1.12, 0));
+        decor.add(mesh(new THREE.CylinderGeometry(upperIn + 0.06, upperIn + 0.06, 0.08, 64, 1, true, start, length), darkWood, 0, upperY + 1.12, 0));
       };
-      railing(balconyStart, stairAngle - stairGap - balconyStart);
-      railing(stairAngle + stairGap, balconyStart + balconyLength - stairAngle - stairGap);
-      // Curved staircase just inside the balcony, rising to the railing gap
-      const steps = 20;
+      railing(stairTop + stairGap, Math.PI * 2 - stairGap * 2);
+      // Curved staircase in the atrium: 16 steps of 0.4 m up to the railing gap
+      const steps = 16;
+      const stairR = 12.6;
       for (let i = 0; i < steps; i++) {
-        const angle = stairAngle - 0.06 - (steps - i) * 0.055;
-        const [x, z] = toXZ(angle, balconyIn - 1.4);
-        const step = box(1.4, 0.3, 2.6, floorWood, x, (balconyY * (i + 1)) / steps - 0.15, z);
+        const angle = stairTop - 0.1 - (steps - i) * 0.072;
+        const [x, z] = toXZ(angle, stairR);
+        const step = box(1.2, 0.3, 2.4, upperWood, x, (upperY * (i + 1)) / steps - 0.15, z);
         step.rotation.y = angle;
         group.add(step);
+        if (i % 2 === 0) {
+          const [rx, rz] = toXZ(angle, stairR - 1.25);
+          decor.add(box(0.06, 1.0, 0.06, metal, rx, (upperY * (i + 1)) / steps + 0.5, rz));
+        }
       }
-      const [lx, lz] = toXZ(stairAngle, balconyIn - 1.4);
-      group.add(box(2.6, 0.3, 2.6, floorWood, lx, balconyY - 0.15, lz));
-      // Warp pads as a shortcut between floor and balcony
+      const [lx, lz] = toXZ(stairTop, stairR + 0.3);
+      const landing = box(2.6, 0.3, 3.2, upperWood, lx, upperY - 0.15, lz);
+      landing.rotation.y = stairTop;
+      group.add(landing);
+      const stairSign = textSprite('Upper floor: reading lounge · lookout · arcade', { width: 7, background: 'rgba(58, 36, 22, 0.92)' });
+      const [sx0, sz0] = toXZ(stairTop - 1.25, stairR);
+      stairSign.position.set(sx0, 3, sz0);
+      group.add(stairSign);
+      // Under-floor downlights for the ground floor (instanced)
+      const downlights = new THREE.InstancedMesh(new THREE.CircleGeometry(0.35, 12), new THREE.MeshStandardMaterial({ color: '#fff1d6', emissive: '#ffe0b0', emissiveIntensity: 2, side: THREE.DoubleSide }), 24);
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      const down = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+      for (let i = 0; i < 24; i++) {
+        const [x, z] = toXZ(i * Math.PI / 12, i % 2 ? 17 : 22);
+        m.compose(new THREE.Vector3(x, upperY - 0.02, z), down, new THREE.Vector3(1, 1, 1));
+        downlights.setMatrixAt(i, m);
+      }
+      downlights.raycast = () => {};
+      downlights.castShadow = false;
+      group.add(downlights);
+      // Warp pads between the floors (shortcut next to the stairs)
+      const [ux, uz] = toXZ(6.0, 9.5);
+      const [bx, bz] = toXZ(6.0, 16.5);
       const warpUp = new THREE.Group();
       warpUp.add(cylinder(0.9, 0.9, 0.1, glow('#ff9f1c', 1), 0, 0.35, 0, 24));
-      const [ux, uz] = toXZ(Math.PI * 1.75, 14.5);
-      warpUp.position.set(ux, 0, uz);
-      const [bx, bz] = toXZ(Math.PI * 1.75, 21);
-      warpUp.userData.destination = new THREE.Vector3(bx - ux, balconyY + 0.5, bz - uz);
-      const upLabel = textSprite('Balcony (E)', { width: 3, background: 'rgba(255, 159, 28, 0.9)' });
+      const upLabel = textSprite('Upper floor (E)', { width: 3.4, background: 'rgba(255, 159, 28, 0.9)' });
       upLabel.position.y = 2.4;
       warpUp.add(upLabel);
-      group.add(PropKit.kit.interactive(warpUp, 'warp', 'Up to the balcony'));
+      warpUp.position.set(ux, 0, uz);
+      warpUp.userData.destination = new THREE.Vector3(bx - ux, upperY + 0.5, bz - uz);
+      group.add(PropKit.kit.interactive(warpUp, 'warp', 'Up to the upper floor'));
       const warpDown = new THREE.Group();
       warpDown.add(cylinder(0.9, 0.9, 0.1, glow('#ff9f1c', 1), 0, 0.08, 0, 24));
-      warpDown.position.set(bx, balconyY, bz);
-      warpDown.userData.destination = new THREE.Vector3(ux - bx, 0.5 - balconyY, uz - bz);
+      warpDown.position.set(bx, upperY, bz);
+      warpDown.userData.destination = new THREE.Vector3(ux - bx, 0.5 - upperY, uz - bz);
       group.add(PropKit.kit.interactive(warpDown, 'warp', 'Down to the lounge'));
-      // Lounge chairs on the balcony
-      for (let i = 0; i < 5; i++) {
-        const angle = Math.PI * 0.95 + i * 0.32;
-        const [x, z] = toXZ(angle, 23.5);
-        const chair = new THREE.Group();
-        chair.add(box(1.0, 0.4, 0.9, material('#7a1f2b', { roughness: 0.9 }), 0, 0.45, 0));
-        chair.add(box(1.0, 0.7, 0.2, material('#7a1f2b', { roughness: 0.9 }), 0, 0.85, -0.4));
-        chair.position.set(x, balconyY, z);
-        chair.rotation.y = angle + Math.PI;
-        group.add(PropKit.kit.interactive(chair, 'sit', 'Balcony armchair'));
-      }
 
-      // Dark red rugs with round tables and chairs
-      const rug = new THREE.MeshStandardMaterial({ map: PropKit.kit.canvasTexture('lounge|rug', 256, 256, (ctx, cw, ch) => {
+      // Upper floor: reading lounge (bookshelves, armchairs, lamps, rug)
+      const books = PropKit.kit.canvasTexture('lounge|books', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#3a2416'; ctx.fillRect(0, 0, cw, ch);
+        const colors = ['#7a1f2b', '#1f4e79', '#2f6b3a', '#c9a227', '#5c3d7a', '#d9cbb3', '#8a5a33'];
+        for (let shelf = 0; shelf < 4; shelf++) {
+          let x = 6;
+          while (x < cw - 10) {
+            const bw = 8 + ((x * 7 + shelf * 13) % 9);
+            const bh = 44 + ((x * 3 + shelf) % 12);
+            ctx.fillStyle = colors[(x + shelf * 3) % colors.length];
+            ctx.fillRect(x, shelf * 64 + 60 - bh, bw, bh);
+            x += bw + 1;
+          }
+          ctx.fillStyle = '#24160c'; ctx.fillRect(0, shelf * 64 + 58, cw, 6);
+        }
+      });
+      const bookMaterial = new THREE.MeshStandardMaterial({ map: books, roughness: 0.8 });
+      const loungeChair = material('#7a1f2b', { roughness: 0.9 });
+      [4.25, 4.55, 4.85, 5.15, 5.45].forEach((angle) => {
+        const [x, z] = toXZ(angle, outer - 0.8);
+        const shelf = new THREE.Group();
+        shelf.add(box(2.6, 3, 0.6, darkWood, 0, 1.5, 0));
+        shelf.add(mesh(new THREE.PlaneGeometry(2.4, 2.8), bookMaterial, 0, 1.5, 0.31));
+        shelf.position.set(x, upperY, z);
+        shelf.rotation.y = angle + Math.PI;
+        decor.add(shelf);
+      });
+      const rugTexture = PropKit.kit.canvasTexture('lounge|rug', 256, 256, (ctx, cw, ch) => {
         ctx.fillStyle = '#5c0f1a'; ctx.fillRect(0, 0, cw, ch);
         ctx.strokeStyle = '#8a1c2b'; ctx.lineWidth = 10; ctx.strokeRect(14, 14, cw - 28, ch - 28);
         ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 3; ctx.strokeRect(30, 30, cw - 60, ch - 60);
         for (let i = 0; i < 1500; i++) { ctx.fillStyle = `rgba(0,0,0,${(i % 5) * 0.03})`; ctx.fillRect((i * 37) % cw, (i * 71) % ch, 2, 2); }
-      }), roughness: 1 });
-      const tableTop = material('#c08a5b', { roughness: 0.4 });
-      const metal = material('#2b2d33', { metalness: 0.7, roughness: 0.4 });
-      [Math.PI * 0.05, Math.PI * 0.75, Math.PI * 1.0, Math.PI * 1.55].forEach((angle) => {
-        const [x, z] = toXZ(angle, 11.5);
-        const carpet = mesh(new THREE.PlaneGeometry(6.5, 5), rug, x, 0.31, z);
+      });
+      const rug = new THREE.MeshStandardMaterial({ map: rugTexture, roughness: 1 });
+      const addRug = (x, y, z, angle, rw = 6.5, rd = 5) => {
+        const carpet = mesh(new THREE.PlaneGeometry(rw, rd), rug, x, y + 0.01, z);
         carpet.rotation.x = -Math.PI / 2;
         carpet.rotation.z = angle;
         carpet.castShadow = false;
         group.add(carpet);
-        group.add(cylinder(0.8, 0.8, 0.06, tableTop, x, 1.12, z, 24));
-        group.add(cylinder(0.06, 0.3, 0.8, metal, x, 0.7, z, 10));
+      };
+      {
+        const [x, z] = toXZ(4.85, 20);
+        addRug(x, upperY, z, 4.85, 7, 5);
+        [4.55, 4.75, 4.95, 5.15].forEach((angle, i) => {
+          const [cx, cz] = toXZ(angle, i % 2 ? 18.5 : 21.5);
+          const chair = new THREE.Group();
+          chair.add(box(1.0, 0.45, 0.9, loungeChair, 0, 0.45, 0));
+          chair.add(box(1.0, 0.75, 0.22, loungeChair, 0, 0.9, -0.4));
+          [-0.45, 0.45].forEach((ax) => chair.add(box(0.14, 0.6, 0.9, loungeChair, ax, 0.6, 0)));
+          chair.position.set(cx, upperY, cz);
+          chair.rotation.y = Math.atan2(x - cx, z - cz);
+          group.add(PropKit.kit.interactive(chair, 'sit', 'Reading armchair'));
+        });
+        decor.add(cylinder(0.5, 0.5, 0.06, material('#c08a5b'), x, upperY + 0.6, z, 20));
+        decor.add(cylinder(0.08, 0.2, 0.6, metal, x, upperY + 0.3, z, 8));
+        [4.4, 5.3].forEach((angle) => {
+          const [fx, fz] = toXZ(angle, 22.5);
+          decor.add(cylinder(0.03, 0.03, 1.8, metal, fx, upperY + 0.9, fz, 6));
+          decor.add(cylinder(0.25, 0.35, 0.4, glow('#ffd8a8', 1.4), fx, upperY + 1.9, fz, 12));
+        });
+      }
+      const readingSign = textSprite('Reading Lounge', { width: 4, background: 'rgba(122, 31, 43, 0.92)' });
+      const [rsx, rsz] = toXZ(4.85, 24);
+      readingSign.position.set(rsx, upperY + 4.2, rsz);
+      group.add(readingSign);
+      // Lookout over the atrium: benches facing the water column + viewers
+      [0.15, 0.75, 5.85].forEach((angle) => {
+        const [x, z] = toXZ(angle, 15.6);
+        const bench = new THREE.Group();
+        bench.add(box(2.4, 0.1, 0.6, material('#8a5a33'), 0, 0.5, 0));
+        bench.add(box(2.4, 0.5, 0.08, material('#8a5a33'), 0, 0.8, 0.28));
+        [-1, 1].forEach((s) => bench.add(box(0.1, 0.45, 0.5, metal, s * 1.05, 0.25, 0)));
+        bench.position.set(x, upperY, z);
+        bench.rotation.y = angle + Math.PI;
+        group.add(PropKit.kit.interactive(bench, 'sit', 'Lookout bench'));
+      });
+      [0.45, 6.15].forEach((angle) => {
+        const [x, z] = toXZ(angle, 14.6);
+        const viewer = new THREE.Group();
+        viewer.add(cylinder(0.06, 0.1, 1.1, metal, 0, 0.55, 0, 8));
+        viewer.add(box(0.5, 0.25, 0.3, material('#c9a227', { metalness: 0.8, roughness: 0.3 }), 0, 1.2, 0));
+        viewer.position.set(x, upperY, z);
+        viewer.rotation.y = angle + Math.PI;
+        viewer.userData = { label: 'Lookout', info: 'From up here you can follow the water falling through the glass column and the "Welcome to the Multiverse" ring, with the whole lounge below.' };
+        group.add(PropKit.kit.interactive(viewer, 'inspect', 'Lookout viewer'));
+      });
+      const lookoutSign = textSprite('Lookout', { width: 3, background: 'rgba(24, 119, 242, 0.9)' });
+      const [lsx, lsz] = toXZ(0.45, 16);
+      lookoutSign.position.set(lsx, upperY + 3.2, lsz);
+      group.add(lookoutSign);
+      // Small arcade: playable cabinets (E plays the snake mini game)
+      const arcadeScreen = PropKit.kit.canvasTexture('lounge|arcade', 128, 128, (ctx, cw, ch) => {
+        ctx.fillStyle = '#05051a'; ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = '#51cf66'; [[20, 60], [28, 60], [36, 60], [44, 60], [44, 52]].forEach(([x, y]) => ctx.fillRect(x, y, 7, 7));
+        ctx.fillStyle = '#ff6b6b'; ctx.fillRect(84, 36, 7, 7);
+        ctx.fillStyle = '#ffd43b'; ctx.font = 'bold 14px monospace'; ctx.fillText('INSERT COIN', 18, 110);
+      });
+      ['#e64980', '#4dabf7', '#fab005', '#7950f2'].forEach((color, i) => {
+        const angle = 1.75 + i * 0.16;
+        const [x, z] = toXZ(angle, outer - 1.2);
+        const cabinet = new THREE.Group();
+        cabinet.add(box(0.9, 1.9, 0.8, material(color, { roughness: 0.5 }), 0, 0.95, 0));
+        const screen = mesh(new THREE.PlaneGeometry(0.66, 0.5), new THREE.MeshBasicMaterial({ map: arcadeScreen }), 0, 1.45, 0.41);
+        cabinet.add(screen);
+        cabinet.add(box(0.8, 0.12, 0.3, material('#212529'), 0, 1.0, 0.5));
+        cabinet.add(box(0.9, 0.25, 0.82, glow(color, 1.4), 0, 2.0, 0));
+        cabinet.position.set(x, upperY, z);
+        cabinet.rotation.y = angle + Math.PI;
+        group.add(PropKit.kit.interactive(cabinet, 'arcade', 'Lounge Arcade'));
+      });
+      const arcadeSign = textSprite('Arcade', { width: 3, background: 'rgba(230, 73, 128, 0.92)' });
+      const [asx, asz] = toXZ(1.99, outer - 2);
+      arcadeSign.position.set(asx, upperY + 3.4, asz);
+      group.add(arcadeSign);
+      // Gallery express: warp to the Minimal Art Gallery entrance
+      const gallery = new THREE.Group();
+      gallery.add(cylinder(0.9, 0.9, 0.1, glow('#e8e6e1', 1.2), 0, 0.08, 0, 24));
+      gallery.add(box(1.6, 2.4, 0.15, material('#e8e6e1'), 0, 1.4, -1.1));
+      const galleryLabel = textSprite('Gallery express (E)', { width: 4, background: 'rgba(40, 40, 40, 0.9)' });
+      galleryLabel.position.y = 3;
+      gallery.add(galleryLabel);
+      const [gx, gz] = toXZ(Math.PI / 2, 21);
+      gallery.position.set(gx, upperY, gz);
+      gallery.rotation.y = -Math.PI / 2;
+      gallery.userData.destination = new THREE.Vector3(80, 0.6 - upperY, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+      group.add(PropKit.kit.interactive(gallery, 'warp', 'Gallery express: Minimal Art Gallery'));
+
+      // ---- Ground floor: rugs, round tables, palms, plants --------------------
+      const tableTop = material('#c08a5b', { roughness: 0.4 });
+      [4.6, 5.5, 3.9, 0.15].forEach((angle) => {
+        const [x, z] = toXZ(angle, angle === 0.15 ? 18.5 : 10);
+        addRug(x, 0.3, z, angle);
+        decor.add(cylinder(0.8, 0.8, 0.06, tableTop, x, 1.12, z, 24));
+        decor.add(cylinder(0.06, 0.3, 0.8, metal, x, 0.7, z, 10));
         [[-1.4, 0], [1.4, 0], [0, -1.4], [0, 1.4]].forEach(([dx, dz]) => {
           const chair = new THREE.Group();
           chair.add(box(0.55, 0.08, 0.55, material('#8a5a33'), 0, 0.75, 0));
@@ -1013,47 +1137,52 @@
           group.add(PropKit.kit.interactive(chair, 'sit', 'Lounge chair'));
         });
       });
+      // Sofas around the wall under the upper floor
+      [2.6, 3.3, 5.0, 5.7].forEach((angle) => {
+        const [x, z] = toXZ(angle, outer - 1.4);
+        const sofa = new THREE.Group();
+        sofa.add(box(3.2, 0.45, 1.0, loungeChair, 0, 0.55, 0));
+        sofa.add(box(3.2, 0.8, 0.25, loungeChair, 0, 1.0, -0.45));
+        sofa.position.set(x, 0, z);
+        sofa.rotation.y = angle + Math.PI;
+        group.add(PropKit.kit.interactive(sofa, 'sit', 'Sofa'));
+      });
 
-      // Orange spotlight cans hanging on cables (instanced) with soft beams
+      // Orange spotlight cans hanging on cables in the atrium (instanced)
       const spots = [];
-      for (let i = 0; i < 14; i++) spots.push(toXZ(i * (Math.PI * 2 / 14) + 0.2, i % 2 ? 9 : 14));
-      const canGeometry = new THREE.CylinderGeometry(0.28, 0.4, 0.7, 12);
-      const cans = new THREE.InstancedMesh(canGeometry, new THREE.MeshStandardMaterial({ color: '#e8590c', metalness: 0.5, roughness: 0.4 }), spots.length);
+      for (let i = 0; i < 12; i++) spots.push(toXZ(i * (Math.PI * 2 / 12) + 0.2, i % 2 ? 6.5 : 9.5));
+      const cans = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.4, 0.7, 12), new THREE.MeshStandardMaterial({ color: '#e8590c', metalness: 0.5, roughness: 0.4 }), spots.length);
       const cables = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.015, 1, 4), new THREE.MeshStandardMaterial({ color: '#111111' }), spots.length);
       const lenses = new THREE.InstancedMesh(new THREE.CircleGeometry(0.33, 12), new THREE.MeshStandardMaterial({ color: '#ffd8a8', emissive: '#ffb347', emissiveIntensity: 2.2, side: THREE.DoubleSide }), spots.length);
       const beams = new THREE.InstancedMesh(new THREE.ConeGeometry(1.8, 6, 16, 1, true), new THREE.MeshBasicMaterial({ color: '#ffb35c', transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), spots.length);
-      const m = new THREE.Matrix4();
-      const q = new THREE.Quaternion();
-      const flip = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
       spots.forEach(([x, z], i) => {
-        const r = Math.hypot(x, z);
-        const ceilingAt = ceilingLow + (ceilingHigh - ceilingLow) * (outer - r) / (outer - innerR);
-        const canY = 9 + (i % 3) * 0.6;
-        const cableLength = ceilingAt - canY;
+        const canY = 10 + (i % 3) * 0.7;
+        const cableLength = ceilingHigh - canY;
         m.compose(new THREE.Vector3(x, canY + cableLength / 2, z), q.identity(), new THREE.Vector3(1, cableLength, 1));
         cables.setMatrixAt(i, m);
         m.compose(new THREE.Vector3(x, canY, z), q.identity(), new THREE.Vector3(1, 1, 1));
         cans.setMatrixAt(i, m);
-        m.compose(new THREE.Vector3(x, canY - 0.36, z), flip, new THREE.Vector3(1, 1, 1));
+        m.compose(new THREE.Vector3(x, canY - 0.36, z), down, new THREE.Vector3(1, 1, 1));
         lenses.setMatrixAt(i, m);
         m.compose(new THREE.Vector3(x, canY - 3.4, z), q.identity(), new THREE.Vector3(1, 1, 1));
         beams.setMatrixAt(i, m);
       });
       [cans, cables, lenses, beams].forEach((instanced) => { instanced.raycast = () => {}; instanced.castShadow = false; group.add(instanced); });
 
-      // Potted plants (instanced) and a few palm trees
+      // Potted plants on both floors (instanced) and palm trees in the atrium
       const plantSpots = [];
-      for (let i = 0; i < 12; i++) plantSpots.push(toXZ(Math.PI / 2 + gapAngle / 2 + 0.25 + i * ((Math.PI * 2 - gapAngle - 0.5) / 11), outer - 1));
+      for (let i = 0; i < 14; i++) plantSpots.push([...toXZ(Math.PI / 2 + gapAngle / 2 + 0.2 + i * ((Math.PI * 2 - gapAngle - 0.4) / 13), outer - 1), 0]);
+      for (let i = 0; i < 10; i++) plantSpots.push([...toXZ(0.9 + i * 0.5, outer - 1), upperY]);
       const pots = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.5, 0.38, 0.8, 12), new THREE.MeshStandardMaterial({ color: '#d9cbb3', roughness: 0.8 }), plantSpots.length);
       const leaves = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.8, 0), new THREE.MeshStandardMaterial({ color: '#2f9e44', roughness: 0.9, flatShading: true }), plantSpots.length);
-      plantSpots.forEach(([x, z], i) => {
-        m.makeTranslation(x, 0.7, z); pots.setMatrixAt(i, m);
-        m.compose(new THREE.Vector3(x, 1.5, z), q.identity(), new THREE.Vector3(1, 1.2 + (i % 3) * 0.2, 1)); leaves.setMatrixAt(i, m);
+      plantSpots.forEach(([x, z, y], i) => {
+        m.makeTranslation(x, y + 0.7, z); pots.setMatrixAt(i, m);
+        m.compose(new THREE.Vector3(x, y + 1.5, z), q.identity(), new THREE.Vector3(1, 1.2 + (i % 3) * 0.2, 1)); leaves.setMatrixAt(i, m);
       });
       group.add(pots, leaves);
       const trunk = material('#8d6e4a', { roughness: 0.9 });
       const frond = material('#2b8a3e', { roughness: 0.8, side: THREE.DoubleSide });
-      [1.9, 2.75, 4.4, 5.6].forEach((angle) => {
+      [0.3, 2.6, 3.4, 5.0].forEach((angle) => {
         const [x, z] = toXZ(angle, 7.5);
         const palm = new THREE.Group();
         palm.add(cylinder(0.7, 0.6, 0.7, material('#5c4033'), 0, 0.65, 0, 14));
@@ -1066,19 +1195,13 @@
           palm.add(leaf);
         }
         palm.position.set(x, 0, z);
-        group.add(palm);
+        decor.add(palm);
       });
 
-      // Glass-railed walkway along the corridor landing
-      [-1, 1].forEach((side) => {
-        const pane = box(7, 1.1, 0.06, glass, outer - 1, 0.85, side * 5.4);
-        pane.castShadow = false;
-        group.add(pane);
-        group.add(box(7, 0.06, 0.12, darkWood, outer - 1, 1.42, side * 5.4));
-      });
-      const corridorSign = textSprite('Hall of Internet History  >  Gig Plaza', { width: 8, background: 'rgba(58, 36, 22, 0.92)' });
-      corridorSign.position.set(outer - 3, 5.2, 0);
-      group.add(corridorSign);
+      // Signage toward the history portal
+      const portalSign = textSprite('Hall of Internet History  >  Art Gallery · Gig Plaza', { width: 9, background: 'rgba(58, 36, 22, 0.92)' });
+      portalSign.position.set(outer - 6, 4.6, 0);
+      group.add(portalSign);
 
       // Underground cafe: curved counter with stools, espresso machine, menu board
       const counterWood = new THREE.MeshStandardMaterial({ map: repeated(plankTexture('#6b3f22'), 6, 1), side: THREE.DoubleSide });
@@ -1095,18 +1218,29 @@
       }
       const menu = facedBox(5, 2.4, 0.15, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 40px Georgia, serif' }) }), radius * 0.45 + 3, 4, radius * 0.3 - 6.5);
       group.add(PropKit.kit.interactive(menu, 'cafe_menu', 'Underground Cafe menu'));
-      const orderSign = textSprite('Order here (E) · dishes are code packages', { width: 7, background: 'rgba(43, 27, 18, 0.9)' });
-      orderSign.position.set(radius * 0.45 + 3, 6, radius * 0.3 - 6.3);
+      const orderSign = textSprite('Order here (E) · dishes are code packages', { width: 6, background: 'rgba(43, 27, 18, 0.9)' });
+      orderSign.position.set(radius * 0.45 + 3, 5.5, radius * 0.3 - 6.3);
       group.add(orderSign);
       // Elevator back to Genesis Plaza
       const elevator = new THREE.Group();
       elevator.add(cylinder(1.6, 1.6, 0.3, glow('#1877f2', 0.8), 0, 0.45, 0, 24));
       elevator.add(mesh(new THREE.CylinderGeometry(1.7, 1.7, 4, 24, 1, true), material('#cfe8ff', { transparent: true, opacity: 0.25, side: THREE.DoubleSide }), 0, 2.4, 0));
-      const caption = textSprite('Elevator · back to the surface (E)', { width: 7, background: 'rgba(24, 119, 242, 0.9)' });
+      const caption = textSprite('Elevator · back to the surface (E)', { width: 6, background: 'rgba(24, 119, 242, 0.9)' });
       caption.position.y = 5.2;
       elevator.add(caption);
       elevator.position.set(-radius * 0.6, 0, -radius * 0.45);
       group.add(PropKit.kit.interactive(elevator, 'jump', 'plaza'));
+
+      // Visitors (cheap decorative figures, see museum.js)
+      if (window.MuseumVisitors) {
+        window.MuseumVisitors(group, [
+          [...toXZ(1.3, 9), 0, 4.0], [...toXZ(1.45, 9.6), 0, 3.6], [...toXZ(4.3, 5), 0, 1.2], [...toXZ(0.9, 15), 0, 4.5],
+          [...toXZ(3.0, 20), 0, 0.3], [...toXZ(5.9, 20), upperY, 2.8], [...toXZ(0.3, 15.2), upperY, 3.4], [...toXZ(4.9, 23), upperY, 1.7],
+          [...toXZ(1.85, 22.6), upperY, 1.85], [...toXZ(2.05, 22.8), upperY, 2.05], [...toXZ(3.6, 19), upperY, 0.4]
+        ]);
+      }
+
+      group.add(PropKit.kit.mergeByMaterial(decor));
       group.userData.label = label || 'Welcome to the Underground';
     },
 

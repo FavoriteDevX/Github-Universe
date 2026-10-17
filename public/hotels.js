@@ -424,27 +424,7 @@
   function buildLodgeForest(group, { w, d }) {
     let seed = 1984;
     const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    const parts = [
-      [new THREE.CylinderGeometry(0.3, 0.42, 2.4, 6).translate(0, 1.2, 0), '#5b3b22'],
-      [new THREE.ConeGeometry(2.8, 3.8, 7).translate(0, 3.6, 0), '#244f2c'],
-      [new THREE.ConeGeometry(2.2, 3.3, 7).translate(0, 5.4, 0), '#2d6236'],
-      [new THREE.ConeGeometry(1.6, 2.8, 7).translate(0, 7.1, 0), '#387541']
-    ];
-    const positions = [];
-    const normals = [];
-    const colors = [];
-    parts.forEach(([geometry, hex]) => {
-      const flat = geometry.toNonIndexed();
-      flat.computeVertexNormals();
-      positions.push(...flat.attributes.position.array);
-      normals.push(...flat.attributes.normal.array);
-      const color = new THREE.Color(hex);
-      for (let i = 0; i < flat.attributes.position.count; i++) colors.push(color.r, color.g, color.b);
-    });
-    const pine = new THREE.BufferGeometry();
-    pine.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    pine.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    pine.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const pine = PropKit.kit.realisticTreeGeometry('pine');
     const spots = [];
     const inner = Math.max(w, d) / 2 + 30; // leaves room for the chalet and the backyard
     for (let ring = 0; ring < 3; ring++) {
@@ -458,7 +438,7 @@
         spots.push([Math.cos(angle) * r, Math.sin(angle) * r - 8, 0.8 + random() * 0.6, random() * 6.28]);
       }
     }
-    const trees = new THREE.InstancedMesh(pine, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), spots.length);
+    const trees = new THREE.InstancedMesh(pine, PropKit.kit.treeMaterial(), spots.length);
     const matrix = new THREE.Matrix4();
     const quaternion = new THREE.Quaternion();
     const up = new THREE.Vector3(0, 1, 0);

@@ -178,6 +178,9 @@ app.post('/api/login', (req, res) => {
 app.get('/api/session', (req, res) => {
   const user = userFromToken(req.get('x-session-token'));
   if (!user) return res.status(401).json({ error: 'Session expired.' });
+  // Sliding session: every visit keeps you signed in for another 30 days
+  const session = accounts.sessions[req.get('x-session-token')];
+  if (session && session.expiresAt - Date.now() < SESSION_TTL_MS - 24 * 60 * 60 * 1000) { session.expiresAt = Date.now() + SESSION_TTL_MS; saveAccounts(); }
   res.json({ username: user.username });
 });
 

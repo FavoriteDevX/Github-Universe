@@ -77,6 +77,7 @@ const Auth = (() => {
 
   function enter(session) {
     storage('set', TOKEN_KEY, JSON.stringify(session));
+    storage('set', 'multiverse-last-username', session.username);
     screen.classList.add('leaving');
     setTimeout(() => { screen.style.display = 'none'; }, 600);
     resolveLogin(session);
@@ -113,19 +114,32 @@ const Auth = (() => {
       let saved = null;
       try { saved = JSON.parse(storage('get', TOKEN_KEY)); } catch (error) { saved = null; }
       if (saved && saved.token) {
-        // Already signed in: skip straight into the world
-        const stillValid = hasServer
-          ? await fetch('/api/session', { headers: { 'x-session-token': saved.token } }).then((response) => response.ok).catch(() => false)
-          : saved.token.startsWith('local:');
-        if (stillValid) { enter(saved); return; }
+        // Already signed in on this browser: no form, straight into the world.
+        // Only a clear "session expired" answer (401) asks for the password again;
+        // a network hiccup keeps the session (the game server checks it anyway).
+        screen.classList.add('resuming');
+        const resumeNote = document.getElementById('auth-resume');
+        if (resumeNote) resumeNote.textContent = `Welcome back, ${saved.username}. Entering the Multiverse...`;
+        let status = 'ok';
+        if (hasServer) {
+          status = await fetch('/api/session', { headers: { 'x-session-token': saved.token } })
+            .then((response) => (response.status === 401 ? 'expired' : 'ok'))
+            .catch(() => 'ok');
+        } else if (!saved.token.startsWith('local:')) status = 'expired';
+        if (status === 'ok') { enter(saved); return; }
         storage('remove', TOKEN_KEY);
+        screen.classList.remove('resuming');
         setMode('login');
-        errorBox.textContent = 'Your session expired. Please log in again.';
+        usernameInput.value = saved.username || '';
+        errorBox.textContent = 'Your session expired (or this server has a fresh account database). Please log in again.';
       } else {
-        setMode('signup');
+        // Returning player whose session was cleared: offer "Log in" with the name filled in
+        const lastName = storage('get', 'multiverse-last-username');
+        setMode(lastName ? 'login' : 'signup');
+        if (lastName) usernameInput.value = lastName;
       }
       screen.style.display = 'flex';
-      usernameInput.focus();
+      (usernameInput.value ? passwordInput : usernameInput).focus();
     });
   }
 

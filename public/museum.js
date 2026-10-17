@@ -467,9 +467,10 @@
   // HALL OF INTERNET HISTORY: a chronological museum walk from 1969 to today.
   // Inspired by the idea of an "internet artifacts" timeline; every
   // illustration below is an original canvas recreation drawn in code and
-  // every description is our own short text. Two connected blocks:
-  //   history_corridor (Early Internet + Dot-com, 1969-1999)
-  //   history_wing     (serpentine gallery, 2000 - today, entered from the corridor)
+  // every description is our own short text. Blocks:
+  //   history_ring  one ring corridor around the Underground Lounge, 1969 at
+  //                 the lounge portal, all the way around to "You are here"
+  //   gallery_link  promenade from the ring to the Minimal Art Gallery
   // --------------------------------------------------------------------------
   const ERAS = {
     early: { name: 'Early Internet', years: '1969 - 1994', frame: '#6b4423', accent: '#ffcf7a', sign: '#3a2416' },
@@ -1129,26 +1130,6 @@
     group.add(unique);
   }
 
-  // Spreads exhibits along x, alternating between two walls, leaving a gap
-  // (with an era arch) wherever the era changes. Returns the layout used.
-  function layoutRun(items, xStart, xEnd) {
-    const eraChanges = items.filter((item, i) => i > 0 && item[4] !== items[i - 1][4]).length;
-    const gap = 2.6;
-    const direction = Math.sign(xEnd - xStart);
-    const step = items.length > 1 ? (Math.abs(xEnd - xStart) - gap * eraChanges) / (items.length - 1) : 0;
-    const positions = [];
-    const dividers = [];
-    let x = xStart;
-    items.forEach((item, i) => {
-      if (i > 0) {
-        if (item[4] !== items[i - 1][4]) { dividers.push({ x: x + direction * (step + gap) / 2, era: item[4] }); x += direction * gap; }
-        x += direction * step;
-      }
-      positions.push(x);
-    });
-    return { positions, dividers };
-  }
-
   // Era arch spanning an aisle between two walls (z1 < z2), sign readable from both sides
   function eraArch(group, decor, x, z1, z2, h, era) {
     const width = z2 - z1;
@@ -1166,32 +1147,6 @@
     group.add(line);
   }
 
-  // Floor timeline strip: years under each exhibit, era names at the arches
-  function timelineStrip(group, key, items, positions, dividers, xMin, xMax, z) {
-    const length = xMax - xMin;
-    const width = 1.3;
-    const texture = canvasTexture(`timelineStrip|${key}`, 1024, 64, (ctx, w, h) => {
-      ctx.fillStyle = '#16120e'; ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#c9a227'; ctx.fillRect(0, h / 2 - 1, w, 2); ctx.fillRect(0, 2, w, 2); ctx.fillRect(0, h - 4, w, 2);
-      // Pixels are stretched along the strip: squeeze text horizontally to compensate
-      const squeeze = (width / h) / (length / w);
-      const toPx = (x) => ((x - xMin) / length) * w;
-      const label = (text, px, font, color) => {
-        ctx.save(); ctx.translate(px, h / 2); ctx.scale(squeeze, 1);
-        ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        const textWidth = ctx.measureText(text).width;
-        ctx.fillStyle = '#16120e'; ctx.fillRect(-textWidth / 2 - 6, -18, textWidth + 12, 36);
-        ctx.fillStyle = color; ctx.fillText(text, 0, 2); ctx.restore();
-      };
-      items.forEach((item, i) => label(item[0] === 2026 ? 'TODAY' : String(item[0]), toPx(positions[i]), 'bold 34px Georgia, serif', '#ffe8a3'));
-      dividers.forEach((divider) => label(ERAS[divider.era].name.toUpperCase(), toPx(divider.x), 'bold 22px Arial', ERAS[divider.era].accent));
-    });
-    const strip = mesh(new THREE.PlaneGeometry(length, width), new THREE.MeshBasicMaterial({ map: texture }), (xMin + xMax) / 2, 0.315, z);
-    strip.rotation.x = -Math.PI / 2;
-    strip.castShadow = false;
-    group.add(strip);
-  }
-
   // Merge static parts by material; light cones never cast shadows or block
   function finishHall(group, decor, beams) {
     group.add(PropKit.kit.mergeByMaterial(decor));
@@ -1200,148 +1155,279 @@
     group.add(mergedBeams);
   }
 
-  // Walls with doorways: wall along x at z, from x0 to x1, with door gaps [center, width]
-  function wallWithDoors(target, wallMaterial, x0, x1, z, h, doors, thickness = 0.4, doorHeight = 3.4) {
-    const sorted = doors.slice().sort((a, b) => a[0] - b[0]);
-    let cursor = x0;
-    sorted.forEach(([center, width]) => {
-      const start = center - width / 2;
-      if (start > cursor) target.add(box(start - cursor, h, thickness, wallMaterial, (cursor + start) / 2, h / 2, z));
-      target.add(box(width, h - doorHeight, thickness, wallMaterial, center, doorHeight + (h - doorHeight) / 2, z));
-      cursor = center + width / 2;
-    });
-    if (x1 > cursor) target.add(box(x1 - cursor, h, thickness, wallMaterial, (cursor + x1) / 2, h / 2, z));
-  }
-
   function hallSurfaces(w, d) {
     return {
-      wall: new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.stuccoTexture('#efe6d6'), Math.round(w / 4), 2), roughness: 0.85 }),
-      floor: new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.plankTexture('#4a2f1b'), Math.round(w / 3), Math.round(d / 3)), roughness: 0.45, metalness: 0.05 }),
-      ceiling: material('#1d1712', { roughness: 0.9 })
+      wall: new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.stuccoTexture('#efe6d6'), Math.round(w / 4), 2), roughness: 0.85, side: THREE.DoubleSide }),
+      floor: new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.plankTexture('#4a2f1b'), Math.round(w / 3), Math.round(d / 3)), roughness: 0.45, metalness: 0.05, side: THREE.DoubleSide }),
+      ceiling: material('#1d1712', { roughness: 0.9, side: THREE.DoubleSide })
     };
   }
 
+  // Cheap decorative visitors (no AI): instanced legs, bodies and heads.
+  // spots: [x, z, floorY, rotationY]. Shared by plaza.js and gigplaza.js.
+  const VISITOR_COLORS = ['#1971c2', '#e8590c', '#2f9e44', '#ae3ec9', '#c92a2a', '#f08c00', '#0ca678', '#495057', '#d6336c'];
+  const SKIN = ['#f1c27d', '#c68642', '#8d5524', '#e0ac69', '#ffdbac'];
+  function visitorFigures(group, spots) {
+    const count = spots.length;
+    if (!count) return;
+    const legs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 0.85, 0.2), new THREE.MeshStandardMaterial({ color: '#2b2f3a', roughness: 0.8 }), count);
+    const bodies = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.25, 0.68, 10), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.7 }), count);
+    const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 }), count);
+    const matrix = new THREE.Matrix4();
+    const rotation = new THREE.Quaternion();
+    const one = new THREE.Vector3(1, 1, 1);
+    const color = new THREE.Color();
+    spots.forEach(([x, z, y, angle], i) => {
+      rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle || 0);
+      const base = (y || 0) + 0.3;
+      legs.setMatrixAt(i, matrix.compose(new THREE.Vector3(x, base + 0.43, z), rotation, one));
+      bodies.setMatrixAt(i, matrix.compose(new THREE.Vector3(x, base + 1.2, z), rotation, one));
+      heads.setMatrixAt(i, matrix.compose(new THREE.Vector3(x, base + 1.68, z), rotation, one));
+      bodies.setColorAt(i, color.set(VISITOR_COLORS[i % VISITOR_COLORS.length]));
+      heads.setColorAt(i, color.set(SKIN[(i * 3) % SKIN.length]));
+    });
+    [legs, bodies, heads].forEach((part) => { part.raycast = () => {}; part.castShadow = false; group.add(part); });
+  }
+  window.MuseumVisitors = visitorFigures;
+
+  // Floor timeline on an arc: a ring strip whose texture runs along the angle
+  function timelineArc(group, key, entries, thetaStart, thetaLength, radius) {
+    const width = 1.4;
+    const length = thetaLength * radius;
+    const texture = canvasTexture(`timelineArc|${key}`, 1024, 64, (ctx, w, h) => {
+      ctx.fillStyle = '#16120e'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#c9a227'; ctx.fillRect(0, h / 2 - 1, w, 2); ctx.fillRect(0, 2, w, 2); ctx.fillRect(0, h - 4, w, 2);
+      // Pixels are stretched along the strip: squeeze text to compensate
+      const squeeze = (width / h) / (length / w);
+      entries.forEach(({ angle, text, color, font }) => {
+        const px = ((angle - thetaStart) / thetaLength) * w;
+        ctx.save(); ctx.translate(px, h / 2); ctx.scale(squeeze, 1);
+        ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillStyle = '#16120e'; ctx.fillRect(-textWidth / 2 - 6, -18, textWidth + 12, 36);
+        ctx.fillStyle = color; ctx.fillText(text, 0, 2); ctx.restore();
+      });
+    });
+    const segments = 64;
+    // RingGeometry angle phi = theta - PI/2 once laid flat (rotation.x = -PI/2)
+    const geometry = new THREE.RingGeometry(radius - width / 2, radius + width / 2, segments, 1, thetaStart - Math.PI / 2, thetaLength);
+    const uv = geometry.attributes.uv;
+    for (let j = 0; j <= 1; j++) for (let i = 0; i <= segments; i++) uv.setXY(j * (segments + 1) + i, i / segments, j);
+    uv.needsUpdate = true;
+    const strip = mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }), 0, 0.32, 0);
+    strip.rotation.x = -Math.PI / 2;
+    strip.castShadow = false;
+    strip.raycast = () => {};
+    group.add(strip);
+  }
+
   Object.assign(builders, {
-    // Long gallery: Early Internet and Dot-com eras (1969-1999). Open west end
-    // toward the Underground Hall, doors in the south wall (data.southDoors,
-    // local x) to the Gig Plaza tunnel and to the history wing; east door to
-    // the art gallery.
-    historyCorridor(group, { w, h, d, label, data }) {
-      const length = w;
-      const width = d;
-      const surfaces = hallSurfaces(length, width);
+    // ONE ring corridor around the Underground Lounge (same center), entered
+    // from the lounge through a portal (data.portal, degrees; 90 = +x). The 43
+    // artifacts run clockwise from 1969 next to the portal all the way around
+    // to "You are here" on the other side of it. Outer doors (data.doors) get
+    // short vestibules: the Minimal Art Gallery link and the Gig Plaza tunnel.
+    // Fully enclosed: floor, ceiling, both walls; plus a dark rock shell around
+    // the whole underground so no gap can ever show the city or the sky.
+    historyRing(group, { w, h, label, data }) {
+      const outerR = w / 2;
+      const innerR = (data && data.inner) || 26.25;
+      const midR = (innerR + outerR) / 2;
+      const deg = Math.PI / 180;
+      const portal = ((data && data.portal) || 90) * deg;
+      const portalWidth = 6;
+      const doors = ((data && data.doors) || []).map((door) => ({ ...door, theta: door.angle * deg }));
+      const surfaces = hallSurfaces(outerR * 2, outerR * 2);
       const decor = new THREE.Group();
       const beams = new THREE.Group();
-      decor.add(box(length, 0.3, width, surfaces.floor, 0, 0.15, 0));
-      decor.add(box(length, 0.3, width, surfaces.ceiling, 0, h + 0.15, 0));
-      const southDoors = ((data && data.southDoors) || []).map((x) => [x, 4]);
-      wallWithDoors(decor, surfaces.wall, -length / 2, length / 2, -width / 2, h, southDoors);
-      decor.add(box(length, h, 0.4, surfaces.wall, 0, h / 2, width / 2));
-      // Skirting boards and a picture rail
+      const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
+      // Floor and ceiling rings
+      const floor = mesh(new THREE.RingGeometry(innerR - 0.3, outerR + 0.2, 128, 1), surfaces.floor, 0, 0.3, 0);
+      floor.rotation.x = -Math.PI / 2;
+      group.add(floor);
+      const ceiling = mesh(new THREE.RingGeometry(innerR - 0.3, outerR + 0.2, 128, 1), surfaces.ceiling, 0, h, 0);
+      ceiling.rotation.x = -Math.PI / 2;
+      group.add(ceiling);
+      const lightRing = mesh(new THREE.RingGeometry(midR - 0.25, midR + 0.25, 128, 1), glow('#fff3c4', 1.1, { side: THREE.DoubleSide }), 0, h - 0.03, 0);
+      lightRing.rotation.x = -Math.PI / 2;
+      lightRing.raycast = () => {};
+      group.add(lightRing);
+      // Curved walls with gaps; lintels above every gap
+      const curvedWall = (radius, gaps, doorHeight) => {
+        const sorted = gaps.slice().sort((a, b) => a.start - b.start);
+        let cursor = sorted.length ? sorted[sorted.length - 1].start + sorted[sorted.length - 1].length - Math.PI * 2 : 0;
+        const pieces = [];
+        sorted.forEach((gap) => { pieces.push([cursor, gap.start - cursor]); cursor = gap.start + gap.length; });
+        if (!sorted.length) pieces.push([0, Math.PI * 2]);
+        pieces.forEach(([start, length]) => { if (length > 0.001) group.add(mesh(new THREE.CylinderGeometry(radius, radius, h, Math.max(8, Math.round(length * 40)), 1, true, start, length), surfaces.wall, 0, h / 2, 0)); });
+        sorted.forEach((gap) => {
+          const top = gap.height || doorHeight;
+          group.add(mesh(new THREE.CylinderGeometry(radius, radius, h - top, 8, 1, true, gap.start, gap.length), surfaces.wall, 0, top + (h - top) / 2, 0));
+        });
+      };
+      const portalHalf = Math.asin(portalWidth / 2 / innerR);
+      curvedWall(innerR, [{ start: portal - portalHalf, length: portalHalf * 2, height: 5.4 }], 5.4);
+      curvedWall(outerR, doors.map((door) => {
+        const half = Math.asin(door.width / 2 / outerR);
+        return { start: door.theta - half, length: half * 2, height: door.height };
+      }), 4.6);
+      // Skirting and picture rail along both walls
+      [innerR + 0.05, outerR - 0.05].forEach((radius) => {
+        decor.add(mesh(new THREE.CylinderGeometry(radius, radius, 0.25, 128, 1, true), hallParts().dark, 0, 0.42, 0));
+        decor.add(mesh(new THREE.CylinderGeometry(radius, radius, 0.06, 128, 1, true), hallParts().brass, 0, h - 1.4, 0));
+      });
+      // Portal frame (both faces) with title signs
+      const portalTitle = labelTexture(`${label || 'Hall of Internet History'} · 1969 to today`, { bg: '#3a2416', fg: '#ffe8a3', width: 1024, height: 160, font: 'bold 56px Georgia, serif' });
       [-1, 1].forEach((side) => {
-        decor.add(box(length, 0.25, 0.08, hallParts().dark, 0, 0.42, side * (width / 2 - 0.22)));
-        decor.add(box(length, 0.06, 0.06, hallParts().brass, 0, h - 1.4, side * (width / 2 - 0.22)));
+        const [x, z] = toXZ(portal + side * portalHalf, innerR);
+        decor.add(box(0.7, 5.6, 0.7, material('#3a2416'), x, 2.8, z));
       });
-      // West end: frame the opening into the Underground Hall (11 m wide)
-      const westOpening = 11;
-      [-1, 1].forEach((side) => decor.add(box(0.4, h, (width - westOpening) / 2, surfaces.wall, -length / 2, h / 2, side * (width + westOpening) / 4)));
-      // East end wall with a doorway into the art gallery
-      const door = 4.4;
-      [-1, 1].forEach((side) => decor.add(box(0.4, h, (width - door) / 2, surfaces.wall, length / 2, h / 2, side * (width + door) / 4)));
-      decor.add(box(0.4, h - 4.6, door, surfaces.wall, length / 2, 4.6 + (h - 4.6) / 2, 0));
-      // Ceiling: two rails for the museum spots and a soft light strip
-      [-1, 1].forEach((side) => decor.add(box(length - 2, 0.08, 0.12, hallParts().dark, 0, h - 0.04, side * (width / 2 - 1.7))));
-      const strip = box(length * 0.95, 0.06, 0.5, glow('#fff3c4', 0.9), 0, h - 0.03, 0);
-      strip.raycast = () => {};
-      group.add(strip);
-      const items = ARTIFACTS.filter(([year]) => year < 2000);
-      const { positions, dividers } = layoutRun(items, -20.5, 21);
-      items.forEach((artifact, i) => {
-        const side = i % 2 ? 1 : -1;
-        placeExhibit(group, decor, beams, artifact, positions[i], side * (width / 2 - 0.2), side > 0 ? Math.PI : 0, h);
-      });
-      dividers.forEach((divider) => eraArch(group, decor, divider.x, -width / 2, width / 2, h, divider.era));
-      timelineStrip(group, 'corridor', items, positions, dividers, -length / 2 + 2, length / 2 - 1, 0);
-      // Entrance: title board and the first era sign
-      const entrance = facedBox(7, 1.3, 0.2, material('#3a2416'), new THREE.MeshBasicMaterial({ map: labelTexture(`${label || 'Hall of Internet History'} · 1969 to today`, { bg: '#3a2416', fg: '#ffe8a3', width: 1024, height: 190, font: 'bold 64px Georgia, serif' }) }), 0, 0, 0);
-      entrance.rotation.y = -Math.PI / 2;
-      entrance.position.set(-length / 2 + 0.5, h - 1.2, 0);
-      group.add(entrance);
-      eraArch(group, decor, -length / 2 + 6.8, -width / 2, width / 2, h, 'early');
-      // Signs over the south doors
-      const signs = (data && data.doorSigns) || [];
-      southDoors.forEach(([x], i) => {
-        if (!signs[i]) return;
-        const sign = facedBox(4.2, 0.7, 0.12, material('#111111'), new THREE.MeshBasicMaterial({ map: labelTexture(signs[i], { bg: '#111111', fg: i ? '#ffe8a3' : '#ff9f1c', width: 512, height: 86, font: 'bold 40px Arial' }) }), x, 3.85, -width / 2 + 0.3);
+      [[innerR + 0.08, portal], [innerR - 0.3, portal + Math.PI]].forEach(([radius, facing]) => {
+        const [x, z] = toXZ(portal, radius);
+        const sign = mesh(new THREE.PlaneGeometry(6.4, 1.0), new THREE.MeshBasicMaterial({ map: portalTitle }), x, 5.95, z);
+        sign.rotation.y = facing;
         group.add(sign);
       });
+      // Vestibules behind the outer doors, ending where the next block starts
+      doors.forEach((door) => {
+        const holder = new THREE.Group();
+        holder.rotation.y = door.theta;
+        const length = door.length || 4;
+        const doorHeight = door.height || 4.6;
+        const start = outerR - 0.4;
+        holder.add(box(door.width + 0.6, 0.3, length + 0.4, surfaces.floor, 0, 0.15, start + (length + 0.4) / 2));
+        holder.add(box(door.width + 0.6, 0.3, length + 0.4, surfaces.ceiling, 0, doorHeight + 0.15, start + (length + 0.4) / 2));
+        [-1, 1].forEach((side) => holder.add(box(0.3, doorHeight, length + 0.4, surfaces.wall, side * (door.width / 2 + 0.15), doorHeight / 2, start + (length + 0.4) / 2)));
+        holder.add(box(door.width, 0.06, 0.4, glow('#fff3c4', 1), 0, doorHeight - 0.05, start + length / 2));
+        decor.add(holder);
+        const sign = new THREE.Group();
+        sign.rotation.y = door.theta;
+        const plane = mesh(new THREE.PlaneGeometry(4.6, 0.8), new THREE.MeshBasicMaterial({ map: labelTexture(door.label || 'Exit', { bg: '#111111', fg: '#ff9f1c', width: 512, height: 90, font: 'bold 40px Arial' }) }), 0, doorHeight + 0.6, outerR - 0.12);
+        plane.rotation.y = Math.PI;
+        sign.add(plane);
+        group.add(sign);
+      });
+      // Exhibits: clockwise from the portal, alternating outer / inner wall
+      const items = ARTIFACTS;
+      const clear = 0.22;
+      const gap = 2.8 / midR;
+      const eraChanges = items.filter((item, i) => i > 0 && item[4] !== items[i - 1][4]).length;
+      const step = (Math.PI * 2 - clear * 2 - gap * eraChanges) / (items.length - 1);
+      const doorClear = (theta, radius, width) => doors.some((door) => Math.abs(Math.atan2(Math.sin(theta - door.theta), Math.cos(theta - door.theta))) * radius < door.width / 2 + 1.8 + (width || 0));
+      let theta = portal + clear;
+      const yearEntries = [];
+      items.forEach((artifact, i) => {
+        if (i > 0) {
+          if (artifact[4] !== items[i - 1][4]) {
+            const archTheta = theta + (step + gap) / 2;
+            const live = new THREE.Group();
+            const still = new THREE.Group();
+            [live, still].forEach((holder) => { holder.rotation.y = archTheta; });
+            eraArch(live, still, 0, innerR + 0.25, outerR - 0.25, h, artifact[4]);
+            group.add(live);
+            decor.add(still);
+            yearEntries.push({ angle: archTheta, text: ERAS[artifact[4]].name.toUpperCase(), color: ERAS[artifact[4]].accent, font: 'bold 22px Arial' });
+            theta += gap;
+          }
+          theta += step;
+        }
+        let onOuter = i % 2 === 0;
+        if (onOuter && doorClear(theta, outerR)) onOuter = false;
+        const radius = onOuter ? outerR - 0.02 : innerR + 0.05;
+        const [x, z] = toXZ(theta, radius);
+        placeExhibit(group, decor, beams, artifact, x, z, onOuter ? theta + Math.PI : theta, h);
+        yearEntries.push({ angle: theta, text: artifact[0] === 2026 ? 'TODAY' : String(artifact[0]), color: '#ffe8a3', font: 'bold 34px Georgia, serif' });
+      });
+      // First arch right after the portal; start / end markers
+      {
+        const live = new THREE.Group();
+        const still = new THREE.Group();
+        [live, still].forEach((holder) => { holder.rotation.y = portal + clear * 0.55; });
+        eraArch(live, still, 0, innerR + 0.25, outerR - 0.25, h, 'early');
+        group.add(live);
+        decor.add(still);
+      }
+      yearEntries.push({ angle: portal + 0.06, text: 'START  >>', color: '#8ce99a', font: 'bold 26px Arial' });
+      yearEntries.push({ angle: portal + Math.PI * 2 - 0.06, text: '<< END', color: '#ff8fab', font: 'bold 26px Arial' });
+      for (let k = 0; k < 4; k++) {
+        const start = portal + k * Math.PI / 2;
+        const end = start + Math.PI / 2;
+        timelineArc(group, `ring${k}`, yearEntries.filter((entry) => entry.angle >= start - 0.02 && entry.angle < end + 0.02), start, Math.PI / 2, midR);
+      }
+      // Benches and visitors along the ring
+      const visitors = [];
+      for (let k = 0; k < 14; k++) {
+        const a = portal + 0.5 + k * 0.42;
+        const nearOuter = k % 2 === 0;
+        const [x, z] = toXZ(a, nearOuter ? outerR - 2.4 : innerR + 2.4);
+        visitors.push([x, z, 0, nearOuter ? a : a + Math.PI]);
+      }
+      visitorFigures(group, visitors);
+      // Dark rock shell around the whole underground (decorative, never blocks):
+      // whatever the camera sees through a gap is rock, never the city or sky
+      const shellCenter = new THREE.Vector3(...((data && data.shellCenter) || [62, 12, -22]));
+      const shell = new THREE.Mesh(new THREE.BoxGeometry(192, 25, 192), new THREE.MeshBasicMaterial({ color: '#0d0a08', side: THREE.BackSide }));
+      shell.position.copy(shellCenter);
+      shell.raycast = () => {};
+      shell.castShadow = false;
+      shell.receiveShadow = false;
+      shell.frustumCulled = false;
+      group.add(shell);
       finishHall(group, decor, beams);
     },
 
-    // Serpentine wing for 2000 - today, entered through a door in the corridor's
-    // south wall (data.entranceX, local x). Two partitions make three aisles:
-    // north aisle walking west, middle aisle east, south aisle west to the
-    // "You are here" finale on the west wall.
-    historyWing(group, { w, h, d, label, data }) {
+    // Promenade from the ring to the Minimal Art Gallery (along +x, open at
+    // both ends: the ring vestibule on the west, the gallery door on the east)
+    galleryLink(group, { w, h, d, label }) {
       const surfaces = hallSurfaces(w, d);
       const decor = new THREE.Group();
-      const beams = new THREE.Group();
-      const halfW = w / 2;
-      const halfD = d / 2;
-      const aisle = d / 3;
-      const p1 = halfD - aisle; // partition between north and middle aisles
-      const p2 = -halfD + aisle; // partition between middle and south aisles
-      const turn = 7; // free space at the ends of the partitions
       decor.add(box(w, 0.3, d, surfaces.floor, 0, 0.15, 0));
       decor.add(box(w, 0.3, d, surfaces.ceiling, 0, h + 0.15, 0));
-      // The north side is closed by the corridor's south wall (shared wall)
-      decor.add(box(w, h, 0.4, surfaces.wall, 0, h / 2, -halfD));
-      [-1, 1].forEach((side) => decor.add(box(0.4, h, d, surfaces.wall, side * halfW, h / 2, 0)));
-      decor.add(box(w - turn, h, 0.5, surfaces.wall, turn / 2, h / 2, p1));
-      decor.add(box(w - turn, h, 0.5, surfaces.wall, -turn / 2, h / 2, p2));
-      decor.add(box(0.6, h, 0.7, hallParts().dark, -halfW + turn, h / 2, p1));
-      decor.add(box(0.6, h, 0.7, hallParts().dark, halfW - turn, h / 2, p2));
-      [(halfD + p1) / 2, 0, (p2 - halfD) / 2].forEach((z) => {
-        const strip = box(w * 0.9, 0.06, 0.4, glow('#fff3c4', 0.9), 0, h - 0.03, z);
-        strip.raycast = () => {};
-        group.add(strip);
-      });
-      const items = ARTIFACTS.filter(([year]) => year >= 2000);
-      const finale = items[items.length - 1];
-      const runEnd = halfW - turn - 2;
-      // [items, from x, to x, wall A (z, rotation), wall B (z, rotation), aisle center z]
-      const runs = [
-        [items.slice(0, 10), runEnd - 1, -runEnd, [halfD - 0.2, Math.PI], [p1 + 0.25, 0], (halfD + p1) / 2],
-        [items.slice(10, 18), -runEnd, runEnd, [p1 - 0.25, Math.PI], [p2 + 0.25, 0], 0],
-        [items.slice(18, items.length - 1), runEnd, -runEnd, [p2 - 0.25, Math.PI], [-halfD + 0.2, 0], (p2 - halfD) / 2]
-      ];
-      runs.forEach(([runItems, from, to, wallA, wallB, center], runIndex) => {
-        const layout = layoutRun(runItems, from, to);
-        runItems.forEach((artifact, i) => {
-          const [z, rotation] = i % 2 ? wallB : wallA;
-          placeExhibit(group, decor, beams, artifact, layout.positions[i], z, rotation, h);
+      [-1, 1].forEach((side) => decor.add(box(w, h, 0.3, surfaces.wall, 0, h / 2, side * (d / 2 - 0.15))));
+      const strip = box(w - 1, 0.06, 0.5, glow('#fff3c4', 1), 0, h - 0.03, 0);
+      strip.raycast = () => {};
+      group.add(strip);
+      const runner = mesh(new THREE.PlaneGeometry(w, 1.6), material('#2b2b2b', { roughness: 0.9 }), 0, 0.31, 0);
+      runner.rotation.x = -Math.PI / 2;
+      runner.castShadow = false;
+      group.add(runner);
+      // Generative posters (drawn in code) on both walls
+      for (let i = 0; i < 8; i++) {
+        const side = i % 2 ? 1 : -1;
+        const x = -w / 2 + 5 + Math.floor(i / 2) * ((w - 10) / 3);
+        const poster = canvasTexture(`linkPoster|${i}`, 256, 320, (ctx, cw, ch) => {
+          const hue = (i * 47) % 360;
+          ctx.fillStyle = `hsl(${hue}, 30%, 92%)`; ctx.fillRect(0, 0, cw, ch);
+          for (let k = 0; k < 12; k++) {
+            ctx.fillStyle = `hsla(${(hue + k * 25) % 360}, 70%, ${40 + (k % 3) * 12}%, 0.8)`;
+            if (i % 3 === 0) { ctx.beginPath(); ctx.arc(cw / 2, ch / 2 - 20, 110 - k * 9, 0, Math.PI * 2); ctx.fill(); }
+            else if (i % 3 === 1) ctx.fillRect(20 + k * 18, 40 + (k % 4) * 30, 14, 180);
+            else { ctx.beginPath(); ctx.moveTo(0, 60 + k * 18); ctx.bezierCurveTo(80, k * 22, 170, 120 + k * 10, cw, 50 + k * 16); ctx.lineWidth = 6; ctx.strokeStyle = ctx.fillStyle; ctx.stroke(); }
+          }
+          ctx.fillStyle = '#222222'; ctx.font = 'bold 18px Arial'; ctx.fillText(`STUDY No.${i + 1}`, 20, ch - 20);
         });
-        const zMin = center - aisle / 2 + 0.25;
-        const zMax = center + aisle / 2 - 0.25;
-        layout.dividers.forEach((divider) => eraArch(group, decor, divider.x, zMin, zMax, h, divider.era));
-        timelineStrip(group, `wing${runIndex}`, runItems, layout.positions, layout.dividers, -halfW + 1, halfW - 1, center);
-      });
-      // Finale on the west wall of the south aisle
-      placeExhibit(group, decor, beams, finale, -halfW + 0.2, (p2 - halfD) / 2, Math.PI / 2, h);
-      // Welcome arch at the entrance and benches at the turns of the loop
-      eraArch(group, decor, ((data && data.entranceX) || halfW - 4) - 3.6, p1 + 0.25, halfD - 0.25, h, 'dotcom');
-      [[-halfW + 1.2, (halfD + p2) / 2 - 1], [halfW - 1.2, (p1 - halfD) / 2 + 1]].forEach(([x, z]) => {
+        decor.add(box(2.2, 2.7, 0.08, material('#111111'), x, 2.3, side * (d / 2 - 0.34)));
+        const art = mesh(new THREE.PlaneGeometry(2, 2.5), new THREE.MeshBasicMaterial({ map: poster }), x, 2.3, side * (d / 2 - 0.39));
+        art.rotation.y = side > 0 ? Math.PI : 0;
+        group.add(art);
+      }
+      // Benches, plants and a few visitors
+      [-12, 4, 18].forEach((x) => {
         const bench = new THREE.Group();
-        bench.add(box(2.6, 0.12, 0.7, material('#6b4423'), 0, 0.75, 0));
-        [-1.1, 1.1].forEach((bx) => bench.add(box(0.12, 0.45, 0.6, hallParts().dark, bx, 0.52, 0)));
-        bench.position.set(x, 0, z);
-        bench.rotation.y = Math.PI / 2;
-        group.add(PropKit.kit.interactive(bench, 'sit', 'Museum bench'));
+        bench.add(box(2.4, 0.1, 0.6, material('#6b4423'), 0, 0.75, 0));
+        [-1, 1].forEach((s) => bench.add(box(0.1, 0.45, 0.5, hallParts().dark, s * 1.05, 0.52, 0)));
+        bench.position.set(x, 0, 1.6);
+        group.add(PropKit.kit.interactive(bench, 'sit', 'Bench'));
       });
-      const title = textSprite(label || 'Hall of Internet History · 2000 to today', { width: 9, background: 'rgba(36, 22, 74, 0.9)' });
-      title.position.set(-halfW + 3.5, h - 1.6, p1);
-      group.add(title);
-      finishHall(group, decor, beams);
+      [-20, -4, 11].forEach((x) => {
+        decor.add(cylinder(0.4, 0.32, 0.7, material('#d9cbb3'), x, 0.65, -2, 12));
+        decor.add(sphere(0.7, material('#2f9e44', { flatShading: true }), x, 1.5, -2, 8));
+      });
+      visitorFigures(group, [[-8, -1, 0, Math.PI], [9, 1.2, 0, 0], [14, -1.3, 0, Math.PI / 2]]);
+      const sign = textSprite(label || 'Minimal Art Gallery  >>', { width: 7, background: 'rgba(40, 40, 40, 0.9)' });
+      sign.position.set(-w / 2 + 4, h - 0.9, 0);
+      group.add(sign);
+      group.add(PropKit.kit.mergeByMaterial(decor));
     }
   });
 
@@ -1563,8 +1649,8 @@
     [/software_wall/, 'softwareWall'],
     [/ball_mouse/, 'ballMouse'],
     [/museum_entrance/, 'museumHall'],
-    [/history_corridor/, 'historyCorridor'],
-    [/history_wing/, 'historyWing'],
+    [/history_ring/, 'historyRing'],
+    [/gallery_link/, 'galleryLink'],
     [/minimal_gallery/, 'minimalGallery'],
     [/timeline_hall/, 'timelineHall']
   ];

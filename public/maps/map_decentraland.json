@@ -968,55 +968,64 @@
    "label": "Welcome to the Underground"
   },
   {
-   "type": "history_corridor",
+   "type": "history_ring",
    "position": [
-    -6,
+    -62,
     -60,
     22
    ],
    "scale": [
-    60,
+    68,
     7,
-    14
+    68
    ],
    "color": "#b3001b",
    "label": "Hall of Internet History",
-   "southDoors": [
-    -27.5,
-    26
-   ],
-   "doorSigns": [
-    "THE GIG PLAZA  >>",
-    "2000 to today  >>"
+   "inner": 26.25,
+   "portal": 90,
+   "doors": [
+    {
+     "angle": 90,
+     "width": 6,
+     "height": 5,
+     "length": 4,
+     "label": "MINIMAL ART GALLERY  >>"
+    },
+    {
+     "angle": 180,
+     "width": 4.2,
+     "height": 5,
+     "length": 4,
+     "label": "THE GIG PLAZA  >>"
+    }
    ]
   },
   {
-   "type": "history_wing",
+   "type": "gallery_link",
    "position": [
-    -3,
+    0,
     -60,
-    0
+    22
    ],
    "scale": [
-    54,
-    7,
-    30
+    48,
+    5,
+    6.6
    ],
-   "color": "#24164a",
-   "label": "Hall of Internet History · 2000 to today",
-   "entranceX": 23
+   "color": "#e8e6e1",
+   "label": "Minimal Art Gallery  >>"
   },
   {
    "type": "gig_tunnel",
    "position": [
-    -33.5,
+    -62,
     -60,
-    -3
+    -20.5
    ],
    "scale": [
     5,
     5,
-    36
+    9
    ],
    "color": "#ff9f1c",
    "label": "To The Gig Plaza"
@@ -1024,9 +1033,9 @@
   {
    "type": "gig_plaza",
    "position": [
-    -12,
+    -50,
     -60,
-    -46
+    -50
    ],
    "scale": [
     50,
@@ -1035,7 +1044,7 @@
    ],
    "color": "#ff9f1c",
    "label": "The Gig Plaza",
-   "entranceX": -21.5
+   "entranceX": -12
   },
   {
    "type": "minimal_gallery",

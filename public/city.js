@@ -533,24 +533,21 @@ const City = (() => {
     // A ring of trees frames the World
     const random = seededRandom(key.length * 977);
     const count = 120;
-    const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3, 0.4, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), count);
-    const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material('#ffffff', { flatShading: true }), count);
+    // Realistic leafy trees (one instanced mesh: bark, foliage and leaf cards)
+    const trees = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry(), PropKit.kit.treeMaterial(), count);
     const matrix = new THREE.Matrix4();
-    const color = new THREE.Color();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
     for (let i = 0; i < count; i++) {
       const angle = random() * Math.PI * 2;
       const distance = Math.max(size[0], size[1]) * 0.62 + 10 + random() * (radius - Math.max(size[0], size[1]) * 0.62 - 20);
-      const treeScale = 1 + random() * 1.2;
-      const x = Math.cos(angle) * distance;
-      const z = Math.sin(angle) * distance;
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), new THREE.Quaternion(), new THREE.Vector3(treeScale, treeScale * 2.6, treeScale));
-      trunks.setMatrixAt(i, matrix);
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + treeScale * 3.6, z), new THREE.Quaternion(), new THREE.Vector3(treeScale * 2, treeScale * 2.2, treeScale * 2));
-      crowns.setMatrixAt(i, matrix);
-      crowns.setColorAt(i, color.setHSL(0.26 + random() * 0.08, 0.5, 0.3 + random() * 0.12));
+      const treeScale = 0.8 + random() * 0.8;
+      matrix.compose(new THREE.Vector3(Math.cos(angle) * distance, GROUND_LEVEL, Math.sin(angle) * distance), quaternion.setFromAxisAngle(up, random() * 6.28), new THREE.Vector3(treeScale, treeScale * (0.9 + random() * 0.3), treeScale));
+      trees.setMatrixAt(i, matrix);
     }
-    trunks.castShadow = crowns.castShadow = true;
-    island.add(trunks, crowns);
+    trees.castShadow = false;
+    trees.raycast = () => {};
+    island.add(trees);
     return island;
   }
 
@@ -867,14 +864,12 @@ const City = (() => {
     const trees = sparse.filter((spot) => spot.kind < 0.45);
     const rocks = sparse.filter((spot) => spot.kind >= 0.45 && spot.kind < 0.6);
     const tufts = sparse.filter((spot) => spot.kind >= 0.6);
-    const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.3, 3, 6).translate(0, 1.5, 0), material('#5d4037'), trees.length);
-    const crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2, 0), material('#3f7f3a', { flatShading: true }), trees.length);
+    const trunk = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry(), PropKit.kit.treeMaterial(), trees.length);
     trees.forEach(({ x, z, size }, index) => {
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion, new THREE.Vector3(size, size, size));
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion.setFromAxisAngle(up, x * 7), new THREE.Vector3(size * 0.85, size * 0.9, size * 0.85));
       trunk.setMatrixAt(index, matrix);
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 3.6 * size, z), quaternion.setFromAxisAngle(up, x), new THREE.Vector3(size, size * 1.1, size));
-      crown.setMatrixAt(index, matrix);
     });
+    const crown = new THREE.Group(); // (the realistic tree mesh includes its crown)
     const rock = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), material('#8a8f94', { flatShading: true, roughness: 1 }), rocks.length);
     rocks.forEach(({ x, z, size }, index) => {
       matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.3, z), quaternion.setFromAxisAngle(up, z), new THREE.Vector3(size * 1.4, size * 0.7, size));
@@ -913,7 +908,7 @@ const City = (() => {
     }
     [trunk, crown, rock, tuft, pines, hills].forEach((instanced) => {
       instanced.raycast = () => {};
-      instanced.castShadow = instanced !== hills && instanced !== pines;
+      instanced.castShadow = instanced !== hills && instanced !== pines && instanced !== trunk; // thousands of trees: no shadow pass
       instanced.receiveShadow = true;
       scene.add(instanced);
     });
@@ -969,16 +964,8 @@ const City = (() => {
   // stay open because no tree grows on a path.
   function buildDistrictTreeBelts() {
     const random = seededRandom(31337);
-    const pine = mergeGeometries([
-      { geometry: new THREE.CylinderGeometry(0.28, 0.38, 2.2, 6).translate(0, 1.1, 0), color: '#6b4a2f' },
-      { geometry: new THREE.ConeGeometry(2.6, 3.6, 7).translate(0, 3.4, 0), color: '#2f6b3a' },
-      { geometry: new THREE.ConeGeometry(2.1, 3.1, 7).translate(0, 5.1, 0), color: '#3a7d43' },
-      { geometry: new THREE.ConeGeometry(1.5, 2.6, 7).translate(0, 6.7, 0), color: '#4a8f4c' }
-    ]);
-    const round = mergeGeometries([
-      { geometry: new THREE.CylinderGeometry(0.25, 0.35, 2.6, 6).translate(0, 1.3, 0), color: '#6b4a2f' },
-      { geometry: new THREE.IcosahedronGeometry(2.3, 1).translate(0, 4.2, 0), color: '#4f9a3f' }
-    ]);
+    const pine = PropKit.kit.realisticTreeGeometry('pine');
+    const round = PropKit.kit.realisticTreeGeometry('broadleaf');
     const pines = [];
     const rounds = [];
     districts.forEach((district) => {
@@ -1010,7 +997,7 @@ const City = (() => {
     const up = new THREE.Vector3(0, 1, 0);
     [[pine, pines], [round, rounds]].forEach(([geometry, spots]) => {
       if (!spots.length) return;
-      const trees = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), spots.length);
+      const trees = new THREE.InstancedMesh(geometry, PropKit.kit.treeMaterial(), spots.length);
       spots.forEach(({ x, z, size, turn }, index) => {
         matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion.setFromAxisAngle(up, turn), new THREE.Vector3(size, size * (0.9 + (index % 5) * 0.06), size));
         trees.setMatrixAt(index, matrix);

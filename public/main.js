@@ -1578,7 +1578,11 @@ function setupNetwork(session) {
     // An outdated server.js would assign a random "Dev_" name: keep the account name
     registerLocalDeveloper({ ...assignedIdentity, devTag: /^Dev_/.test(assignedIdentity.devTag || '') || !assignedIdentity.devTag ? session.username : assignedIdentity.devTag });
     // The account's saved look wins; a look chosen before connecting is uploaded
-    if (assignedIdentity.avatar) { localLook = Avatar.sanitize(assignedIdentity.avatar); applyLook(localCursor, localLook); }
+    if (assignedIdentity.avatar) {
+      localLook = Avatar.sanitize(assignedIdentity.avatar);
+      applyLook(localCursor, localLook);
+      try { localStorage.setItem('multiverse-look', JSON.stringify(localLook)); } catch (error) { /* storage blocked */ }
+    }
     else socket.emit('set_avatar', localLook);
     lastEmittedPosition.set(Infinity, Infinity, Infinity);
     emitCursor(true);
@@ -1936,10 +1940,16 @@ const universeReady = plazaReady.then(() => {
 Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
   if (Auth.hasServer) socket = io({ auth: { token: session.token, lobby: lobbyId } });
   setupNetwork(session);
-  // First time on this browser: customize the cursor before entering (Decentraland-style)
+  // First time only: customize the cursor before entering (Decentraland-style).
+  // A look saved in this browser or in the account (server) skips it.
   let customized = false;
   try { customized = !!localStorage.getItem('multiverse-look'); } catch (error) { customized = false; }
-  if (!customized) openAvatarCustomizer();
+  if (!customized && !socket) openAvatarCustomizer();
+  else if (!customized) {
+    let decided = false;
+    socket.once('local_registration_success', (identity) => { decided = true; if (!identity.avatar) openAvatarCustomizer(); });
+    setTimeout(() => { if (!decided) openAvatarCustomizer(); }, 8000);
+  }
   LootSystem.init(lootHooks());
   Interactions.init(interactionHooks());
   CityMap.init({

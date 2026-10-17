@@ -52,14 +52,13 @@
   }
 
   // Stylized tree with a puffy crown (pink, orange, green...)
-  function puffyTree(color, height = 5, crown = 1.8) {
-    const tree = new THREE.Group();
-    tree.add(cylinder(0.14, 0.24, height * 0.6, material('#5b3a29'), 0, height * 0.3, 0, 6));
-    [[0, 0, 0, 1], [0.7, -0.3, 0.2, 0.75], [-0.6, -0.2, -0.3, 0.8], [0.1, 0.4, -0.5, 0.7]].forEach(([x, y, z, s]) => {
-      const puff = sphere(crown * s, material(color, { roughness: 0.85, flatShading: true }), x * crown, height * 0.75 + y * crown, z * crown, 7);
-      tree.add(puff);
-    });
-    return tree;
+  // Realistic leafy tree: pink colors become cherry blossoms, orange/red autumn leaves
+  function puffyTree(color, height = 5) {
+    const hue = new THREE.Color(color || '#2f9e44').getHSL({}).h;
+    const variant = hue > 0.85 || hue < 0.02 ? 'blossom' : hue < 0.15 ? 'autumn' : 'green';
+    const group = new THREE.Group();
+    group.add(PropKit.kit.realisticTree('broadleaf', height * 1.25, variant));
+    return group;
   }
 
   function bench(length = 2.4) {

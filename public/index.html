@@ -386,6 +386,10 @@
       overflow-y: auto;
     }
     #auth-screen.leaving { opacity: 0; pointer-events: none; }
+    /* Returning players: no form, just a short "welcome back" while entering */
+    #auth-resume { display: none; color: #fff; font: 600 18px var(--font, 'Segoe UI', Arial, sans-serif); }
+    #auth-screen.resuming .auth-card { display: none; }
+    #auth-screen.resuming #auth-resume { display: block; }
     .auth-card {
       width: min(440px, 100%);
       padding: 28px;
@@ -764,6 +768,7 @@
 
   <!-- Welcome screen shown before entering the multiverse -->
   <div id="auth-screen">
+    <p id="auth-resume" aria-live="polite"></p>
     <section class="auth-card" aria-labelledby="auth-title">
       <img class="auth-logo" src="assets/logo.png" alt="GitHub Multiverse logo">
       <h1 id="auth-title">Welcome to <span>GitHub Multiverse</span></h1>
