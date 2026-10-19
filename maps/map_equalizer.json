@@ -1,0 +1,189 @@
+{
+ "themeName": "Graphic Equalizer",
+ "backgroundColor": "#0d0f1a",
+ "blocks": [
+  {
+   "type": "equalizer_tower",
+   "position": [
+    0,
+    0,
+    -4
+   ],
+   "scale": [
+    14,
+    34,
+    14
+   ],
+   "color": "#4dabf7",
+   "label": "Graphic Equalizer \u00b7 The Tower of Icons"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    22.9,
+    3.5,
+    3.1
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    13.2,
+    3,
+    9.6
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    5.3,
+    3.5,
+    19.4
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -5.2,
+    3,
+    14.3
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -17.6,
+    3.5,
+    12.3
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -18.4,
+    3,
+    0.6
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -22.9,
+    3.5,
+    -11.1
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    -13.2,
+    3,
+    -17.6
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    -5.3,
+    3.5,
+    -27.4
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    5.2,
+    3,
+    -22.3
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  },
+  {
+   "type": "round_tree",
+   "position": [
+    17.6,
+    3.5,
+    -20.3
+   ],
+   "scale": [
+    4,
+    7,
+    4
+   ],
+   "color": "#2f9e44"
+  },
+  {
+   "type": "lamp_post",
+   "position": [
+    18.4,
+    3,
+    -8.6
+   ],
+   "scale": [
+    0.4,
+    6,
+    0.4
+   ],
+   "color": "#fff3c4"
+  }
+ ]
+}

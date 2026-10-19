@@ -1,0 +1,37 @@
+GITHUB UNIVERSE SOFTWARE LICENSE AGREEMENT
+Version 1.0 (Enterprise & Commercial Edition)
+
+This Software License Agreement (the "Agreement") is a legally binding agreement between you (an individual or a single legal entity, referred to as "Licensee" or "You") and the original author and copyright holder of the Github-Universe repository ("Licensor"). 
+
+BY DOWNLOADING, INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE.
+
+1. DEFINITIONS
+"Software" means the source code, 3D assets, scene configurations, build scripts, client-side files, server-side implementations (Express/Socket.io), and documentation associated with the Github-Universe project found in this repository.
+"Commercial Use" means any use of the Software for financial gain, including but not limited to hosting a paid version of the metaverse, integrating paid advertisements, selling digital real estate or wearables within the platform, or using the platform for corporate marketing.
+
+2. LICENSE GRANT & CONDITIONS
+Subject to Your compliance with all terms and conditions of this Agreement, Licensor hereby grants You a non-exclusive, non-transferable, royalty-free, worldwide, revocable license to:
+(a) Review, modify, and create derivative works of the Software solely for educational, personal, and non-commercial collaborative purposes.
+(b) Run a local instance of the Software for individual development or private internal testing ("Solo Mode" or local server).
+
+3. ENTERPRISE AND COMMERCIAL RESTRICTIONS
+Unless explicitly authorized via a separate commercial agreement signed by the Licensor, You shall not:
+(a) Sublicense, rent, lease, or lend the Software, or host the Software as a commercial Software-as-a-Service (SaaS) or Metaverse-as-a-Service (MaaS).
+(b) Monetize any instance of the Software, including charging for user access, virtual assets, or developer cosmetic items ("wearables").
+(c) Use the Software to build, deploy, or maintain a directly competing 3D developer metaverse platform that replicates the architectural layouts, spatial concepts, or proprietary mini-games of Genesis City.
+
+4. INTELLECTUAL PROPERTY AND THIRD-PARTY MARKS
+(a) Retained Rights: Licensor retains all right, title, and interest in and to the Software, including all copyrights, patents, trade secrets, and other intellectual property rights.
+(b) Third-Party Trademarks: The Software includes low-poly, stylized recreations and wordmark representations of real-world corporate brands (e.g., Apple, Google, Meta, Anthropic, Tesla, NVIDIA). These representations are used strictly for contextual, non-commercial identification within the simulated Silicon Valley and Genesis districts. No license, express or implied, is granted under any third-party trademark, logo, or proprietary brand design. You agree to indemnify and hold harmless the Licensor from any third-party trademark infringement claims resulting from Your unauthorized redistribution or commercial modification of these representations.
+
+5. FEEDBACK AND CONTRIBUTIONS
+If You submit any modifications, enhancements, pull requests, or code contributions ("Contributions") to the Licensor, You hereby grant Licensor a perpetual, irrevocable, worldwide, royalty-free, fully sublicensable, non-exclusive license to use, reproduce, modify, distribute, and display such Contributions within the main Software ecosystem without any obligation or compensation to You.
+
+6. HIGH-RISK ACTIVITIES DISCLAIMER
+The Software is designed for community interaction and social developer environments. It is not fault-tolerant and is not designed or intended for use in hazardous environments requiring fail-safe performance, such as live industrial operations, infrastructure routing, or high-security data operations.
+
+7. LIMITATION OF LIABILITY AND WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS, CONTRIBUTORS, OR CORPORATE REPRESENTATIVES BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+8. GOVERNING LAW AND JURISDICTION
+This Agreement shall be governed by, and construed in accordance with, the laws of the jurisdiction where the Licensor resides, without regard to its conflict of law provisions. Any legal action or proceeding arising under this Agreement will be brought exclusively in the appropriate courts located in said jurisdiction.

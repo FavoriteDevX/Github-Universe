@@ -1,8 +1,10 @@
 # 🌐 GitHub Multiverse
 
-<img width="1370" height="768" alt="GitHub Multiverse banner" src="https://github.com/user-attachments/assets/33672bb3-ddbe-4782-8b29-527179559d01" />
+<img width="1000" height="561" alt="GitHub Multiverse" src="https://github.com/user-attachments/assets/1c7a81c7-6897-4ce4-bc3c-422fa9a61cfe" />
 
 A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**. Everyone starts in **Genesis City**, one continuous, organic space around Genesis Plaza (no street grid, no square blocks) made of small themed scenes, with an **underground level** below the plaza, a **metro** to every district, and bigger **Worlds**: interactive mini-games and a Silicon Valley tech campus.
+
+So, imagine to have a fun, useful and 3D virtual dimension world, just for devs like you. Meet new friends, code like a pro, discover who uses the same tools that you do, invite friends to dynamic workspaces and explore your world.
 
 ---
 
@@ -280,7 +282,19 @@ HP, LinkedIn, Uber, Cisco and eBay are on the campus too (walk or fly to them).
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## 🖼️ 📸 Screenshots & Gameplay
+
+<img width="1200" height="700" alt="image-1792007569618" src="https://github.com/user-attachments/assets/3d3c7549-26b5-4b45-9a7e-883f6ea83521" />
+<img width="1100" height="620" alt="image-1791929585609" src="https://github.com/user-attachments/assets/743ebdc4-6b07-4556-b61d-887e15694b89" />
+<img width="595" height="260" alt="rfdsgdf" src="https://github.com/user-attachments/assets/32569009-eb9b-4c19-a433-8bdc1b150ce2" />
+<img width="1100" height="620" alt="image-1792008718931" src="https://github.com/user-attachments/assets/9d41054a-ac18-45e6-b4b4-f02114069e44" />
+<img width="1360" height="435" alt="Screenshot 2026-10-14 172729" src="https://github.com/user-attachments/assets/2001835a-9662-41ce-8bde-8367d90bc86e" />
+<img width="1354" height="560" alt="Screenshot 2026-10-14 172842" src="https://github.com/user-attachments/assets/4d084e22-9f8b-4389-a829-22c391f140f2" />
+
+## 🛠️ Tech Stack & Architecture
+
+- **Frontend**: [Three.js](https://threejs.org) r128 (vanilla JavaScript, local vendor)
+- **Backend**: Node.js + Express + Socket.io
 
 ```text
 github-multiverse/
@@ -323,20 +337,19 @@ github-multiverse/
 
 ---
 
-## 💻 Getting Started Locally
+## 💻 Local Setup
 
 ### 1. Prerequisites
 [Node.js](https://nodejs.org) v18 or higher.
 
 ### 2. Installation
 ```bash
+# 1. Install dependencies
 npm install
-```
 
 ### 3. Execution
 ```bash
 npm start
-```
 
 ### 4. Open Interface
 ```text
@@ -427,10 +440,34 @@ Brand logos on billboards, HQ signs and the Apple Store come from [Simple Icons]
 
 ---
 
-## 🗺️ Roadmap & Future Enhancements
+## ☁️ Deployment & Roadmap
 
-- [ ] **GitHub API Core Integration**: Connect GitHub personal access tokens to build districts from real repositories and contribution data.
-- [ ] **Proximity Voice Chat**: WebRTC voice that fades in as cursors get closer.
-- [ ] **Interactive File Editing Node**: Click objects to open repository trees or shared notepads in 3D.
-- [ ] **Persistent Game State**: Save leaderboards, murals and merged Pull Requests to a database.
-- [ ] **Trading**: Swap loot with other devs.
+- **Hosting**: Requires a platform supporting WebSockets (Render, Railway, Fly.io) for multiplayer. Static hosts (Vercel) will auto-fallback to **Solo Mode**.
+- **Roadmap**: 
+  - [ ] Real GitHub API integration (generate maps from actual repo data).
+  - [ ] WebRTC Proximity Voice Chat.
+  - [ ] Persistent database storage for murals and leaderboards.
+  - [ ] **GitHub API Core Integration**: Connect GitHub personal access tokens to build districts from real repositories and contribution data.
+  - [ ] **Proximity Voice Chat**: WebRTC voice that fades in as cursors get closer.
+  - [ ] **Interactive File Editing Node**: Click objects to open repository trees or shared notepads in 3D.
+  - [ ] **Persistent Game State**: Save leaderboards, murals and merged Pull Requests to a database.
+  - [ ] **Trading**: Swap loot with other devs.
+
+---
+
+## Can I Contribute?
+
+Contributions are welcome on this repo! Please fork, share the web link to your Discord servers, star this repo and make this get popular.
+Obs.: Read the contributing.txt file before for more info :)
+
+## 🤝 Contributors & Partners
+
+This project is proudly supported and built in collaboration with:
+
+- Apple Official
+- Decentraland.org
+
+---
+
+## ⚖️ Disclaimer
+Company names and structures are stylized wordmark recreations for identification purposes. Keynotes are streamed directly from official Apple/Google YouTube embeds. All trademarks belong to their respective owners.

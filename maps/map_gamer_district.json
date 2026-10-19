@@ -1,0 +1,171 @@
+{
+ "themeName": "Gamer District",
+ "backgroundColor": "#2b2140",
+ "blocks": [
+  {
+   "type": "arena_floor",
+   "position": [
+    0,
+    -0.2,
+    0
+   ],
+   "scale": [
+    116,
+    0.4,
+    116
+   ],
+   "color": "#2b2140",
+   "label": "Gamer District"
+  },
+  {
+   "type": "gravity_tower",
+   "position": [
+    0,
+    0,
+    -10
+   ],
+   "scale": [
+    20,
+    48,
+    20
+   ],
+   "color": "#9775fa",
+   "label": "Gravity Flip tower"
+  },
+  {
+   "type": "arcade_cabinet_1",
+   "position": [
+    -40,
+    2,
+    -30
+   ],
+   "scale": [
+    2,
+    4,
+    2
+   ],
+   "color": "#00a8ff",
+   "label": "Pac-Git"
+  },
+  {
+   "type": "arcade_cabinet_2",
+   "position": [
+    -34,
+    2,
+    -30
+   ],
+   "scale": [
+    2,
+    4,
+    2
+   ],
+   "color": "#e84118",
+   "label": "Doom Web"
+  },
+  {
+   "type": "arcade_cabinet_3",
+   "position": [
+    -28,
+    2,
+    -30
+   ],
+   "scale": [
+    2,
+    4,
+    2
+   ],
+   "color": "#fbc531",
+   "label": "Tetris Merge"
+  },
+  {
+   "type": "neon_pillar",
+   "position": [
+    36,
+    4,
+    -30
+   ],
+   "scale": [
+    1,
+    8,
+    1
+   ],
+   "color": "#00ffcc",
+   "label": "Neon"
+  },
+  {
+   "type": "neon_pillar",
+   "position": [
+    44,
+    4,
+    -30
+   ],
+   "scale": [
+    1,
+    8,
+    1
+   ],
+   "color": "#ff007f",
+   "label": "Neon"
+  },
+  {
+   "type": "mini_game_arena",
+   "position": [
+    34,
+    0,
+    26
+   ],
+   "scale": [
+    22,
+    1,
+    22
+   ],
+   "color": "#7a5cff",
+   "label": "Arena"
+  },
+  {
+   "type": "battlestation_desk",
+   "position": [
+    -36,
+    0.6,
+    20
+   ],
+   "scale": [
+    4,
+    1.2,
+    2
+   ],
+   "color": "#2f3640",
+   "label": "LAN party station"
+  },
+  {
+   "type": "battlestation_desk",
+   "position": [
+    -28,
+    0.6,
+    20
+   ],
+   "scale": [
+    4,
+    1.2,
+    2
+   ],
+   "color": "#2f3640",
+   "label": "LAN party station"
+  },
+  {
+   "type": "metro_station",
+   "position": [
+    0,
+    0,
+    46
+   ],
+   "scale": [
+    10,
+    1,
+    4
+   ],
+   "color": "#e03131",
+   "label": "Gamer District Station"
+  }
+ ]
+}

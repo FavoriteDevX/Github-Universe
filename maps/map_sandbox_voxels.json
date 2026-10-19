@@ -1,0 +1,11 @@
+{
+  "themeName": "The Sandbox Voxel Grid Cluster",
+  "backgroundColor": "#0c1020",
+  "blocks": [
+    { "type": "sandbox_land_base", "position": [0, -0.5, 0], "scale": [40, 1, 40], "color": "#00d2ff", "label": "LAND Premium Parcel #166464" },
+    { "type": "voxel_castle_tower", "position": [-10, 6, -10], "scale": [6, 12, 6], "color": "#34495e", "label": "Alpha Season Hub Tower" },
+    { "type": "game_quest_npc_zone", "position": [8, 0.1, 8], "scale": [4, 0.2, 4], "color": "#f1c40f", "label": "Play-to-Earn Quest Node" },
+    { "type": "voxel_bridge", "position": [0, 4, -8], "scale": [12, 0.8, 2], "color": "#e67e22" },
+    { "type": "nft_display_monolith", "position": [10, 3, -2], "scale": [2, 6, 0.5], "color": "#9b59b6", "label": "VoxEdit Asset Showcase" }
+  ]
+}

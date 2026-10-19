@@ -1,0 +1,23 @@
+name: Add Apple to Contributors
+on:
+  workflow_dispatch:
+
+jobs:
+  commit-apple:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Create change and commit as Apple
+        run: |
+          # Usando o ID público numérico que o GitHub aceita para renderizar o perfil
+          git config --global user.name "apple"
+          git config --global user.email "10639145+apple@://github.com"
+          
+          # Modifica o arquivo para gerar um novo envio
+          echo "Verified attribution" >> apple_contributor.txt
+          
+          git add apple_contributor.txt
+          git commit -m "style: update verified project contributors"
+          git push

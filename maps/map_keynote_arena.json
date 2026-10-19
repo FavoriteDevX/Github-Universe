@@ -1,0 +1,124 @@
+{
+ "themeName": "Keynote Amphitheater - Permanent Tech Event Arena",
+ "backgroundColor": "#14141f",
+ "blocks": [
+  {
+   "type": "amphitheater_floor",
+   "position": [
+    0,
+    -0.25,
+    0
+   ],
+   "scale": [
+    116,
+    0.5,
+    116
+   ],
+   "color": "#2b2d42",
+   "label": "Keynote Arena Grounds"
+  },
+  {
+   "type": "amphitheater_seats",
+   "position": [
+    0,
+    0,
+    10
+   ],
+   "scale": [
+    90,
+    12,
+    60
+   ],
+   "color": "#3d405b",
+   "label": "Amphitheater Seating (2,000 devs)"
+  },
+  {
+   "type": "keynote_stage",
+   "position": [
+    0,
+    1,
+    -30
+   ],
+   "scale": [
+    40,
+    2,
+    14
+   ],
+   "color": "#ef233c",
+   "label": "Main Keynote Stage"
+  },
+  {
+   "type": "keynote_screen",
+   "position": [
+    0,
+    14,
+    -40
+   ],
+   "scale": [
+    48,
+    20,
+    1
+   ],
+   "color": "#111111",
+   "label": "Live Keynote Screen - click or /watch to open the stream"
+  },
+  {
+   "type": "merch_booth",
+   "position": [
+    -45,
+    2,
+    40
+   ],
+   "scale": [
+    10,
+    4,
+    8
+   ],
+   "color": "#ffb703",
+   "label": "Dev Wearables Booth - click to try on a hoodie, mug, cap or headphones"
+  },
+  {
+   "type": "merch_booth",
+   "position": [
+    45,
+    2,
+    40
+   ],
+   "scale": [
+    10,
+    4,
+    8
+   ],
+   "color": "#219ebc",
+   "label": "Infinite Coffee Booth - click for a never-ending mug"
+  },
+  {
+   "type": "spotlight_tower",
+   "position": [
+    -28,
+    10,
+    -20
+   ],
+   "scale": [
+    2,
+    20,
+    2
+   ],
+   "color": "#edf2f4"
+  },
+  {
+   "type": "spotlight_tower",
+   "position": [
+    28,
+    10,
+    -20
+   ],
+   "scale": [
+    2,
+    20,
+    2
+   ],
+   "color": "#edf2f4"
+  }
+ ]
+}

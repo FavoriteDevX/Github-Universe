@@ -1,0 +1,11 @@
+{
+  "themeName": "Meta GamiMall Multi-Level E-Commerce Center",
+  "backgroundColor": "#f4f6f9",
+  "blocks": [
+    { "type": "mall_ground_floor", "position": [0, -0.5, 0], "scale": [40, 1, 40], "color": "#ffffff", "label": "GamiMall Main Entrance Lobby" },
+    { "type": "wearable_shop_alpha", "position": [-10, 2.5, -10], "scale": [10, 5, 8], "color": "#000000", "label": "Crypto Wearables & Avatar Clothing Store" },
+    { "type": "wearable_shop_beta", "position": [10, 2.5, -10], "scale": [10, 5, 8], "color": "#ff007f", "label": "Digital Sneaker Boutique (NFT Drops)" },
+    { "type": "second_floor_balcony", "position": [0, 5.25, -10], "scale": [36, 0.5, 8], "color": "#dfe4ea", "label": "Upper Floor Shopping Terrace" },
+    { "type": "central_escalator_block", "position": [0, 2.5, 0], "scale": [3, 5, 8], "color": "#747d8c" }
+  ]
+}
