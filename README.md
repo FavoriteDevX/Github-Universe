@@ -20,12 +20,6 @@ So, imagine to have a fun, useful and 3D virtual dimension world, just for devs 
 
 ## 🖼️ 📸 Screenshots & Gameplay
 
-<img width="1200" height="700" alt="image-1792007569618" src="https://github.com/user-attachments/assets/3d3c7549-26b5-4b45-9a7e-883f6ea83521" />
-<img width="1100" height="620" alt="image-1791929585609" src="https://github.com/user-attachments/assets/743ebdc4-6b07-4556-b61d-887e15694b89" />
-<img width="595" height="260" alt="rfdsgdf" src="https://github.com/user-attachments/assets/32569009-eb9b-4c19-a433-8bdc1b150ce2" />
-<img width="1100" height="620" alt="image-1792008718931" src="https://github.com/user-attachments/assets/9d41054a-ac18-45e6-b4b4-f02114069e44" />
-<img width="1360" height="435" alt="Screenshot 2026-10-14 172729" src="https://github.com/user-attachments/assets/2001835a-9662-41ce-8bde-8367d90bc86e" />
-<img width="1354" height="560" alt="Screenshot 2026-10-14 172842" src="https://github.com/user-attachments/assets/4d084e22-9f8b-4389-a829-22c391f140f2" />
 
 ## 🎮 Controls & Commands
 
