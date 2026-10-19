@@ -1551,15 +1551,7 @@
         const end = start + Math.PI / 2;
         timelineArc(group, `ring${k}`, yearEntries.filter((entry) => entry.angle >= start - 0.02 && entry.angle < end + 0.02), start, Math.PI / 2, midR);
       }
-      // Benches and visitors along the ring
-      const visitors = [];
-      for (let k = 0; k < 14; k++) {
-        const a = portal + 0.5 + k * 0.42;
-        const nearOuter = k % 2 === 0;
-        const [x, z] = toXZ(a, nearOuter ? outerR - 2.4 : innerR + 2.4);
-        visitors.push([x, z, 0, nearOuter ? a : a + Math.PI]);
-      }
-      visitorFigures(group, visitors);
+      // No decorative visitor figures in the underground (only real players)
       // Dark rock shell around the whole underground (decorative, never blocks):
       // whatever the camera sees through a gap is rock, never the city or sky
       const shellCenter = new THREE.Vector3(...((data && data.shellCenter) || [62, 12, -22]));
@@ -1608,7 +1600,7 @@
         art.rotation.y = side > 0 ? Math.PI : 0;
         group.add(art);
       }
-      // Benches, plants and a few visitors
+      // Benches and plants
       [-12, 4, 18].forEach((x) => {
         const bench = new THREE.Group();
         bench.add(box(2.4, 0.1, 0.6, material('#6b4423'), 0, 0.75, 0));
@@ -1620,7 +1612,6 @@
         decor.add(cylinder(0.4, 0.32, 0.7, material('#d9cbb3'), x, 0.65, -2, 12));
         decor.add(sphere(0.7, material('#2f9e44', { flatShading: true }), x, 1.5, -2, 8));
       });
-      visitorFigures(group, [[-8, -1, 0, Math.PI], [9, 1.2, 0, 0], [14, -1.3, 0, Math.PI / 2]]);
       const sign = textSprite(label || 'Minimal Art Gallery  >>', { width: 7, background: 'rgba(40, 40, 40, 0.9)' });
       sign.position.set(-w / 2 + 4, h - 0.9, 0);
       group.add(sign);
