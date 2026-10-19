@@ -1203,7 +1203,7 @@ const HELP_PAGES = [
   ['Codify', 'C opens Codify: write code, Add to world (private unless you tick Visible to others) | E on your block to edit it | Fry your Code at the Genesis Plaza firepit'],
   ['Graphics', '/quality low | medium | high | auto — the game lowers it by itself when it gets slow'],
   ['Economy', '/balance | /pay <player> <amount> | /buyland (the parcel you stand on) | /lands — Multiverse Coins are in-game only'],
-  ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder>'],
+  ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder> | /sound on|off | /music add <YouTube link> | /music list | /music next | /music clear'],
   ['Social', '/nick <name> | /msg <player> <text> (alias /tell /w) | /r <text> | /me <action> | /list | /coords | /clear | /invite'],
   ['Actions', '/e <wave|dance|cheer|clap|sit|think|ship|coffee> | /fly (or F) | E near laptops, seats, coffee, arcades, fishing spots, art, elevators | /commits'],
   ['Metro', 'N or /metro opens the transit map | /metro <place> rides the train there | walk through portals in Genesis Plaza'],
@@ -1330,6 +1330,10 @@ function interpretChatCommand(inputBuffer) {
       const spot = bedSpawn();
       if (spot) flyTo(spot, null, 'Back to your bed.');
       else appendSystemMessage('You have no bed yet. Sleep in a hotel bed (Multiverse Hotel or the mini hotels) to set your spawn point.');
+      break;
+    }
+    case 'music': {
+      Codify.musicChat(args, appendSystemMessage);
       break;
     }
     case 'sound': {

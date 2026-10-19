@@ -442,14 +442,61 @@ const Codify = (() => {
   // hidden YouTube player (no audio file is shipped); the video can be changed
   // with localStorage "multiverse-night-music" (a YouTube link or video id).
   // --------------------------------------------------------------------------
-  const NIGHT_MUSIC_DEFAULT = 'fVv5RnNM8hg';
+  // Default tracks: licensed orchestral recordings of "Hand Covers Bruise"
+  // (The Original Movies Orchestra, The London Film Score Orchestra). Players
+  // add more with /music add <YouTube link>.
+  const NIGHT_MUSIC_DEFAULT = ['fVv5RnNM8hg', 'gG8S3_krTpI'];
   const music = { frame: null, ready: false, playing: false, volume: 0, target: 0, lastSent: -1 };
 
-  function nightMusicId() {
-    let custom = '';
-    try { custom = localStorage.getItem('multiverse-night-music') || ''; } catch (error) { custom = ''; }
-    const match = custom.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/) || custom.match(/^([\w-]{11})$/);
-    return match ? match[1] : NIGHT_MUSIC_DEFAULT;
+  function youtubeId(text) {
+    const match = String(text || '').match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/) || String(text || '').trim().match(/^([\w-]{11})$/);
+    return match ? match[1] : null;
+  }
+
+  function customTracks() {
+    let saved = '';
+    try { saved = localStorage.getItem('multiverse-night-music') || ''; } catch (error) { saved = ''; }
+    return saved.split(/[\s,]+/).map(youtubeId).filter(Boolean);
+  }
+
+  function nightMusicTracks() {
+    const tracks = [...NIGHT_MUSIC_DEFAULT, ...customTracks()].filter((id, index, list) => list.indexOf(id) === index);
+    // A different track first every time the player starts
+    const first = Math.floor(Math.random() * tracks.length);
+    return [...tracks.slice(first), ...tracks.slice(0, first)];
+  }
+
+  // /music add <link> | remove <link> | list | next | clear
+  function musicChat(args, say) {
+    const action = (args[0] || 'list').toLowerCase();
+    const saveCustom = (list) => { try { localStorage.setItem('multiverse-night-music', list.join(',')); } catch (error) { /* storage blocked */ } };
+    if (action === 'add' || action === 'remove') {
+      const id = youtubeId(args[1]);
+      if (!id) { say(`Usage: /music ${action} <YouTube link>`); return; }
+      const list = customTracks().filter((track) => track !== id);
+      if (action === 'add') list.push(id);
+      saveCustom(list);
+      resetMusicPlayer();
+      say(action === 'add' ? `Night soundtrack: track added (${list.length + NIGHT_MUSIC_DEFAULT.length} in the playlist).` : 'Night soundtrack: track removed.');
+    } else if (action === 'clear') {
+      saveCustom([]);
+      resetMusicPlayer();
+      say('Night soundtrack: back to the default tracks.');
+    } else if (action === 'next' || action === 'skip') {
+      if (music.ready && music.playing) { musicCommand('nextVideo'); say('Night soundtrack: next track.'); } else say('The night soundtrack plays at night while Codify is open or your code is frying.');
+    } else {
+      const all = [...NIGHT_MUSIC_DEFAULT, ...customTracks()];
+      say(`Night soundtrack (${all.length} tracks): ${all.map((id) => `youtu.be/${id}`).join(' · ')}. Use /music add <YouTube link>, /music remove <link>, /music next or /music clear.`);
+    }
+  }
+
+  function resetMusicPlayer() {
+    if (music.frame) music.frame.remove();
+    music.frame = null;
+    music.ready = false;
+    music.playing = false;
+    music.volume = 0;
+    music.lastSent = -1;
   }
 
   function musicCommand(func, args = []) {
@@ -458,13 +505,14 @@ const Codify = (() => {
   }
 
   function createMusicPlayer() {
-    const id = nightMusicId();
+    const tracks = nightMusicTracks();
+    const id = tracks[0];
     const frame = document.createElement('iframe');
-    frame.title = 'Hand Covers Bruise';
+    frame.title = 'Night soundtrack';
     frame.allow = 'autoplay';
     frame.setAttribute('aria-hidden', 'true');
     frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;bottom:-10px;opacity:0;pointer-events:none;border:0';
-    frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&loop=1&playlist=${id}&controls=0&enablejsapi=1&playsinline=1`;
+    frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&loop=1&playlist=${tracks.join(',')}&controls=0&enablejsapi=1&playsinline=1`;
     frame.addEventListener('load', () => {
       music.ready = true;
       music.lastSent = -1;
@@ -493,5 +541,5 @@ const Codify = (() => {
     if (!wanted && music.playing && music.volume <= 0) { musicCommand('pauseVideo'); music.playing = false; }
   }
 
-  return { init, open, close, isOpen, update, updateMusic, isRoasting: () => Boolean(roast), interact, startRoast, findBugs, loadTemplate };
+  return { init, open, close, isOpen, update, updateMusic, musicChat, isRoasting: () => Boolean(roast), interact, startRoast, findBugs, loadTemplate };
 })();

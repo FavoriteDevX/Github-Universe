@@ -1,16 +1,14 @@
 // ============================================================================
-// SOUND EFFECTS: FOOTSTEPS AND SMALL UI SOUNDS (OPTIONAL)
+// SOUND EFFECTS: CURSOR GLIDE AND SMALL UI SOUNDS (OPTIONAL)
 // ============================================================================
-// Everything is synthesized with the Web Audio API (no audio files): footsteps
-// that change with the ground (stone in plazas and on paths, soft grass, an
-// echoing cave underground), jump and landing, coins, teleports, clicks and
-// crickets at night. Toggle with the dock button or /sound on|off; the
+// Everything is synthesized with the Web Audio API (no audio files): the hiss
+// of a mouse gliding on a mousepad while the cursor moves, jump and landing,
+// coins, teleports, clicks, a crackling fire and crickets at night. Toggle with the dock button or /sound on|off; the
 // choice is remembered in this browser.
 const Sound = (() => {
   let context = null;
   let master = null;
   let enabled = true;
-  let stepTimer = 0;
   let airborneFor = 0;
   let cricketTimer = 0;
   try { enabled = localStorage.getItem('multiverse-sound') !== 'off'; } catch (error) { enabled = true; }
@@ -70,17 +68,10 @@ const Sound = (() => {
     oscillator.stop(start + duration + 0.05);
   }
 
-  // Footsteps: a soft heel thump plus a surface texture, each step slightly
-  // different in pitch and loudness so walking never sounds mechanical
   const vary = (value, amount) => value * (1 - amount / 2 + Math.random() * amount);
   const EFFECTS = {
-    step: (surface) => {
-      tone(vary(85, 0.2), 0.07, { volume: vary(0.07, 0.4) });
-      if (surface === 'stone') noiseBurst({ duration: 0.05, volume: vary(0.2, 0.3), filter: vary(2600, 0.25), type: 'bandpass' });
-      else if (surface === 'cave') noiseBurst({ duration: 0.06, volume: vary(0.2, 0.3), filter: vary(1500, 0.2), type: 'bandpass', echo: true });
-      else if (surface === 'wood') { noiseBurst({ duration: 0.05, volume: vary(0.16, 0.3), filter: vary(900, 0.2), type: 'bandpass' }); tone(vary(150, 0.15), 0.07, { volume: 0.07, type: 'triangle' }); }
-      else { noiseBurst({ duration: 0.11, volume: vary(0.13, 0.3), filter: vary(1800, 0.3), type: 'highpass' }); noiseBurst({ duration: 0.08, volume: vary(0.08, 0.3), filter: 500 }); }
-    },
+    // A faint plastic tick of the mouse shell / scroll wheel while gliding
+    mouseTick: () => noiseBurst({ duration: 0.012, volume: vary(0.05, 0.5), filter: vary(5200, 0.2), type: 'highpass' }),
     bird: () => {
       const base = 2200 + Math.random() * 1600;
       for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) tone(base + Math.random() * 400, 0.09, { type: 'sine', volume: 0.025, slide: 600 - Math.random() * 1200, delay: i * 0.13 });
@@ -141,10 +132,47 @@ const Sound = (() => {
     return fire;
   }
 
+  // Cursor glide: instead of footsteps, the soft hiss of a mouse sliding on a
+  // cloth mousepad (filtered white noise with a slow, uneven texture), plus a
+  // faint plastic tick now and then. It swells while you move and fades when
+  // you stop.
+  let glide = null;
+  let glideTickTimer = 0;
+  function glideLoop() {
+    const ctx = ensure();
+    if (!ctx) return null;
+    if (glide) return glide;
+    const seconds = 3;
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let texture = 0;
+    for (let i = 0; i < data.length; i++) {
+      // The weave of the mousepad: the noise level wobbles a little
+      if (i % 600 === 0) texture = 0.55 + Math.random() * 0.45;
+      data[i] = (Math.random() * 2 - 1) * texture;
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = 2400;
+    band.Q.value = 0.7;
+    const soft = ctx.createBiquadFilter();
+    soft.type = 'lowpass';
+    soft.frequency.value = 5200;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    source.connect(band).connect(soft).connect(gain).connect(master);
+    source.start();
+    glide = { gain, band };
+    return glide;
+  }
+
   let birdTimer = 3;
   // Called every frame with the avatar state
   function update(deltaSeconds, { moving, grounded, running, surface, night, fireDistance = Infinity, day = false }) {
-    if (!enabled) { if (fire) fire.gain.gain.value = 0; return; }
+    if (!enabled) { if (fire) fire.gain.gain.value = 0; if (glide) glide.gain.gain.value = 0; return; }
     // Fire volume: full at the fire, silent beyond 22 m
     const fireVolume = fireDistance < 22 ? Math.pow(1 - fireDistance / 22, 2) * 0.55 : 0;
     if (fireVolume > 0 || fire) {
@@ -160,10 +188,17 @@ const Sound = (() => {
       if (airborneFor > 0.45) play('land');
       airborneFor = 0;
     }
-    stepTimer -= deltaSeconds;
-    if (moving && grounded && stepTimer <= 0) {
-      play('step', surface);
-      stepTimer = running ? 0.27 : 0.4;
+    // Mouse glide while the cursor moves on the ground (brighter when running)
+    const gliding = moving && grounded;
+    const loop = gliding || glide ? glideLoop() : null;
+    if (loop) {
+      loop.gain.gain.setTargetAtTime(gliding ? (running ? 0.16 : 0.1) : 0, context.currentTime, gliding ? 0.06 : 0.12);
+      loop.band.frequency.setTargetAtTime(running ? 3200 : 2400, context.currentTime, 0.2);
+    }
+    glideTickTimer -= deltaSeconds;
+    if (gliding && glideTickTimer <= 0) {
+      play('mouseTick');
+      glideTickTimer = 0.8 + Math.random() * 1.6;
     }
     if (night) {
       cricketTimer -= deltaSeconds;
