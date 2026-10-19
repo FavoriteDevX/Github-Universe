@@ -758,9 +758,20 @@
       const steel = material('#adb5bd', { metalness: 0.8, roughness: 0.3 });
       [-1, 1].forEach((side) => inner.add(box(0.5, h * 0.45, 0.5, steel, side * w * 0.3, -h * 0.28, 0)));
       inner.add(box(w + 0.4, h * 0.55 + 0.4, 0.5, material('#1d1d1f'), 0, h * 0.22, -0.1));
-      const screen = box(w, h * 0.55, 0.05, material('#000000'), 0, h * 0.22, 0.2);
+      // Until the video loads (or when it is blocked or far away) the screen
+      // shows the Mac ad banners in rotation instead of a black panel
+      const posterFace = new THREE.MeshBasicMaterial({ map: productBoard('Mac', 'Apple on YouTube', '#000000', '#ffffff') });
+      const screen = box(w, h * 0.55, 0.05, [material('#000000'), material('#000000'), material('#000000'), material('#000000'), posterFace, material('#000000')], 0, h * 0.22, 0.2);
       inner.add(screen);
       group.add(inner);
+      adList().then((ads) => {
+        const files = ads.map((ad) => ad.file).filter(Boolean);
+        if (!files.length) return;
+        let index = Math.floor(Math.random() * files.length);
+        const show = () => loadAd(files[index++ % files.length], (texture) => { posterFace.map = texture; posterFace.needsUpdate = true; });
+        show();
+        setInterval(show, 7000);
+      });
       VideoScreens.register(screen, w, h * 0.55, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
     },
 
