@@ -1015,6 +1015,7 @@ const City = (() => {
     const { box, cylinder, sphere, mesh, glow: glowMaterial, interactive, labelTexture } = PropKit.kit;
     const random = seededRandom(2024);
     const trees = [];
+    const shrubs = [];
     const houses = [];
     const sculptures = [];
     const kiosks = [];
@@ -1037,10 +1038,10 @@ const City = (() => {
       { type: 'supertree', scale: [8, 16, 8], radius: 150, angle: 5.0 },
       { type: 'column_hall', scale: [20, 10, 14], color: '#cdb4db', label: 'Gallery of Open Source', radius: 190, angle: 2.0, face: true },
       { type: 'light_pavilion', scale: [24, 16, 24], label: 'Pavilion of Light', radius: 140, angle: 1.55, face: true },
-      { type: 'mini_hotel', scale: [10, 6, 10], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
+      { type: 'mini_hotel', scale: [15, 9, 15], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
       { type: 'forest_garden', scale: [30, 1, 30], label: 'Multiverse Forest', radius: 175, angle: 1.05, face: true },
       { type: 'forest_garden', scale: [26, 1, 26], label: 'Multiverse Forest II', radius: 240, angle: 4.75, face: true },
-      { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
+      { type: 'mini_hotel', scale: [14, 12, 14], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
       { type: 'promenade', scale: [14, 1, 54], color: '#b9b4d6', radius: 150, angle: 3.9, face: true },
       { type: 'promenade', scale: [14, 1, 54], color: '#d6c7b4', radius: 165, angle: 0.15, face: true },
       { type: 'promenade', scale: [12, 1, 46], color: '#c5d6e0', radius: 180, angle: 5.2, face: true },
@@ -1080,16 +1081,17 @@ const City = (() => {
         const roll = random();
         if (roll < 0.42) {
           lawns.push({ x, z, size: 7 + random() * 4 });
-          const count = 3 + Math.floor(random() * 5);
-          for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * 12, z: z + (random() - 0.5) * 12, size: 0.8 + random() * 0.8, shade: random() });
-        } else if (roll < 0.56) houses.push({ x, z, width: 6 + random() * 3, depth: 6 + random() * 3, height: 3.5 + random() * 2, hue: random(), roof: random(), turn: random() * Math.PI });
+          const count = 5 + Math.floor(random() * 6);
+          for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * 16, z: z + (random() - 0.5) * 16, size: 0.8 + random() * 0.8, shade: random() });
+          for (let t = 0; t < 4; t++) shrubs.push({ x: x + (random() - 0.5) * 14, z: z + (random() - 0.5) * 14, size: 0.6 + random() * 0.6, turn: random() * Math.PI });
+        } else if (roll < 0.56) houses.push({ x, z, width: 9 + random() * 4, depth: 9 + random() * 4, height: 6 + random() * 3, hue: random(), roof: random(), turn: random() * Math.PI });
         else if (roll < 0.65) sculptures.push({ x, z, hue: random(), kind: Math.floor(random() * 3), size: 1.5 + random() * 1.5 });
         else if (roll < 0.72) kiosks.push({ x, z, hue: random(), turn: random() * Math.PI });
         else if (roll < 0.79) spots.push({ type: 'campfire', x, z });
         else if (roll < 0.85) spots.push({ type: 'art', x, z, link: COMMUNITY_LINKS[Math.floor(random() * COMMUNITY_LINKS.length)], seed: Math.floor(random() * 1000), turn: random() * Math.PI * 2 });
         else if (roll < 0.9) spots.push({ type: 'picnic', x, z, turn: random() * Math.PI });
         else if (roll < 0.94) spots.push({ type: 'sale', x, z });
-        else midrises.push({ x, z, width: 9 + random() * 5, depth: 9 + random() * 5, height: 8 + random() * 10, hue: random() });
+        else midrises.push({ x, z, width: 11 + random() * 6, depth: 11 + random() * 6, height: 14 + random() * 18, hue: random() });
       }
     }
 
@@ -1106,20 +1108,37 @@ const City = (() => {
       if (solid) { sharedCollidables.push(instanced); pickables.push(instanced); }
     };
 
-    // Trees (round, Decentraland-style, with autumn accents)
-    const trunkMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.35, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), Math.max(1, trees.length));
-    const crownMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), material('#ffffff', { roughness: 0.9 }), Math.max(1, trees.length));
-    trunkMesh.count = crownMesh.count = trees.length;
-    trees.forEach((tree, index) => {
-      matrix.compose(position.set(tree.x, GROUND_LEVEL, tree.z), quaternion.identity(), scale.set(tree.size, tree.size * 2.5, tree.size));
-      trunkMesh.setMatrixAt(index, matrix);
-      matrix.compose(position.set(tree.x, GROUND_LEVEL + tree.size * 3.4, tree.z), quaternion.identity(), scale.set(tree.size * 1.9, tree.size * 1.7, tree.size * 1.9));
-      crownMesh.setMatrixAt(index, matrix);
-      if (tree.shade > 0.68) crownMesh.setColorAt(index, color.set(['#ff7f50', '#f78fb3', '#ffb347', '#ff4d6d'][Math.floor(tree.shade * 100) % 4]));
-      else crownMesh.setColorAt(index, color.setHSL(0.27 + tree.shade * 0.08, 0.5, 0.34 + tree.shade * 0.12));
+    // Realistic leafy trees (green, blossom and autumn broadleaf, some pines) with low leafy shrubs
+    const treeGroups = { broadleaf_green: [], broadleaf_blossom: [], broadleaf_autumn: [], pine_green: [] };
+    trees.forEach((tree) => {
+      const key = tree.shade > 0.86 ? 'broadleaf_blossom' : tree.shade > 0.7 ? 'broadleaf_autumn' : tree.shade < 0.22 ? 'pine_green' : 'broadleaf_green';
+      treeGroups[key].push(tree);
     });
-    addInstanced(trunkMesh);
-    addInstanced(crownMesh, false);
+    Object.entries(treeGroups).forEach(([key, list]) => {
+      if (!list.length) return;
+      const [kind, variant] = key.split('_');
+      const mesh = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry(kind), PropKit.kit.treeMaterial(variant), list.length);
+      list.forEach((tree, index) => {
+        quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tree.x * 3.1 + tree.z);
+        matrix.compose(position.set(tree.x, GROUND_LEVEL, tree.z), quaternion, scale.set(tree.size * 0.8, tree.size * (0.75 + tree.shade * 0.2), tree.size * 0.8));
+        mesh.setMatrixAt(index, matrix);
+      });
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      sharedCollidables.push(mesh);
+      pickables.push(mesh);
+    });
+    if (shrubs.length) {
+      const shrubMesh = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry('broadleaf'), PropKit.kit.treeMaterial('green'), shrubs.length);
+      shrubs.forEach((shrub, index) => {
+        quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), shrub.turn);
+        // A squashed leafy crown sunk into the ground reads as a bush
+        matrix.compose(position.set(shrub.x, GROUND_LEVEL - 1.7 * shrub.size, shrub.z), quaternion, scale.set(shrub.size * 0.55, shrub.size * 0.5, shrub.size * 0.55));
+        shrubMesh.setMatrixAt(index, matrix);
+      });
+      shrubMesh.receiveShadow = true;
+      scene.add(shrubMesh);
+    }
 
     // Cottages with rounded walls and pyramid roofs, turned in every direction
     const houseMap = repeated(windowsTexture('#ffffff', '#ffe9a8'), 2, 1);

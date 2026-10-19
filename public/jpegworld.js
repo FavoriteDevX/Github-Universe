@@ -386,7 +386,7 @@
       ctx.fillStyle = '#8ab4f8';
       ctx.font = '22px Consolas, "Courier New", monospace';
       const url = redirectUrl();
-      const perLine = 74;
+      const perLine = 66;
       let y = 912;
       for (let i = 0; i < url.length && y < h - 20; i += perLine) { ctx.fillText(url.slice(i, i + perLine), 48, y); y += 32; }
     });

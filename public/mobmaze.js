@@ -321,6 +321,12 @@ const MobMaze = (() => {
     base.position.y = FLOOR_Y - 0.225;
     base.receiveShadow = true;
     group.add(base);
+    // Dark grout layer under the maze tiles: the gaps read as dark seams, but
+    // the floor stays continuous so the avatar never snags in a seam
+    const grout = new THREE.Mesh(new THREE.BoxGeometry(HALF * 2, TILE_Y - 0.07 - FLOOR_Y, HALF * 2), material('#0e1020', { roughness: 1 }));
+    grout.position.y = FLOOR_Y + (TILE_Y - 0.07 - FLOOR_Y) / 2;
+    grout.receiveShadow = true;
+    group.add(grout);
 
     // ---- Special cells: gates, plates, hazards, mobs ----
     const gateSpecs = [];
@@ -382,7 +388,7 @@ const MobMaze = (() => {
     const segments = instanced(worldBox(CELL - WALL_T, WALL_H, WALL_T, 1.5), stoneMat, segmentList.length, { shadow: true });
     segmentList.forEach(([x, z, rotated], index) => {
       place(segments, index, x, FLOOR_Y + WALL_H / 2, z, rotated);
-      segments.setColorAt(index, color.setHSL(0.6 + random() * 0.03, 0.18 + random() * 0.08, 0.36 + random() * 0.08));
+      segments.setColorAt(index, color.setHSL(0.6 + random() * 0.03, 0.2 + random() * 0.08, 0.26 + random() * 0.06));
     });
     group.add(segments);
 
@@ -395,7 +401,7 @@ const MobMaze = (() => {
     const posts = instanced(worldBox(WALL_T, WALL_H + 0.5, WALL_T, 1), glyphMat, postList.length, { shadow: true });
     postList.forEach(([x, z], index) => {
       place(posts, index, x, FLOOR_Y + (WALL_H + 0.5) / 2, z);
-      posts.setColorAt(index, color.setHSL(0.6, 0.15, 0.42 + random() * 0.08));
+      posts.setColorAt(index, color.setHSL(0.6, 0.15, 0.3 + random() * 0.06));
     });
     group.add(posts);
 
@@ -425,7 +431,7 @@ const MobMaze = (() => {
 
     // Visual pits: dark sunken tiles with purple specks (shallow, walkable)
     const voids = instanced(new THREE.BoxGeometry(CELL - 0.3, 0.06, CELL - 0.3), voidMat, voidCells.length);
-    voidCells.forEach(([i, j], index) => place(voids, index, cellX(i), FLOOR_Y + 0.03, cellZ(j)));
+    voidCells.forEach(([i, j], index) => place(voids, index, cellX(i), TILE_Y - 0.06, cellZ(j)));
     group.add(voids);
 
     // Lava hazards
@@ -520,7 +526,7 @@ const MobMaze = (() => {
     const local = new THREE.Vector3();
     let lastTime = 0;
     animate(group, (time) => {
-      const delta = Math.min(0.1, time - lastTime || 0.016);
+      const delta = Math.min(0.5, time - lastTime || 0.016);
       lastTime = time;
       lavaTexture.offset.set(Math.sin(time * 0.3) * 0.05, time * 0.08);
       lavaMat.emissiveIntensity = 0.9 + Math.sin(time * 3) * 0.3;

@@ -37,7 +37,7 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **Roblox-style seats everywhere**: E sits on benches, sofas, stools, theatre and amphitheater seats, HQ chairs, campfire benches, picnic tables and more.
 - **Spawn hub & Events Explorer**: the spawn faces a large square pool (14 m, reflective rippling water, tiled walls and caustics) inside a game-lobby style hub: low terraces with blue neon trims and water channels, octagonal tree planters, star pads that jump to the Worlds, a card table, a giant Connect Four, a gazebo lounge and canopy tents. Around the pool, ringed by walls of **Top Rated** scenes, **Events** (the Worlds) and live **Dev News**, with JUMP IN cards, a diving board into the pool and a floating golden arrow. Paths start there and lead to every district, and the districts are linked to each other by winding paths.
 - **Multiverse Hotel & mini hotels**: an architectural hotel district (giant neon "M" letters around a glass tower, red swirling lobby, spiral stairs, floating beds, teal lounge) plus mini capsule and neon-cube hotels in Genesis City and in several Worlds. **E on a bed at night** sets your spawn point (`/bed`); when half of the online devs are asleep the night is skipped for everyone, like Minecraft.
-- **In-game economy (not real money)**: Multiverse Coins (**MVC**) are earned with commits (+3), chests (+5), supply drops (+25) and the Gravity Flip reward (+50), and spent on **land parcels** (250 MVC) marked by "PARCEL FOR SALE" signs around Genesis City; bought parcels show the owner. `/pay` sends coins to another dev. There is no cryptocurrency, wallet or blockchain: MVC have no real value and cannot be bought or sold.
+- **In-game economy (not real money)**: Multiverse Coins (**MVC**) are earned with commits (+3), chests (+5), supply drops (+25) and the Gravity Flip reward (+50), and spent on **land parcels** (250 MVC) marked by "PARCEL FOR SALE" signs around Genesis City; bought parcels show the owner. `/pay` sends coins to another dev. By default MVC live only on the server. Optionally (see [Web3 on testnet](#-web3-on-testnet-optional)) they can be mirrored as an ERC-20 token on a **test network** (Base Sepolia or Polygon Amoy): test tokens have no real value and cannot be bought or sold.
 - **Avatar customization**: before entering (and anytime with the 👕 button) dress your cursor like a Decentraland backpack: cursor color, classic pixel "deal with it" shades, round glasses, neon visor or heart shades, a jacket cut to the shape of the arrow (leather, puffer, varsity, hoodie, tuxedo) and a cap, beanie, top hat, crown, headphones or halo. Saved on your account and visible to everyone.
 - **Underground Cafe menu**: E at the cafe menu board orders Italian-style "dishes" with Multiverse Coins. Every dish is a real package of code or tools (Carbonara Docker = a production Dockerfile, Risotto di GitHub = a GitHub Actions CI workflow, Gnocchi Kubernetes = a Deployment + Service, Pizza VS Code = editor settings, Panna Cotta Blockchain = an educational hash chain...): it is served on the counter, **downloaded as a file to your computer**, opened in Codify and kept in Codify → My packages. Cocktails (Python Negroni, Aperol Script, Terminal Espresso Martini, AWS Cloud Sour, Linux Mint Julep) also give a short buff.
 - **Coin indicator & daily bonus**: the top-right coin shows your MVC; click it for the daily bonus and the ways to earn more.
@@ -55,9 +55,33 @@ A Decentraland-like, fully functional 3D collaborative metaverse built for devel
 - **More around the plaza**: Decentraland-style ad cube towers and a floating LED cube, supertrees with glowing bulbs, the Hall of Builders (pink colonnade), a marble statue, a kinetic sculpture, the Pavilion of Light, open promenades with planters, the **Cotton Cloud Shop** in the center of the plaza and a mini plaza with a fountain and a floating message cube at every cowork.
 - **Living World**: a Minecraft-length day (10 minutes of day, 10 of night, 20 in total) with a live countdown in the HUD; at night the sky turns deep navy-violet with stars and a moon while windows, lamps and billboards light up. Rain, snow, thunderstorms, traffic on US-101 and a Caltrain.
 - **Immersive Lighting & Shadows**: PCF soft shadow maps give the whole world an organic architectural-maquette look.
-- **Welcome Screen & Accounts**: a sign-up / log-in screen over the README banner. Accounts live on the server with scrypt-hashed passwords and session tokens; your inventory is saved with your account. Already signed in? You go straight in.
+- **Welcome Screen & Accounts**: a sign-up / log-in screen over the README banner. Accounts live on the server with scrypt-hashed passwords and session tokens; your inventory is saved with your account. Already have an account on this browser? The game resumes your session silently and you start straight in the world, with the same look (sessions slide forward every time you play).
 - **Fortnite-Style Loot (for devs)**: golden chests on street corners all over Genesis City and Silicon Valley, plus a **supply drop** that falls from the sky every 3 minutes. Instead of weapons you find dev items in five rarities, from a Common Espresso Shot to a Legendary Jetpack.js.
 - **Solo Mode**: on static hosts with no server, the world still loads and every single-player feature works (the account and inventory are then kept only in that browser).
+
+## 🆕 New in v8
+
+- **Live Events**: a **Community Events Board** near the spawn (E) with **LIVE** and **Upcoming** tabs, local-time countdowns and **Jump In**. During an event its stage plays the stream (YouTube or Twitch) on a big screen; **V** toggles its sound and only the nearest screen ever plays audio. Stay 5 minutes near a live stage and the server confirms your attendance: **+100 MVC**. Events live in `public/maps/events.json` (`id, titulo, organizador, descricao, tipo, urlTransmissao, dataHoraInicio, dataHoraFim, coordenadasDestino {x, y}`); if a stream fails, the stage shows an offline card.
+- **Glass Cube Store**: a Fifth Avenue-style glass cube on a granite plaza with the Multiverse logo floating inside. A spiral stair (and a glass elevator) goes down to the underground **Tech Hub**: laptops there pay **+5 MVC** per commit instead of 3. The glass is solid.
+- **Bigger, more realistic world**: districts are 1.5x larger, hotels and city buildings are taller, and trees are real-looking leafy trees (bark, dense foliage and leaf cards, in green, blossom and autumn, plus pines) with bushes, in denser groves.
+- **Beach on the sea**: the beach sits on the edge of Genesis City where the ocean reaches the horizon, with palms and islands.
+- **The Hotel in the forest**: the log-cabin chalet now has its own district in a ring of pines, and its ventilation-duct maze is a 13x13 labyrinth.
+- **Fry your Code at every firepit**, with crackling fire sounds that grow as you get close. Footsteps, birds and other sounds were improved.
+- **Genesis Plaza Underground**: a lounge inspired by the "Welcome to Decentraland" hall, a ring corridor (the Hall of Internet History) around the whole underground, an upper floor and the **Gig Plaza** (cook pizza and coffee, deliver, earn rewards).
+- **Crypto Valley** (world, next to Silicon Valley): zoned HQs, digital-art galleries, financial towers with LED market screens, floating buildings and a central plaza, still under construction.
+- **.jpeg World**: a world made of real photo textures with plain white signs. Its entrance is a Minecraft-style world border that turns into an image-search card when you touch it.
+- **The Mob Maze**, the **Candlestick Maze** (walls follow real crypto prices), the **Pit Arena** and more districts.
+- **Genesis City minimap** card always visible under the coin indicator; **F** toggles flight.
+
+## 🔗 Web3 on testnet (optional)
+
+Everything works without this. To mirror MVC on a test network:
+
+1. Copy `.env.example` to `.env` and fill `THIRDWEB_CLIENT_ID`, `THIRDWEB_SECRET_KEY`, `MVC_CHAIN` (`base-sepolia` or `polygon-amoy`), `MVC_TOKEN_ADDRESS`, `GAME_ADMIN_PRIVATE_KEY` and `GAME_TREASURY_ADDRESS`.
+2. Deploy the token from `blockchain/` (`cd blockchain && npm install && npm test`): `contracts/MVCToken.sol` is an OpenZeppelin ERC-20 (capped, burnable) whose `mint` only the owner or the game contract can call.
+3. `npm start` builds `public/vendor/web3.js` (thirdweb in-app wallets, gas sponsored). Players log in with email or Google, get a wallet automatically (address shown discreetly), can **claim** their in-game MVC as test tokens and buy land with an on-chain transfer of 250 MVC (verified by the server before the parcel is granted).
+
+Only test networks are accepted; mainnets are refused by the server.
 
 ---
 
@@ -208,7 +232,6 @@ Every map is a JSON file in `public/maps/` and is registered in `public/maps/wor
 | `techsquare` | **Tech Square** | Far from the center: LED screens with live GitHub commits and PRs, Big Tech stocks and dev trending topics, fireworks |
 | `gamer` | **Gamer District** | Far from the center: the Gravity Flip tower, arcade cabinets, neon pillars, a mini-game arena and LAN-party desks |
 | `villas` | **Aero-Glass Oasis** | Far from the center: floating glass villas with smart glass and low-gravity infinity pools |
-| `festival` | **Soundwave Festival** | A big music event "amplifying Spotify": an entrance gate of LED screens on truss with a walkable bridge, flame cannons, a main stage with an LED equalizer wall, lasers, sound waves on the floor and a crowd of dancing cursors. Spotify's official embedded player (Today's Top Hits) is on the stage: press play on it, Spotify embeds do not autoplay; the show follows a 124 BPM clock because browsers cannot read the audio of an embed |
 | `hotel` | **Multiverse Hotel** | Glass tower behind giant neon "M" letters; red swirling lobby, spiral staircase, floating beds (sleep at night), reception, golden hexagon lamps, fireflies, teal lounge, capsule pods and a neon cube hotel |
 | `equalizer` | **Graphic Equalizer** | The Tower of Icons: real app icons that pulse with the music, and a spiral of icon platforms with a sound/effect on every step |
 | `workspace` | **Holo Workspace** | A futuristic glass office on a pastel gradient floor: acrylic tables and chairs with laptops, a round lounge sofa and the live Commit Leaderboard |
@@ -277,7 +300,6 @@ github-multiverse/
     ├── techsquare.js    # Tech Square LED screens, stock bars, fireworks, Hall of Fame & Newsroom boards
     ├── metro.js         # Multiverse Metro map and train rides
     ├── vehicles.js      # Cyber Garage: hover cars and light cycles, riding and neon trails
-    ├── festival.js      # Soundwave Festival: LED gate, stage, lasers, sound waves, dancing crowd
     ├── codify.js        # Codify editor, code blocks in the world (private/shared), Fry your Code bug finder
     ├── hotels.js        # Multiverse Hotel, mini hotels and The Hotel lodge (beds to sleep at night)
     ├── cafe.js          # Underground Cafe menu: dishes that are code packages (maps/cafe_menu.json)

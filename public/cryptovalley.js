@@ -1453,7 +1453,8 @@
         const roots = [group.parent, ...City.districts.filter((district) => district.world.key === 'valley').map((district) => district.root)];
         const probe = new THREE.Vector3();
         roots.forEach((root) => root.children.forEach((child) => {
-          if (child.userData.blockType || !child.isGroup) return;
+          // Island tree rings (no block type) and tree-cluster blocks only
+          if (!child.isGroup || (child.userData.blockType && !/tree/.test(child.userData.blockType))) return;
           child.children.forEach((node) => {
             if (!node.isInstancedMesh) return;
             node.updateMatrixWorld(true);
