@@ -332,6 +332,7 @@ async function loadUniverse() {
   worldFullyLoaded = true;
   DistanceCulling.prepare();
   Quality.refresh();
+  FireLights.init(scene);
 }
 
 let resolvePlazaReady = () => {};
@@ -1696,6 +1697,13 @@ function animate() {
   emitCursor(false);
 
   const { flash, haze, inCloud } = City.updateEnvironment({ ticks: currentTicks(), weather: worldClock.weather, camera, focus: controls.target, deltaSeconds, time: elapsed });
+  // Firelight: the firepits register themselves once built; 0 by day, 1 at night with a dusk/dawn ramp
+  (window.firepits || []).forEach((pit) => { if (!pit.userData.fireLit) { pit.userData.fireLit = true; FireLights.register(pit, { radius: 11, height: 1.4, strength: 1.15 }); } });
+  {
+    const ticks = currentTicks();
+    const night = ticks < 11500 ? 0 : ticks < 13000 ? (ticks - 11500) / 1500 : ticks < 22800 ? 1 : ticks < 24000 ? (24000 - ticks) / 1200 : 0;
+    FireLights.update(camera, elapsed, night, Quality.level());
+  }
   DistanceCulling.update(elapsed);
   // High altitude blurs the view a little; flying through a cloud blurs it a lot
   // (a CSS blur on the whole canvas is very expensive, so it is skipped on lighter quality levels)
@@ -1727,8 +1735,8 @@ function animate() {
       window.firepits.forEach((pit) => { pit.getWorldPosition(firepitProbe); fireDistance = Math.min(fireDistance, firepitProbe.distanceTo(avatar.position)); });
       lastFireDistance = fireDistance;
     }
-    // Streets and paved plazas sound like stone; the land parcels sound like grass
-    const onGrass = !here && avatar.position.y > -20 && City.landAt(avatar.position.x, avatar.position.z) !== 'road';
+    // Streets and the paved commons sound like stone; the parcels for sale sound like grass
+    const onGrass = !here && avatar.position.y > -20 && !['road', 'commons'].includes(City.landAt(avatar.position.x, avatar.position.z));
     Sound.update(deltaSeconds, { moving: avatar.moving && viewMode === 'explore', grounded: avatar.grounded || flying, running: keysPressed.has('shift'), surface: onGrass ? 'grass' : surface === 'grass' && !here ? 'stone' : surface, night: ticks > 13000 && ticks < 23000 && avatar.position.y > -20, fireDistance: lastFireDistance, day: ticks < 12000 && avatar.position.y > -20 });
   }
   Cafe.update(elapsed);

@@ -1871,3 +1871,104 @@ const PropKit = (() => {
 
   return { buildBlock, registerBuilder, kit, textSprite, material, glow, animatedObjects, interactables };
 })();
+
+// ============================================================================
+// FIRE LIGHTS: FLICKERING FIRELIGHT AND SHADOWS AROUND FIREPITS AND CAMPFIRES
+// ============================================================================
+// Every fire registers here. Each one gets a warm pool of light painted on the
+// ground (cheap, always on, brighter at night). On top of that a small pool of
+// real point lights follows the fires nearest to the camera: they flicker like
+// flames, and at night the closest one also casts soft shadows of the benches,
+// logs and cursors around it (a point light shadow renders the scene six
+// times, so only one fire casts them). By day the fires barely light anything.
+const FireLights = (() => {
+  const fires = [];
+  const lights = [];
+  const LIGHT_COUNT = 2;
+  const RANGE = 70;
+  const probe = new THREE.Vector3();
+  let glowTexture = null;
+  let scene = null;
+
+  function groundGlowTexture() {
+    if (glowTexture) return glowTexture;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gradient.addColorStop(0, 'rgba(255, 170, 80, 1)');
+    gradient.addColorStop(0.25, 'rgba(255, 120, 40, 0.55)');
+    gradient.addColorStop(0.6, 'rgba(200, 70, 20, 0.16)');
+    gradient.addColorStop(1, 'rgba(120, 40, 10, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+    glowTexture = new THREE.CanvasTexture(canvas);
+    return glowTexture;
+  }
+
+  // group: the fire (its origin is the center of the fire, on the ground)
+  function register(group, { radius = 9, height = 1.2, strength = 1 } = {}) {
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(radius * 2, radius * 2), new THREE.MeshBasicMaterial({ map: groundGlowTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, polygonOffset: true, polygonOffsetFactor: -4 }));
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = 0.06;
+    glow.raycast = () => {};
+    glow.renderOrder = 1;
+    group.add(glow);
+    fires.push({ group, glow, height, strength, phase: Math.random() * 10 });
+  }
+
+  function ensureLights() {
+    if (lights.length || !scene) return;
+    for (let i = 0; i < LIGHT_COUNT; i++) {
+      const light = new THREE.PointLight('#ff8a3d', 0, 26, 2);
+      light.shadow.mapSize.set(512, 512);
+      light.shadow.bias = -0.004;
+      light.shadow.radius = 4;
+      light.shadow.camera.near = 0.3;
+      light.shadow.camera.far = 26;
+      light.userData.shadowCapable = false; // the quality governor leaves it alone
+      scene.add(light);
+      lights.push(light);
+    }
+  }
+
+  function init(targetScene) {
+    scene = targetScene;
+  }
+
+  // night: 0 by day, 1 at night; quality: 0 (minimum) .. 3 (high)
+  function update(camera, time, night, quality = 2) {
+    if (!scene) return;
+    ensureLights();
+    const flickerOf = (fire) => 0.78 + Math.sin(time * 9.7 + fire.phase) * 0.09 + Math.sin(time * 23.3 + fire.phase * 1.7) * 0.07 + Math.sin(time * 3.1 + fire.phase * 0.6) * 0.06;
+    // Ground glow on every fire (stronger at night)
+    const nearby = [];
+    fires.forEach((fire) => {
+      if (!fire.group.parent) return;
+      const flicker = flickerOf(fire);
+      fire.glow.material.opacity = (0.12 + night * 0.6) * flicker * fire.strength;
+      fire.glow.scale.setScalar(0.94 + flicker * 0.08);
+      fire.group.getWorldPosition(probe);
+      const distance = probe.distanceTo(camera.position);
+      if (distance < RANGE) nearby.push({ fire, distance, position: probe.clone(), flicker });
+    });
+    nearby.sort((a, b) => a.distance - b.distance);
+    // castShadow only flips at dusk and dawn (flipping it recompiles the shaders);
+    // with no fire nearby the shadow map simply stops updating
+    const castShadows = night > 0.5 && quality >= 2;
+    lights.forEach((light, index) => {
+      const entry = nearby[index];
+      light.castShadow = castShadows && index === 0;
+      light.shadow.autoUpdate = Boolean(entry) && light.castShadow;
+      if (!entry) { light.intensity = 0; return; }
+      const { fire, position, flicker } = entry;
+      // The light dances a little with the flames
+      light.position.set(position.x + Math.sin(time * 6.3 + fire.phase) * 0.12, position.y + fire.height + Math.sin(time * 8.1 + fire.phase) * 0.08, position.z + Math.cos(time * 5.7 + fire.phase) * 0.12);
+      light.color.setHSL(0.07 + Math.sin(time * 4 + fire.phase) * 0.01, 1, 0.55);
+      light.intensity = (0.25 + night * 2.6) * flicker * fire.strength;
+      light.distance = 14 + night * 14;
+    });
+  }
+
+  return { init, register, update };
+})();

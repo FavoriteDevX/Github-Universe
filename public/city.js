@@ -204,7 +204,9 @@ const City = (() => {
         const water = seaAt(x, z);
         if (water && !water.island) continue;
         if (!water && isRoadParcel(px, pz)) roadSpots.push([x, z]);
-        else grassSpots.push([x, z, px, pz]);
+        // Like Decentraland, Genesis City itself (the commons) stays paved with
+        // stone; grass only covers the parcels for sale around it and islands
+        else if (water || !inCore(x, z)) grassSpots.push([x, z, px, pz]);
       }
     }
     const { grass, road } = parcelTextures();
@@ -968,8 +970,9 @@ const City = (() => {
     const pines = [];
     const rounds = [];
     districts.forEach((district) => {
-      // The plaza and the beach stay open (the beach looks out to the sea)
-      if (district.world.world || district.world.key === 'plaza' || district.world.key === 'beach') return;
+      // The plaza, the beach (it looks out to the sea) and the Glass Cube (a
+      // store on an open square of the city) stay open
+      if (district.world.world || ['plaza', 'beach', 'glasscube'].includes(district.world.key)) return;
       const { center, size } = district.layout;
       [5, 10].forEach((offset, row) => {
         const halfX = size[0] / 2 + offset;
@@ -1226,8 +1229,14 @@ const City = (() => {
           spotGroup.add(log);
         }
         const flame = mesh(new THREE.ConeGeometry(0.6, 1.6, 7), glowMaterial('#ff9f1c', 2, { transparent: true, opacity: 0.9 }), 0, 1.2, 0);
-        spotGroup.add(flame);
-        animatedCity.push((time) => { flame.scale.set(1, 0.8 + Math.sin(time * 14 + spot.x) * 0.25, 1); });
+        const core = mesh(new THREE.ConeGeometry(0.32, 1.1, 7), glowMaterial('#ffe8a3', 3, { transparent: true, opacity: 0.95 }), 0, 0.95, 0);
+        [flame, core].forEach((part) => { part.castShadow = false; spotGroup.add(part); });
+        animatedCity.push((time) => {
+          flame.scale.set(1 + Math.sin(time * 9 + spot.z) * 0.06, 0.8 + Math.sin(time * 14 + spot.x) * 0.25, 1);
+          core.scale.set(1, 0.85 + Math.sin(time * 19 + spot.z) * 0.2, 1);
+        });
+        // Flickering firelight on the ground and benches (stronger at night)
+        FireLights.register(spotGroup, { radius: 8, height: 1.3, strength: 0.9 });
         for (let i = 0; i < 4; i++) {
           const angle = (i / 4) * Math.PI * 2 + 0.4;
           const bench = new THREE.Group();
