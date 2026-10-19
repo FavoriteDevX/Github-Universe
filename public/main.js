@@ -1690,6 +1690,7 @@ function animate() {
   }
   nearbyAnimated.forEach((object) => object.userData.animate(elapsed));
   Codify.update(elapsed);
+  Codify.updateMusic(currentTicks() >= 12000, deltaSeconds);
   {
     // Footsteps: stone in Genesis Plaza and on paths, an echo underground, grass elsewhere
     const here = City.districtAt(avatar.position.x, avatar.position.z);

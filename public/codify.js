@@ -435,5 +435,63 @@ const Codify = (() => {
     open();
   }
 
-  return { init, open, close, isOpen, update, interact, startRoast, findBugs, loadTemplate };
+
+  // --------------------------------------------------------------------------
+  // Night soundtrack: "Hand Covers Bruise" (The Social Network) plays only at
+  // night while Codify is open or a block is roasting at a firepit. It is a
+  // hidden YouTube player (no audio file is shipped); the video can be changed
+  // with localStorage "multiverse-night-music" (a YouTube link or video id).
+  // --------------------------------------------------------------------------
+  const NIGHT_MUSIC_DEFAULT = 'fVv5RnNM8hg';
+  const music = { frame: null, ready: false, playing: false, volume: 0, target: 0, lastSent: -1 };
+
+  function nightMusicId() {
+    let custom = '';
+    try { custom = localStorage.getItem('multiverse-night-music') || ''; } catch (error) { custom = ''; }
+    const match = custom.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/) || custom.match(/^([\w-]{11})$/);
+    return match ? match[1] : NIGHT_MUSIC_DEFAULT;
+  }
+
+  function musicCommand(func, args = []) {
+    if (!music.frame || !music.frame.contentWindow) return;
+    music.frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+  }
+
+  function createMusicPlayer() {
+    const id = nightMusicId();
+    const frame = document.createElement('iframe');
+    frame.title = 'Hand Covers Bruise';
+    frame.allow = 'autoplay';
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;bottom:-10px;opacity:0;pointer-events:none;border:0';
+    frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&loop=1&playlist=${id}&controls=0&enablejsapi=1&playsinline=1`;
+    frame.addEventListener('load', () => {
+      music.ready = true;
+      music.lastSent = -1;
+      musicCommand('setVolume', [0]);
+      musicCommand('playVideo');
+      music.playing = true;
+    });
+    document.body.appendChild(frame);
+    music.frame = frame;
+  }
+
+  // Called every frame: fades the soundtrack in (night + Codify/roast) or out
+  function updateMusic(isNight, deltaSeconds = 1 / 60) {
+    const soundOn = typeof Sound === 'undefined' || !Sound.isEnabled || Sound.isEnabled();
+    const wanted = Boolean(isNight && soundOn && (isOpen() || roast));
+    music.target = wanted ? 60 : 0;
+    if (wanted && !music.frame) {
+      try { createMusicPlayer(); } catch (error) { console.warn('Night music unavailable', error); }
+    }
+    if (!music.ready) return;
+    const step = deltaSeconds * (wanted ? 25 : 40);
+    music.volume = music.volume < music.target ? Math.min(music.target, music.volume + step) : Math.max(music.target, music.volume - step);
+    const rounded = Math.round(music.volume);
+    if (rounded !== music.lastSent) { musicCommand('setVolume', [rounded]); music.lastSent = rounded; }
+    if (wanted && !music.playing) { musicCommand('playVideo'); music.playing = true; }
+    if (!wanted && music.playing && music.volume <= 0) { musicCommand('pauseVideo'); music.playing = false; }
+  }
+
+  return { init, open, close, isOpen, update, updateMusic, isRoasting: () => Boolean(roast), interact, startRoast, findBugs, loadTemplate };
 })();
