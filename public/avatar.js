@@ -124,6 +124,8 @@ const Avatar = (() => {
   // Customization screen (Decentraland-like backpack) with a live 3D preview
   // --------------------------------------------------------------------------
   function openCustomizer(current, onSave, buildCursor) {
+    // Never stack two customization screens (first visit and the dock button)
+    if (document.getElementById('avatar-screen')) return;
     let look = sanitize(current);
     const screen = document.createElement('div');
     screen.id = 'avatar-screen';
