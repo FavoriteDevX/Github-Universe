@@ -1,0 +1,34 @@
+<svg xmlns="http://w3.org" viewBox="0 0 1000 450" width="100%" height="auto">
+  <defs>
+    <style>
+      @keyframes carouselAnimation {
+        0%, 13.33% { opacity: 1; }      /* Image 1 visible */
+        16.66%, 30% { opacity: 0; }     /* Smooth fade transition */
+        33.33%, 96.66% { opacity: 0; }  /* Hidden for the rest of the loop */
+        100% { opacity: 1; }
+      }
+      .slide {
+        position: absolute;
+        width: 1000px;
+        height: 450px;
+        opacity: 0;
+        animation: carouselAnimation 24s infinite ease-in-out;
+      }
+      /* Individual timing delay for each of the 6 screenshots */
+      .img1 { animation-delay: 0s; opacity: 1; }
+      .img2 { animation-delay: 4s; }
+      .img3 { animation-delay: 8s; }
+      .img4 { animation-delay: 12s; }
+      .img5 { animation-delay: 16s; }
+      .img6 { animation-delay: 20s; }
+    </style>
+  </defs>
+
+  <!-- Pulling the images locally from the same assets directory -->
+  <image class="slide img1" href="./image1.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img2" href="./image2.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img3" href="./image3.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img4" href="./image4.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img5" href="./image5.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img6" href="./image6.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+</svg>
