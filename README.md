@@ -5,6 +5,7 @@
 A fully functional 3D collaborative metaverse built for developers. Instead of avatars, players explore a low-poly universe as custom **3D mouse pointers**, discovering themed districts, mini-games, and a stylized recreation of Silicon Valley.
 
 So, imagine to have a fun, useful and 3D virtual dimension world, just for devs like you. Meet new friends, code like a pro, discover who uses the same tools that you do, invite friends to dynamic workspaces and explore your world.
+
 ---
 
 ## 🚀 Features
@@ -20,6 +21,9 @@ So, imagine to have a fun, useful and 3D virtual dimension world, just for devs 
 
 ## 🖼️ 📸 Screenshots & Gameplay
 
+<p align="center">
+  <img src="./assets/carousel.svg" alt="Metaverse Project Showcase" width="100%">
+</p>
 
 ## 🎮 Controls & Commands
 
