@@ -1946,7 +1946,7 @@ const FireLights = (() => {
     fires.forEach((fire) => {
       if (!fire.group.parent) return;
       const flicker = flickerOf(fire);
-      fire.glow.material.opacity = (0.12 + night * 0.6) * flicker * fire.strength;
+      fire.glow.material.opacity = Math.min(1, (0.12 + night * 0.85) * flicker * fire.strength);
       fire.glow.scale.setScalar(0.94 + flicker * 0.08);
       fire.group.getWorldPosition(probe);
       const distance = probe.distanceTo(camera.position);
@@ -1965,8 +1965,8 @@ const FireLights = (() => {
       // The light dances a little with the flames
       light.position.set(position.x + Math.sin(time * 6.3 + fire.phase) * 0.12, position.y + fire.height + Math.sin(time * 8.1 + fire.phase) * 0.08, position.z + Math.cos(time * 5.7 + fire.phase) * 0.12);
       light.color.setHSL(0.07 + Math.sin(time * 4 + fire.phase) * 0.01, 1, 0.55);
-      light.intensity = (0.25 + night * 2.6) * flicker * fire.strength;
-      light.distance = 14 + night * 14;
+      light.intensity = (0.25 + night * 4.2) * flicker * fire.strength;
+      light.distance = 14 + night * 18;
     });
   }
 
