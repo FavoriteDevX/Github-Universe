@@ -31,7 +31,6 @@ const City = (() => {
   let hemisphere;
   let stars;
   let moon;
-  let clouds;
   let rain;
   let snow;
   let streetLampHeads;
@@ -1406,15 +1405,6 @@ const City = (() => {
     stars = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3)), new THREE.PointsMaterial({ color: '#ffffff', size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     scene.add(stars);
 
-    clouds = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), material('#ffffff', { roughness: 1, transparent: true, opacity: 0.92, flatShading: true }), 60);
-    const matrix = new THREE.Matrix4();
-    for (let i = 0; i < 60; i++) {
-      const cloudScale = new THREE.Vector3(18 + random() * 22, 5 + random() * 5, 12 + random() * 14);
-      matrix.compose(new THREE.Vector3((random() - 0.5) * 1400, 90 + random() * 50, (random() - 0.5) * 1400 + 200), new THREE.Quaternion(), cloudScale);
-      clouds.setMatrixAt(i, matrix);
-    }
-    clouds.castShadow = false;
-    scene.add(clouds);
 
     rain = createPrecipitation(4000, '#a5c8ff', 0.35, true);
     snow = createPrecipitation(2500, '#ffffff', 1.4, false);
@@ -1514,8 +1504,6 @@ const City = (() => {
     moon.position.set(camera.position.x - Math.cos(sunAngle) * 900, Math.max(-200, -Math.sin(sunAngle) * 700 + 150), camera.position.z - 500);
     moon.visible = night > 0.1 && weather === 'clear';
     stars.position.copy(camera.position);
-    clouds.material.color.set(weather === 'clear' ? '#ffffff' : '#9aa5b1');
-    clouds.position.x = (time * 2) % 200;
     nightWindowMaterials.forEach((windowMaterial) => { windowMaterial.emissive.setScalar(night * 0.9); });
     if (streetLampHeads) streetLampHeads.material.emissiveIntensity = 0.2 + night * 2.2;
     if (lampHalos) lampHalos.material.opacity = night * 0.22;
@@ -1676,8 +1664,8 @@ const City = (() => {
   }
 
   // --------------------------------------------------------------------------
-  // Horizon: red low-poly mesas with autumn trees, a sweeping arch landmark and
-  // puffy cumulus clouds, so the sky around Genesis City never feels empty
+  // Horizon: red low-poly mesas with autumn trees and a sweeping arch landmark,
+  // so the sky around Genesis City never feels empty (clouds: the Minecraft layer)
   // --------------------------------------------------------------------------
   function buildHorizon() {
     const random = seededRandom(9001);
@@ -1726,25 +1714,6 @@ const City = (() => {
       arch.add(ring);
     }
 
-    // Puffy cumulus clouds made of clustered spheres
-    const cloudMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, emissive: '#ffffff', emissiveIntensity: 0.15 });
-    for (let i = 0; i < 18; i++) {
-      const cloud = new THREE.Group();
-      const puffs = 5 + Math.floor(random() * 4);
-      for (let p = 0; p < puffs; p++) {
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), cloudMaterial);
-        const size = 14 + random() * 16;
-        puff.scale.set(size, size * 0.8, size);
-        puff.position.set((p - puffs / 2) * 14 + random() * 6, random() * 10 + (p % 2) * 8, random() * 10);
-        cloud.add(puff);
-      }
-      const angle = random() * Math.PI * 2;
-      const distance = 350 + random() * 450;
-      cloud.position.set(Math.cos(angle) * distance, 130 + random() * 90, Math.sin(angle) * distance);
-      cloud.traverse((node) => { node.raycast = () => {}; });
-      scene.add(cloud);
-      animatedCity.push((time) => { cloud.position.x += Math.sin(time * 0.01 + i) * 0.02; });
-    }
   }
 
   // Called once every district is loaded
