@@ -22,7 +22,7 @@ So, imagine to have a fun, useful and 3D virtual dimension world, just for devs 
 ## 🖼️ 📸 Screenshots & Gameplay
 
 <p align="center">
-  <img src="./assets/carousel.svg" alt="Metaverse Project Showcase" width="100%">
+  <img src="https://githubusercontent.com" alt="Metaverse Project Showcase" width="100%">
 </p>
 
 ## 🎮 Controls & Commands
