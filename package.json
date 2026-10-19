@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "prestart": "npm run build:web3",
-    "build:web3": "esbuild web3/client.js --bundle --minify --format=iife --platform=browser --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --outfile=public/vendor/web3.js --log-level=warning"
+    "build:web3": "esbuild web3/client.js --bundle --minify --format=iife --platform=browser --target=es2020 --define:process.env.NODE_ENV=\\\"production\\\" --outfile=public/vendor/web3.js --log-level=warning",
+    "test": "node -e \"const fs=require('fs'),vm=require('vm');let n=0;for(const f of ['server.js','web3/server.js','web3/client.js'].concat(fs.readdirSync('public').filter(x=>x.endsWith('.js')).map(x=>'public/'+x))){if(f.startsWith('web3/client')||!fs.existsSync(f))continue;new vm.Script(fs.readFileSync(f,'utf8').replace(/^#!.*/,''),{filename:f});n++}for(const m of fs.readdirSync('public/maps').filter(x=>x.endsWith('.json'))){JSON.parse(fs.readFileSync('public/maps/'+m,'utf8'));n++}console.log('Syntax OK:',n,'files')\""
   },
   "dependencies": {
     "express": "^4.19.2",
