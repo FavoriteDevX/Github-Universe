@@ -1,6 +1,6 @@
  ## GitHub Multiverse
 
-<img width="1000" height="561" alt="image" src="https://github.com/user-attachments/assets/1c7a81c7-6897-4ce4-bc3c-422fa9a61cfe" />
+<img width="1369" height="768" alt="image" src="https://github.com/user-attachments/assets/1d43db17-2b05-41dd-a486-5373ef3742c3" />
 
 A fully functional 3D collaborative metaverse built for developers. Instead of avatars, players explore a low-poly universe as custom **3D mouse pointers**, discovering themed districts, mini-games, and a stylized recreation of Silicon Valley.
 
