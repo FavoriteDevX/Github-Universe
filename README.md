@@ -145,6 +145,21 @@ This project is proudly supported and built in collaboration with:
 
 ---
 
+## Also rip Zuckerberg's metaverse lol
+
+
+
+<details>
+<summary>🪦 Open Letter to Mark Zuckerberg (Click to expand)</summary>
+
+Dear Mark, 
+
+We saw what you tried to do with Horizon Worlds. We appreciated the effort, but devs don't need expensive VR goggles to look at low-poly empty plazas. They just need a terminal, a browser, and a way to judge each other's code. 
+
+Rest in peace, corporate metaverse. The open-source community takes it from here.
+</details>
+
+---
+
 ## ⚖️ Disclaimer
 Company names and structures are stylized wordmark recreations for identification purposes. Keynotes are streamed directly from official Apple/Google YouTube embeds. All trademarks belong to their respective owners.
-
