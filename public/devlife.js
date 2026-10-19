@@ -19,12 +19,11 @@
 // - Mascots and props: a giant rubber duck, a plush octocat-like cat (an
 //   original design, not the GitHub logo), a desk with a mountain of coffee
 //   cups, a giant keyboard with worn Ctrl/C/V keys, a battle station with six
-//   monitors, dark sofas and about twenty stylized visitors (some walking).
+//   monitors, and dark sofas.
 // Performance: canvases are drawn lazily (one per frame, only when the camera
 // comes near), labels share 4-per-atlas textures merged into one mesh per
-// atlas, static parts are merged by material, visitors are three instanced
-// meshes and the interior is hidden when the camera is far away (the usual
-// DistanceCulling still handles the rest).
+// atlas, static parts are merged by material and the interior is hidden when
+// the camera is far away (the usual DistanceCulling still handles the rest).
 (() => {
   const { material, glow, box, cylinder, sphere, animate, textSprite, interactive, seat, canvasTexture, mergeByMaterial, repeated } = PropKit.kit;
   const W = 70; // gallery width (x)
@@ -1177,63 +1176,6 @@
     [-0.6, 0.6].forEach((offset) => interior.add(seat(x + Math.cos(ry) * offset, 0.45, z - Math.sin(ry) * offset, 'Gallery sofa', ry)));
   }
 
-  // Stylized visitors: legs, body and head as three instanced meshes with
-  // per-instance colors; a few of them walk slowly around the gallery
-  function visitors(interior) {
-    const people = [
-      // standing in front of panels and around the mascots: [x, z, facing]
-      [-12.3, -9.4, Math.PI], [-11.4, -9.2, Math.PI + 0.3], [20, -0.4, Math.PI], [-20, 8.6, Math.PI - 0.2],
-      [12.2, 17.6, Math.PI], [13.1, 17.8, Math.PI + 0.4], [-27.3, -21.8, Math.PI], [-1.7, -21.8, Math.PI],
-      [9.6, -21.6, Math.PI + 0.2], [4.8, -4.6, -1.6], [-4.8, -5.2, 1.6], [-28, -0.4, Math.PI],
-      [28, 8.6, Math.PI + 0.2], [-30.5, -15.5, -Math.PI / 2]
-    ].map(([x, z, ry]) => ({ x, z, ry }));
-    // walkers: [center x, center z, radius x, radius z, speed, phase]
-    const walkers = [[0, -3, 8.5, 8, 0.09, 0], [0, -3, 8.5, 8, 0.09, Math.PI], [20.5, -7.8, 10, 0.4, 0.05, 0.5], [-20.5, 1.2, 10, 0.4, 0.05, 2], [20.5, 10.2, 10, 0.4, 0.06, 1], [-20.5, 10.2, 10, 0.4, 0.06, 3], [0, -19.8, 22, 0.3, 0.025, 1.5]];
-    const count = people.length + walkers.length;
-    const legs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.38, 0.86, 0.22).translate(0, 0.43, 0), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.8 }), count);
-    const bodies = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.27, 0.7, 10).translate(0, 1.21, 0), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.7 }), count);
-    const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.17, 12, 10).translate(0, 1.76, 0), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 }), count);
-    const shirts = ['#e64980', '#4dabf7', '#ffd43b', '#51cf66', '#845ef7', '#ff922b', '#20c997', '#f8f9fa', '#343a40', '#fa5252'];
-    const pants = ['#1c2a44', '#343a40', '#5c4033', '#2b8a3e', '#495057', '#0b7285'];
-    const skins = ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac', '#a0522d'];
-    const color = new THREE.Color();
-    const random = seeded(77);
-    for (let i = 0; i < count; i++) {
-      legs.setColorAt(i, color.set(pants[Math.floor(random() * pants.length)]));
-      bodies.setColorAt(i, color.set(shirts[Math.floor(random() * shirts.length)]));
-      heads.setColorAt(i, color.set(skins[Math.floor(random() * skins.length)]));
-    }
-    const sizes = Array.from({ length: count }, () => 0.88 + random() * 0.2);
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3();
-    const quaternion = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
-    const up = new THREE.Vector3(0, 1, 0);
-    const place = (i, x, z, ry, bob) => {
-      matrix.compose(position.set(x, bob, z), quaternion.setFromAxisAngle(up, ry), scale.setScalar(sizes[i]));
-      legs.setMatrixAt(i, matrix);
-      bodies.setMatrixAt(i, matrix);
-      heads.setMatrixAt(i, matrix);
-    };
-    people.forEach((p, i) => place(i, p.x, p.z, p.ry, 0));
-    const step = (time) => {
-      walkers.forEach(([cx, cz, rx, rz, speed, phase], k) => {
-        const a = time * speed + phase;
-        const x = cx + Math.cos(a) * rx;
-        const z = cz + Math.sin(a) * rz;
-        // Facing the direction of travel (derivative of the ellipse)
-        const ry = Math.atan2(-Math.sin(a) * rx, Math.cos(a) * rz);
-        place(people.length + k, x, z, ry, Math.abs(Math.sin(time * 4 + k)) * 0.05);
-      });
-      legs.instanceMatrix.needsUpdate = true;
-      bodies.instanceMatrix.needsUpdate = true;
-      heads.instanceMatrix.needsUpdate = true;
-    };
-    step(0);
-    [legs, bodies, heads].forEach((part) => { part.raycast = () => {}; part.frustumCulled = false; interior.add(part); });
-    return step;
-  }
-
   // --------------------------------------------------------------------------
   // The gallery builder
   // --------------------------------------------------------------------------
@@ -1423,8 +1365,6 @@
       interior.add(cable);
     });
 
-    const walk = visitors(interior);
-
     // Label atlases: four labels per 1024 x 1024 canvas, merged into one mesh per atlas
     group.updateMatrixWorld(true);
     const inverse = new THREE.Matrix4().copy(group.matrixWorld).invert();
@@ -1461,7 +1401,7 @@
     // Interior details never cast shadows (only the pergola and walls do)
     interior.traverse((node) => { node.castShadow = false; });
 
-    // Lazy drawing, the ticker, the walkers and interior visibility by camera distance
+    // Lazy drawing, the ticker and interior visibility by camera distance
     const center = new THREE.Vector3();
     interior.visible = false;
     let painted = false;
@@ -1473,7 +1413,6 @@
       if (!interior.visible) return;
       if (!painted && distance < 160) painted = !paintNext();
       if (ticker.map) ticker.map.offset.x = (time * 0.04) % 1;
-      walk(time);
     });
   }
 

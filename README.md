@@ -75,7 +75,7 @@ So, imagine to have a fun, useful and 3D virtual dimension world, just for devs 
 - **Crypto Valley** (world, next to Silicon Valley): zoned HQs, digital-art galleries, financial towers with LED market screens, floating buildings and a central plaza, still under construction.
 - **.jpeg World**: a world made of real photo textures with plain white signs. Its entrance is a Minecraft-style world border that turns into an image-search card when you touch it.
 - **The Mob Maze**, the **Candlestick Maze** (walls follow real crypto prices), the **Pit Arena** and more districts.
-- **Developers Daily Life museum**: an open-air gallery under a white pergola, near Genesis Plaza, with 32 canvas-drawn exhibits on black-framed panels (Too Many Tabs, Mission Control Chaos, the Windows 11 BSOD, It works on my machine, node_modules, merge conflicts, git push --force on Friday, how to exit Vim, centering a div...), each with a humorous description (E to read it all), a scrolling LED ticker, a giant rubber duck, a mountain of coffee cups, a worn-out keyboard and visitors walking around.
+- **Developers Daily Life museum**: an open-air gallery under a white pergola, near Genesis Plaza, with 32 canvas-drawn exhibits on black-framed panels (Too Many Tabs, Mission Control Chaos, the Windows 11 BSOD, It works on my machine, node_modules, merge conflicts, git push --force on Friday, how to exit Vim, centering a div...), each with a humorous description (E to read it all), a scrolling LED ticker, a giant rubber duck, a mountain of coffee cups and a worn-out keyboard.
 - **Genesis City minimap** card always visible under the coin indicator; **F** toggles flight.
 
 ## 🔗 Web3 on testnet (optional)
