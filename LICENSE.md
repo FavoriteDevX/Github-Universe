@@ -33,3 +33,4 @@ Every corporate or independent developer contributing code to this multiplayer e
 
 ---
 *Disclaimer: Cloning, copying, modifying, or distributing any software architecture contained in this repository constitutes binding legal acceptance of the terms outlined in the respective text files located in the `src/licensing/` directory.*
+
