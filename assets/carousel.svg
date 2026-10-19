@@ -2,9 +2,9 @@
   <defs>
     <style>
       @keyframes carouselAnimation {
-        0%, 13.33% { opacity: 1; }      /* Image 1 visible */
-        16.66%, 30% { opacity: 0; }     /* Smooth fade transition */
-        33.33%, 96.66% { opacity: 0; }  /* Hidden for the rest of the loop */
+        0%, 13.33% { opacity: 1; }
+        16.66%, 30% { opacity: 0; }
+        33.33%, 96.66% { opacity: 0; }
         100% { opacity: 1; }
       }
       .slide {
@@ -14,7 +14,6 @@
         opacity: 0;
         animation: carouselAnimation 24s infinite ease-in-out;
       }
-      /* Individual timing delay for each of the 6 screenshots */
       .img1 { animation-delay: 0s; opacity: 1; }
       .img2 { animation-delay: 4s; }
       .img3 { animation-delay: 8s; }
@@ -24,11 +23,11 @@
     </style>
   </defs>
 
-  <!-- Pulling the images locally from the same assets directory -->
-  <image class="slide img1" href="./image1.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
-  <image class="slide img2" href="./image2.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
-  <image class="slide img3" href="./image3.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
-  <image class="slide img4" href="./image4.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
-  <image class="slide img5" href="./image5.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
-  <image class="slide img6" href="./image6.png" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <!-- Buscando seus arquivos reais de imagem salvos na pasta assets -->
+  <image class="slide img1" href="https://githubusercontent.com" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img2" href="https://githubusercontent.com" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img3" href="https://githubusercontent.com" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img4" href="https://githubusercontent.com" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img5" href="https://githubusercontent.com" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
+  <image class="slide img6" href="https://githubusercontent.com" width="1000" height="450" preserveAspectRatio="xMidYMid slice"/>
 </svg>
