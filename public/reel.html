@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video reel</title>
+<style>html, body, #player { margin: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }</style>
+</head>
+<body>
+<div id="player"></div>
+<script>
+// Plays a list of clips from official YouTube videos back to back, as one
+// continuous reel, and loops. Used by the 3D video screens (video.js):
+//   reel.html?s=VIDEO_ID:START-END,VIDEO_ID:START-END&mute=1
+// START and END are seconds (END may be empty to play until the video ends).
+// Nothing is downloaded or re-encoded: each clip streams from YouTube's player.
+const params = new URLSearchParams(location.search);
+const muted = params.get('mute') !== '0';
+const clips = (params.get('s') || '').split(',').map((entry) => {
+  const match = /^([\w-]{11}):(\d*)-(\d*)$/.exec(entry.trim());
+  return match ? { videoId: match[1], startSeconds: Number(match[2] || 0), endSeconds: match[3] ? Number(match[3]) : undefined } : null;
+}).filter(Boolean);
+let index = 0;
+let player = null;
+
+function clip(i) {
+  const { videoId, startSeconds, endSeconds } = clips[i];
+  return endSeconds ? { videoId, startSeconds, endSeconds } : { videoId, startSeconds };
+}
+
+function next() {
+  index = (index + 1) % clips.length;
+  player.loadVideoById(clip(index));
+}
+
+window.onYouTubeIframeAPIReady = () => {
+  if (!clips.length) return;
+  player = new YT.Player('player', {
+    width: '100%',
+    height: '100%',
+    videoId: clips[0].videoId,
+    playerVars: { autoplay: 1, mute: muted ? 1 : 0, playsinline: 1, rel: 0, modestbranding: 1, controls: 0, start: clips[0].startSeconds, end: clips[0].endSeconds },
+    events: {
+      onReady: (event) => { if (muted) event.target.mute(); else event.target.unMute(); event.target.playVideo(); },
+      onStateChange: (event) => { if (event.data === YT.PlayerState.ENDED) next(); },
+      // A clip that cannot be embedded is skipped
+      onError: () => setTimeout(next, 1000)
+    }
+  });
+};
+const api = document.createElement('script');
+api.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(api);
+</script>
+</body>
+</html>

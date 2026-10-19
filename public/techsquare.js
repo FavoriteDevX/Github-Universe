@@ -349,7 +349,7 @@ const TechSquare = (() => {
   };
 
   const rules = [
-    [/shibuya_building/, 'shibuyaBuilding'], [/events_screen/, 'eventsScreen'], [/universe_replays/, 'universeReplays'],[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
+    [/shibuya_building/, 'shibuyaBuilding'], [/events_screen/, 'eventsScreen'], [/universe_replays/, 'universeReplays'], [/roadster_reel/, 'roadsterReel'],[/led_tower/, 'ledTower'], [/ticker_tower/, 'tickerTower'], [/stock_podium/, 'stockPodium'], [/neon_arch/, 'neonArch']];
   // ---------------------------------------------------------------------------
   // GitHub events screen: countdown to the next annual event (GitHub Universe),
   // a LIVE badge while it happens, and the official livestream on the screen
@@ -373,6 +373,31 @@ const TechSquare = (() => {
     caption.position.set(0, h + 0.8, 0.2);
     group.add(caption);
     group.userData.label = 'GitHub Universe keynote replays';
+  }
+
+  // Tesla Roadster reel: one screen playing the flying-Roadster clips of several
+  // official videos back to back (reel.html streams each clip from YouTube's
+  // player; nothing is downloaded). The clips live in maps/github_events.json
+  // under "roadsterReel" so their start and end seconds are easy to adjust.
+  function roadsterReel(group, { w, h }) {
+    const steel = material('#2b2d33', { metalness: 0.8, roughness: 0.35 });
+    [-1, 1].forEach((side) => group.add(box(0.5, h, 0.5, steel, side * (w / 2 + 0.25), h / 2, 0)));
+    const screenHeight = w * 9 / 16;
+    const screen = box(w, screenHeight, 0.2, material('#000000'), 0, h - screenHeight / 2 - 0.3, 0);
+    group.add(screen);
+    group.add(box(w + 0.6, 0.3, 0.6, glow('#e82127', 1.4), 0, h - screenHeight - 0.6, 0));
+    const caption = textSprite('Roadster in space · reel (V for sound)', { width: 8, background: 'rgba(130, 16, 22, 0.92)' });
+    caption.position.set(0, h + 0.8, 0.2);
+    group.add(caption);
+    group.userData.label = 'Tesla Roadster reel';
+    fetch('maps/github_events.json').then((response) => response.json()).then((data) => {
+      const clips = ((data.roadsterReel && data.roadsterReel.clips) || [])
+        .map((clip) => ({ id: youtubeId(clip.video) || (/^[\w-]{11}$/.test(clip.video || '') ? clip.video : null), start: Math.max(0, Math.floor(clip.start || 0)), end: clip.end ? Math.floor(clip.end) : '' }))
+        .filter((clip) => clip.id);
+      if (!clips.length) return;
+      const reel = clips.map((clip) => `${clip.id}:${clip.start}-${clip.end}`).join(',');
+      VideoScreens.register(screen, w, screenHeight, `reel.html?s=${encodeURIComponent(reel)}&mute=1`, { distance: 90 });
+    }).catch(() => {});
   }
 
   function eventsScreen(group, { w, h }) {
@@ -507,6 +532,7 @@ const TechSquare = (() => {
   Object.assign(builders, {
     eventsScreen,
     universeReplays,
+    roadsterReel,
     shibuyaBuilding(group, { w, h, d, data }) {
       const variant = (data && data.variant) || 'stripes';
       const seed = (data && data.seed) || 0;
