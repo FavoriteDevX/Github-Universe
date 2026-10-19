@@ -2,11 +2,19 @@
 // GENESIS CITY MAP: DECENTRALAND-STYLE TOP VIEW OF EVERY PARCEL
 // ============================================================================
 // Press M to open it. Like Decentraland's map, everything is one grid of
-// parcels: Genesis Plaza (red) in the middle, the districts as estates, the
-// empty green parcels for sale all around them and a few long roads that
-// stop at the estates. Owned parcels are purple. Drag to pan, scroll to zoom, hover a parcel to see its
+// parcels, colored by status like Decentraland's map (legend bar at the
+// bottom): Available parcels for sale (grey), My Lands (red), Not Available
+// parcels owned by other devs (green) and Unavailable estates, plaza, commons
+// and roads (dark). Drag to pan, scroll to zoom, hover a parcel to see its
 // coordinates and status, click it to jump there or buy it (in-game MVC).
 const CityMap = (() => {
+  // Decentraland-style parcel status colors (the legend bar at the bottom)
+  const STATUS = {
+    available: { label: 'Available', fill: '#3b3d50', edge: '#6b6e85' },
+    mine: { label: 'My Lands', fill: '#e0254f', edge: '#ff6b86' },
+    taken: { label: 'Not Available', fill: '#2fd17a', edge: '#7cf0ad' },
+    unavailable: { label: 'Unavailable', fill: '#25233a', edge: '#3a3755' }
+  };
   const DISTRICT_COLORS = ['#5f3dc4', '#1864ab', '#0b7285', '#2b8a3e', '#5c940d', '#e67700', '#d9480f', '#a61e4d', '#862e9c', '#364fc7', '#087f5b', '#495057'];
   let hooks = null;
   let overlay = null;
@@ -64,24 +72,21 @@ const CityMap = (() => {
           continue;
         }
         if (kind === 'road') {
-          ctx.fillStyle = '#c9c2b4';
+          ctx.fillStyle = STATUS.unavailable.fill;
           ctx.fillRect(x, y, step, step);
           continue;
         }
-        const shade = hash(px, pz);
-        ctx.fillStyle = `hsl(${100 + shade * 6}, ${44 + shade * 4}%, ${34 + hash(pz, px) * 3}%)`;
+        // Empty parcels for sale are "Available"; the commons around the plaza are "Unavailable"
+        const status = kind === 'land' ? STATUS.available : STATUS.unavailable;
+        ctx.fillStyle = status.fill;
         ctx.fillRect(x, y, step, step);
-        // Grass speckles
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-        for (let k = 0; k < 3; k++) ctx.fillRect(x + hash(px + k, pz) * step, y + hash(px, pz + k) * step, 2, 2);
-        // Parcel line (the stone edging seen in the world)
-        ctx.strokeStyle = 'rgba(220, 214, 196, 0.35)';
+        ctx.strokeStyle = status.edge;
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 0.5, y + 0.5, step - 1, step - 1);
       }
     }
     // Paths of the center
-    ctx.strokeStyle = '#d6c7a8';
+    ctx.strokeStyle = 'rgba(160, 156, 190, 0.35)';
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.lineWidth = 5 * BASE_SCALE;
@@ -98,23 +103,25 @@ const CityMap = (() => {
       const w = size[0] * BASE_SCALE;
       const h = size[1] * BASE_SCALE;
       const plaza = district.world.key === 'plaza';
-      ctx.fillStyle = '#c9c2b4';
-      ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
-      ctx.fillStyle = plaza ? '#c0392b' : ['#3d5a80', '#5a3d80', '#2f6f4f', '#7a4b2a', '#4a4e69', '#22577a', '#6d597a'][index % 7];
+      // Districts and the plaza are not for sale: "Unavailable", with faint rooftops
+      ctx.fillStyle = STATUS.unavailable.edge;
+      ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+      ctx.fillStyle = STATUS.unavailable.fill;
       ctx.fillRect(x, y, w, h);
+      ctx.save();
+      ctx.globalAlpha = 0.28;
       const color = plaza ? '#ff8a5c' : DISTRICT_COLORS[index % DISTRICT_COLORS.length];
       for (let k = 0; k < (plaza ? 80 : 30); k++) {
         const bw = (0.06 + hash(index, k) * 0.18) * w;
         const bh = (0.06 + hash(k, index) * 0.18) * h;
         ctx.fillStyle = k % 4 === 0 ? '#f1f3f5' : k % 4 === 1 ? color : k % 4 === 2 ? '#adb5bd' : '#2b2d42';
-        ctx.globalAlpha = 0.85;
         if (plaza && k % 3 === 0) {
           ctx.beginPath();
           ctx.arc(x + hash(index * 7, k) * w, y + hash(k * 7, index) * h, bw / 2, 0, Math.PI * 2);
           ctx.fill();
         } else ctx.fillRect(x + hash(index * 7, k) * (w - bw), y + hash(k * 7, index) * (h - bh), bw, bh);
       }
-      ctx.globalAlpha = 1;
+      ctx.restore();
     });
   }
 
@@ -160,13 +167,20 @@ const CityMap = (() => {
     const span = limit() * 2 * view.scale;
     ctx.imageSmoothingEnabled = view.scale < BASE_SCALE;
     ctx.drawImage(base, x0, y0, span, span);
-    // Owned parcels
+    // Owned parcels: mine in red, other devs' in green
+    let myName = '';
+    try { myName = (localStorage.getItem('multiverse-last-username') || '').toLowerCase(); } catch (error) { me = ''; }
     Object.keys(City.landOwners).forEach((key) => {
       const [px, pz] = key.split(',').map(Number);
       const [sx, sy] = toScreen(px * parcelSize(), -(pz + 1) * parcelSize());
       const s = parcelSize() * view.scale;
-      ctx.fillStyle = 'rgba(151, 117, 250, 0.85)';
+      const owner = City.landOwner(key);
+      const status = owner && myName && owner.toLowerCase() === myName ? STATUS.mine : STATUS.taken;
+      ctx.fillStyle = status.fill;
       ctx.fillRect(sx, sy, s, s);
+      ctx.strokeStyle = status.edge;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx + 0.5, sy + 0.5, s - 1, s - 1);
     });
     // Points of interest (every district)
     ctx.fillStyle = '#ff922b';
@@ -239,9 +253,9 @@ const CityMap = (() => {
     overlay.id = 'citymap-overlay';
     overlay.innerHTML = `
       <header><b>Genesis City</b><span id="citymap-coords"></span>
-        <span class="citymap-legend"><i style="background:#c0392b"></i>Genesis Plaza <i style="background:#3d5a80"></i>Districts <i style="background:#5f9e3f"></i>Empty parcels <i style="background:#c9c2b4"></i>Roads <i style="background:#2f86c4"></i>Sea <i style="background:#9775fa"></i>Owned</span>
         <button type="button" data-act="3d">3D view</button><button type="button" data-act="close" aria-label="Close">&times;</button></header>
       <canvas id="citymap-canvas"></canvas>
+      <div class="citymap-legend">${Object.values(STATUS).map((status) => `<span><i style="background:${status.fill};border-color:${status.edge}"></i>${status.label}</span>`).join('')}</div>
       <div id="citymap-selected"><b></b><span></span><div><button type="button" data-act="jump">Jump here</button><button type="button" data-act="buy">Buy · 250 MVC</button></div></div>`;
     document.body.appendChild(overlay);
     canvas = overlay.querySelector('canvas');

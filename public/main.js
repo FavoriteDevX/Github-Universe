@@ -602,9 +602,24 @@ function updateAvatar(deltaSeconds) {
   const delta = avatar.position.clone().sub(previous);
   camera.position.add(delta);
   controls.target.copy(avatar.position).add(new THREE.Vector3(0, 1.8, 0));
-  const cameraGround = groundHeightAt(camera.position.x, camera.position.z, camera.position.y + 1);
-  if (camera.position.y < cameraGround + 0.6) camera.position.y = cameraGround + 0.6;
+  // (ground and wall corrections are applied only while rendering, so the
+  // camera keeps the same distance and angle when you walk backwards)
   localCursor.target.copy(avatar.position);
+}
+
+// Big surfaces (walls, ceilings, building shells) block the camera; instanced
+// trees and small props do not
+const cameraBlockerCache = new WeakMap();
+function cameraBlocker(object) {
+  if (object.isInstancedMesh) return false;
+  if (!cameraBlockerCache.has(object)) {
+    const geometry = object.geometry;
+    if (geometry && !geometry.boundingSphere) geometry.computeBoundingSphere();
+    const scale = object.getWorldScale(new THREE.Vector3());
+    const radius = geometry && geometry.boundingSphere ? geometry.boundingSphere.radius * Math.max(scale.x, scale.y, scale.z) : 0;
+    cameraBlockerCache.set(object, radius > 3);
+  }
+  return cameraBlockerCache.get(object);
 }
 
 function isBlocked(move) {
@@ -913,7 +928,13 @@ function bindInputEvents() {
     if (event.key.toLowerCase() === 'e' && viewMode === 'explore' && Interactions.handleKey(event)) return;
     // Space jumps right away (like Roblox); flying moved to F so fast jumps never toggle it
     if (event.key === ' ' && !event.repeat) jumpRequestedAt = performance.now();
-    if (event.key.toLowerCase() === 'f' && !event.repeat && viewMode === 'explore') { toggleFlight(); return; }
+    if (event.key.toLowerCase() === 'f' && !event.repeat && viewMode === 'explore') {
+      // F next to a firepit fries your code (E is for the benches); anywhere else it toggles flight
+      const firepit = !flying && Interactions.nearFirepit(avatar.position);
+      if (firepit) Codify.startRoast(firepit);
+      else toggleFlight();
+      return;
+    }
     if (event.key === ' ') event.preventDefault();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(event.key.toLowerCase())) wakeUp();
     keysPressed.add(event.key.toLowerCase());
@@ -1200,7 +1221,7 @@ const TIME_PRESETS = { sunrise: 0, day: 1000, morning: 1000, noon: 6000, sunset:
 const HELP_PAGES = [
   ['Teleport', '/tp <player> | /tp <x> <z> | /tp <x> <y> <z> (supports ~ relative) | /tpa <player> | /tpahere <player> | /tpaccept | /tpdeny'],
   ['Places', '/world <place> (alias /warp /goto) | /worlds | /spawn | /sethome | /home'],
-  ['Codify', 'C opens Codify: write code, Add to world (private unless you tick Visible to others) | E on your block to edit it | Fry your Code at the Genesis Plaza firepit'],
+  ['Codify', 'C opens Codify: write code, Add to world (private unless you tick Visible to others) | E on your block to edit it | F next to any firepit: Fry your Code (E sits on the benches)'],
   ['Graphics', '/quality low | medium | high | auto — the game lowers it by itself when it gets slow'],
   ['Economy', '/balance | /pay <player> <amount> | /buyland (the parcel you stand on) | /lands — Multiverse Coins are in-game only'],
   ['World', '/time set <day|noon|sunset|night|midnight|ticks> | /time add <ticks> | /time query | /gamerule doDaylightCycle <true|false> | /weather <clear|rain|snow|thunder> | /sound on|off | /music add <YouTube link> | /music list | /music next | /music clear'],
@@ -1749,10 +1770,18 @@ function animate() {
     const distance = toCamera.length();
     cameraRay.set(controls.target, toCamera.normalize());
     cameraRay.far = distance;
-    const hit = cameraRay.intersectObjects(City.collidablesAt(controls.target.x, controls.target.z), true).find(isSolidHit);
+    // Only real walls and ceilings pull the camera in; small props, trees and
+    // benches behind the cursor are ignored, so the view never jumps onto it
+    const hit = cameraRay.intersectObjects(City.collidablesAt(controls.target.x, controls.target.z), true).find((candidate) => isSolidHit(candidate) && cameraBlocker(candidate.object));
     if (hit && hit.distance > 0.5) {
       restoreCamera = camera.position.clone();
-      camera.position.copy(controls.target).addScaledVector(toCamera, hit.distance - 0.3);
+      camera.position.copy(controls.target).addScaledVector(toCamera, Math.max(hit.distance - 0.3, 1.2));
+    }
+    // Never look from under the ground (temporary, like the wall correction)
+    const cameraGround = groundHeightAt(camera.position.x, camera.position.z, camera.position.y + 1);
+    if (camera.position.y < cameraGround + 0.6) {
+      if (!restoreCamera) restoreCamera = camera.position.clone();
+      camera.position.y = cameraGround + 0.6;
     }
   }
   renderer.render(scene, camera);

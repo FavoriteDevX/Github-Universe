@@ -151,6 +151,22 @@ function rateLimited(ip) {
 }
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
+const DEVICE_KEY_PATTERN = /^[a-f0-9]{64}$/;
+
+// Remembered devices: the browser keeps a random device key and the server
+// keeps only its SHA-256, so a returning player reconnects without a password
+// even after the session token expired or the server lost its sessions.
+function deviceHash(deviceKey) {
+  return crypto.createHash('sha256').update(deviceKey).digest('hex');
+}
+function rememberDevice(user, deviceKey) {
+  if (typeof deviceKey !== 'string' || !DEVICE_KEY_PATTERN.test(deviceKey)) return;
+  const hash = deviceHash(deviceKey);
+  user.devices = (user.devices || []).filter((known) => known !== hash);
+  user.devices.push(hash);
+  if (user.devices.length > 10) user.devices.shift();
+  saveAccounts();
+}
 
 app.post('/api/signup', (req, res) => {
   if (rateLimited(req.ip)) return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
@@ -161,6 +177,7 @@ app.post('/api/signup', (req, res) => {
   if (accounts.users[key]) return res.status(409).json({ error: 'That username is taken. Log in instead?' });
   const salt = crypto.randomBytes(16).toString('hex');
   accounts.users[key] = { username, salt, hash: hashPassword(password, salt), createdAt: Date.now(), inventory: [] };
+  rememberDevice(accounts.users[key], req.body.deviceKey);
   res.json({ token: createSession(key), username });
 });
 
@@ -172,7 +189,35 @@ app.post('/api/login', (req, res) => {
   if (!user || !crypto.timingSafeEqual(candidate, Buffer.from(user.hash, 'hex'))) {
     return res.status(401).json({ error: 'Wrong username or password.' });
   }
+  rememberDevice(user, req.body.deviceKey);
   res.json({ token: createSession(username.toLowerCase()), username: user.username });
+});
+
+// Reconnect a remembered device. If the account no longer exists (a server
+// with a fresh database, e.g. after a redeploy on a host without a persistent
+// disk), it is recreated for this device so the player is never stuck.
+app.post('/api/resume', (req, res) => {
+  const { username, deviceKey } = req.body || {};
+  if (!USERNAME_PATTERN.test(username || '') || typeof deviceKey !== 'string' || !DEVICE_KEY_PATTERN.test(deviceKey)) return res.status(400).json({ error: 'Invalid device.' });
+  const key = username.toLowerCase();
+  const user = accounts.users[key];
+  if (user) {
+    if (!(user.devices || []).includes(deviceHash(deviceKey))) return res.status(401).json({ error: 'Please log in on this device.' });
+    return res.json({ token: createSession(key), username: user.username });
+  }
+  if (rateLimited(req.ip)) return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  accounts.users[key] = { username, salt, hash: hashPassword(crypto.randomBytes(24).toString('hex'), salt), createdAt: Date.now(), inventory: [], restored: true };
+  rememberDevice(accounts.users[key], deviceKey);
+  res.json({ token: createSession(key), username, restored: true });
+});
+
+// Attach this browser's device key to an already signed-in account
+app.post('/api/device', (req, res) => {
+  const user = userFromToken(req.get('x-session-token'));
+  if (!user) return res.status(401).json({ error: 'Session expired.' });
+  rememberDevice(user, (req.body || {}).deviceKey);
+  res.json({ ok: true });
 });
 
 app.get('/api/session', (req, res) => {

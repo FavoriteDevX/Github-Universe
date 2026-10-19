@@ -76,7 +76,6 @@ function fixBug(bug) {
     land: 'Press E to buy this parcel (250 MVC)',
     bed: 'Press E to sleep (skips the night, sets your spawn point)',
     cafe_menu: 'Press E to see the menu and order',
-    roast: 'Press E to Fry your Code',
     sit: 'Press E to sit',
     coffee: 'Press E for a coffee (run faster)',
     arcade: 'Press E to play',
@@ -126,7 +125,6 @@ function fixBug(bug) {
       case 'land': hooks.buyLand(object.userData.parcel); break;
       case 'bed': hooks.sleep(object); break;
       case 'cafe_menu': Cafe.open(); break;
-      case 'roast': Codify.startRoast(object); break;
       case 'link': {
         const url = object.userData.url;
         if (url && /^https:\/\//.test(url)) { window.open(url, '_blank', 'noopener'); hooks.system(`↗ Opened ${label} in a new tab.`); }
@@ -279,6 +277,20 @@ function fixBug(bug) {
     return false;
   }
 
+  // The firepit the avatar stands next to (Fry your Code uses F), or null
+  const firepitProbe = new THREE.Vector3();
+  function nearFirepit(avatar) {
+    let best = null;
+    let bestDistance = 9;
+    (window.firepits || []).forEach((pit) => {
+      if (!pit.parent) return;
+      pit.getWorldPosition(firepitProbe);
+      const distance = Math.hypot(firepitProbe.x - avatar.x, firepitProbe.z - avatar.z);
+      if (distance < bestDistance && Math.abs(firepitProbe.y - avatar.y) < 3) { best = pit; bestDistance = distance; }
+    });
+    return best;
+  }
+
   // --------------------------------------------------------------------------
   // Per frame: prompts, fishing bites, seated state, parkour coins and timer
   // --------------------------------------------------------------------------
@@ -291,7 +303,11 @@ function fixBug(bug) {
       ui.prompt.style.display = 'block';
       if (!nearest) fishing = null;
     } else if (nearest) {
-      ui.prompt.textContent = nearest.userData.prompt || PROMPTS[nearest.userData.interactable.type] || 'Press E';
+      const text = nearest.userData.prompt || PROMPTS[nearest.userData.interactable.type] || 'Press E';
+      ui.prompt.textContent = nearFirepit(avatar) ? `${text} · F to Fry your Code` : text;
+      ui.prompt.style.display = 'block';
+    } else if (nearFirepit(avatar)) {
+      ui.prompt.textContent = 'Press F to Fry your Code';
       ui.prompt.style.display = 'block';
     } else {
       ui.prompt.style.display = 'none';
@@ -349,5 +365,5 @@ function fixBug(bug) {
     ui.arcadeClose.addEventListener('click', closeArcade);
   }
 
-  return { init, update, handleKey, EMOTES, isBusy: () => !!(workSession || arcadeGame), isSeated: () => !!seated };
+  return { init, update, handleKey, nearFirepit, EMOTES, isBusy: () => !!(workSession || arcadeGame), isSeated: () => !!seated };
 })();

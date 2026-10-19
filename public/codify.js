@@ -41,7 +41,7 @@ const Codify = (() => {
     panel.innerHTML = `
       <header><b>&lt;/&gt; Codify</b><button type="button" id="codify-close" aria-label="Close">&times;</button></header>
       <label>Language <select id="codify-language">${Object.entries(LANGUAGES).map(([key, lang]) => `<option value="${key}">${lang.name}</option>`).join('')}</select></label>
-      <textarea id="codify-code" spellcheck="false" maxlength="${MAX_CODE}" placeholder="// Write some code...\nfunction hello(dev) {\n  return 'Hello, ' + dev;\n}"></textarea>
+      <div class="codify-editor"><pre id="codify-highlight" aria-hidden="true"></pre><textarea id="codify-code" spellcheck="false" maxlength="${MAX_CODE}" placeholder="// Write some code...\nfunction hello(dev) {\n  return 'Hello, ' + dev;\n}"></textarea></div>
       <div class="codify-row">
         <button type="button" id="codify-add">Add to world</button>
         <label class="codify-share"><input type="checkbox" id="codify-share"> Visible to others</label>
@@ -57,8 +57,14 @@ const Codify = (() => {
       add: panel.querySelector('#codify-add'),
       share: panel.querySelector('#codify-share'),
       status: panel.querySelector('#codify-status'),
-      report: panel.querySelector('#codify-report')
+      report: panel.querySelector('#codify-report'),
+      highlight: panel.querySelector('#codify-highlight')
     };
+    // Colored code: a highlighted copy sits under the transparent textarea
+    const repaint = () => { paintEditor(); };
+    ui.code.addEventListener('input', repaint);
+    ui.code.addEventListener('scroll', () => { ui.highlight.scrollTop = ui.code.scrollTop; ui.highlight.scrollLeft = ui.code.scrollLeft; });
+    ui.language.addEventListener('change', repaint);
     panel.querySelector('#codify-close').addEventListener('click', close);
     ui.add.addEventListener('click', () => {
       if (active) { active = null; ui.add.textContent = 'Add to world'; ui.code.value = ''; setStatus(); return; }
@@ -79,7 +85,79 @@ const Codify = (() => {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // Editor syntax colors (GitHub dark palette), per language
+  // --------------------------------------------------------------------------
+  const CONSTANTS = ['true', 'false', 'null', 'undefined', 'None', 'True', 'False', 'nil', 'this', 'self', 'super', 'NULL'];
+  const EXTRA_KEYWORDS = {
+    javascript: ['of', 'in', 'do', 'switch', 'case', 'break', 'continue', 'default', 'throw', 'finally', 'typeof', 'instanceof', 'delete', 'yield', 'extends', 'static', 'get', 'set'],
+    typescript: ['var', 'of', 'in', 'switch', 'case', 'break', 'continue', 'default', 'throw', 'finally', 'typeof', 'extends', 'implements', 'enum', 'public', 'private', 'readonly', 'as', 'keyof', 'new', 'while'],
+    python: ['in', 'is', 'not', 'and', 'or', 'pass', 'break', 'continue', 'raise', 'finally', 'global', 'yield', 'del', 'assert'],
+    rust: ['const', 'static', 'trait', 'where', 'while', 'in', 'as', 'ref', 'move', 'mod', 'crate', 'dyn', 'async', 'await', 'break', 'continue'],
+    go: ['switch', 'case', 'default', 'break', 'continue', 'interface', 'map', 'chan', 'select', 'goto', 'fallthrough'],
+    java: ['protected', 'final', 'extends', 'implements', 'interface', 'throws', 'throw', 'finally', 'switch', 'case', 'break', 'continue', 'package', 'this', 'int', 'boolean', 'double', 'long', 'char', 'String'],
+    c: ['const', 'static', 'unsigned', 'long', 'short', 'double', 'float', 'switch', 'case', 'break', 'continue', 'sizeof', 'typedef', 'enum', 'define'],
+    shell: ['else', 'elif', 'while', 'case', 'esac', 'function', 'local', 'return', 'in', 'sudo', 'npm', 'git', 'cat', 'grep'],
+    sql: ['CREATE', 'TABLE', 'AND', 'OR', 'NOT', 'NULL', 'AS', 'ON', 'LEFT', 'RIGHT', 'INNER', 'LIMIT', 'SET', 'PRIMARY', 'KEY', 'INT', 'TEXT', 'VARCHAR', 'COUNT', 'HAVING', 'DISTINCT']
+  };
+  const span = (kind, text) => `<span class="ck-${kind}">${escapeHtml(text)}</span>`;
+
+  function highlightCode(code, language) {
+    const lang = LANGUAGES[language] || LANGUAGES.javascript;
+    if (language === 'html') {
+      return code.replace(/(<!--[\s\S]*?(?:-->|$))|(<\/?)([\w-]+)([^>]*)(>?)|([^<]+)/g, (match, comment, open, tag, attrs, close, text) => {
+        if (comment) return span('comment', comment);
+        if (text) return escapeHtml(text);
+        const attrHtml = attrs.replace(/([\w-:@]+)(=)?("[^"]*"|'[^']*')?|([^\w"']+)/g, (m, name, eq, value, rest) => (rest ? escapeHtml(rest) : span('attr', name) + (eq || '') + (value ? span('string', value) : '')));
+        return escapeHtml(open) + span('tag', tag) + attrHtml + escapeHtml(close);
+      });
+    }
+    const caseless = ['sql', 'docker'].includes(language);
+    const keywords = new Set([...lang.keywords, ...(EXTRA_KEYWORDS[language] || [])].map((word) => (caseless ? word.toUpperCase() : word)));
+    const hashComments = ['python', 'shell', 'yaml', 'docker'].includes(language);
+    const pattern = new RegExp([
+      '(\\/\\*[\\s\\S]*?(?:\\*\\/|$))', // block comment
+      hashComments ? '(#[^\\n]*)' : language === 'sql' ? '(--[^\\n]*)' : '(\\/\\/[^\\n]*)', // line comment
+      '("(?:\\\\.|[^"\\\\\\n])*"?|\'(?:\\\\.|[^\'\\\\\\n])*\'?|`(?:\\\\.|[^`\\\\])*`?)', // strings
+      '(\\b\\d+(?:\\.\\d+)?\\b)', // numbers
+      '(@[A-Za-z_]\\w*)', // decorators / annotations
+      '([A-Za-z_$][\\w$]*)' // words
+    ].join('|'), 'g');
+    let html = '';
+    let last = 0;
+    code.replace(pattern, (match, block, line, string, number, decorator, word, offset) => {
+      html += escapeHtml(code.slice(last, offset));
+      last = offset + match.length;
+      if (block && !hashComments) html += span('comment', block);
+      else if (block) html += escapeHtml(block);
+      else if (line) html += span('comment', line);
+      else if (string) html += span('string', string);
+      else if (number) html += span('number', number);
+      else if (decorator) html += span('function', decorator);
+      else if (word) {
+        const after = code.slice(last).match(/^\s*(\(|:)/);
+        if (keywords.has(caseless ? word.toUpperCase() : word)) html += span('keyword', word);
+        else if (CONSTANTS.includes(word)) html += span('constant', word);
+        else if (language === 'yaml' && after && after[1] === ':') html += span('attr', word);
+        else if (after && after[1] === '(') html += span('function', word);
+        else if (/^[A-Z][a-z]/.test(word)) html += span('type', word);
+        else html += escapeHtml(word);
+      }
+      return match;
+    });
+    return html + escapeHtml(code.slice(last));
+  }
+
+  function paintEditor() {
+    if (!ui || !ui.highlight) return;
+    // A trailing newline needs a placeholder so the last empty line keeps its height
+    ui.highlight.innerHTML = highlightCode(ui.code.value, ui.language.value) + '\n ';
+    ui.highlight.scrollTop = ui.code.scrollTop;
+    ui.highlight.scrollLeft = ui.code.scrollLeft;
+  }
+
   function setStatus() {
+    paintEditor();
     if (!active) { ui.status.textContent = 'Write some code and press "Add to world". Blocks are private unless you tick "Visible to others".'; return; }
     ui.status.textContent = active.shared ? 'Shared: devs near you can see this block and its code live.' : 'Private: only you can see this block. Edits appear in the world as you type.';
   }
@@ -247,7 +325,7 @@ const Codify = (() => {
     ui.add.textContent = 'New block';
     if (block.shared) sync(block);
     setStatus();
-    hooks.system('Code block added to the world. Keep typing: it updates live. Walk to the Genesis Plaza firepit to "Fry your Code".');
+    hooks.system('Code block added to the world. Keep typing: it updates live. Press F next to any firepit to "Fry your Code".');
   }
 
   function removeBlock(id) {
@@ -541,5 +619,5 @@ const Codify = (() => {
     if (!wanted && music.playing && music.volume <= 0) { musicCommand('pauseVideo'); music.playing = false; }
   }
 
-  return { init, open, close, isOpen, update, updateMusic, musicChat, isRoasting: () => Boolean(roast), interact, startRoast, findBugs, loadTemplate };
+  return { init, open, close, isOpen, update, updateMusic, musicChat, highlightCode, isRoasting: () => Boolean(roast), interact, startRoast, findBugs, loadTemplate };
 })();

@@ -389,7 +389,11 @@
     /* Returning players: no form, just a short "welcome back" while entering */
     #auth-resume { display: none; color: #fff; font: 600 18px var(--font, 'Segoe UI', Arial, sans-serif); }
     #auth-screen.resuming .auth-card { display: none; }
-    #auth-screen.resuming #auth-resume { display: block; }
+    #auth-screen.resuming #auth-resume { display: flex; align-items: center; gap: 12px; letter-spacing: 0.02em; }
+    #auth-resume span:last-child::after { content: ''; display: inline-block; width: 1.2em; text-align: left; animation: auth-dots 1.2s steps(4, end) infinite; }
+    .auth-spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.18); border-top-color: #1f8bff; animation: auth-spin 0.8s linear infinite; }
+    @keyframes auth-spin { to { transform: rotate(360deg); } }
+    @keyframes auth-dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
     .auth-card {
       width: min(440px, 100%);
       padding: 28px;
@@ -432,11 +436,13 @@
     #citymap-overlay header { display: flex; align-items: center; gap: 14px; padding: 10px 16px; background: #22232b; font-size: 13px; flex-wrap: wrap; }
     #citymap-overlay header b { font-size: 16px; }
     #citymap-coords { color: #ced4da; font-family: var(--mono); flex: 1; min-width: 160px; }
-    .citymap-legend { display: flex; align-items: center; gap: 6px; color: #adb5bd; font-size: 12px; }
-    .citymap-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-left: 6px; }
+    #citymap-overlay { position: fixed; }
+    .citymap-legend { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 22px; padding: 10px 18px; border-radius: 10px; background: rgba(24, 23, 34, 0.92); border: 1px solid rgba(255, 255, 255, 0.08); color: #e9e8f0; font-size: 13px; z-index: 2; flex-wrap: wrap; }
+    .citymap-legend span { display: flex; align-items: center; gap: 9px; }
+    .citymap-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; border: 2px solid transparent; box-sizing: border-box; }
     #citymap-overlay header button { border: 0; border-radius: 8px; padding: 6px 12px; background: rgba(255, 255, 255, 0.12); color: #fff; cursor: pointer; font-size: 13px; }
     #citymap-canvas { flex: 1; width: 100%; min-height: 0; cursor: grab; touch-action: none; }
-    #citymap-selected { display: none; position: absolute; left: 16px; bottom: 16px; padding: 12px 14px; border-radius: 12px; background: rgba(34, 35, 43, 0.95); min-width: 220px; }
+    #citymap-selected { display: none; position: absolute; left: 16px; bottom: 72px; padding: 12px 14px; border-radius: 12px; background: rgba(34, 35, 43, 0.95); min-width: 220px; }
     #citymap-selected b, #citymap-selected span { display: block; }
     #citymap-selected span { color: #adb5bd; font-size: 13px; margin: 4px 0 10px; }
     #citymap-selected button { border: 0; border-radius: 8px; padding: 7px 12px; margin-right: 6px; background: #ff2d55; color: #fff; cursor: pointer; font-weight: 600; }
@@ -494,10 +500,19 @@
     #codify-panel header button { background: none; border: 0; color: #e6edf3; font-size: 24px; cursor: pointer; }
     #codify-panel label { font-size: 13px; color: #8b949e; display: flex; gap: 8px; align-items: center; }
     #codify-panel select { flex: 1; background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 6px; }
-    #codify-code {
-      flex: 1; min-height: 220px; resize: none; background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
-      border-radius: 8px; padding: 10px; font: 13px/1.5 Menlo, Consolas, monospace; tab-size: 2;
+    .codify-editor { position: relative; flex: 1; min-height: 220px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+    #codify-code, #codify-highlight {
+      position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; box-sizing: border-box; border: 0;
+      padding: 10px; font: 13px/1.5 Menlo, Consolas, monospace; tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto;
     }
+    #codify-highlight { color: #e6edf3; pointer-events: none; scrollbar-width: none; }
+    #codify-highlight::-webkit-scrollbar { display: none; }
+    #codify-code { resize: none; background: transparent; color: transparent; caret-color: #e6edf3; outline: none; }
+    #codify-code::placeholder { color: #6e7681; }
+    #codify-code::selection { background: rgba(56, 139, 253, 0.4); color: transparent; }
+    .codify-editor:focus-within { border-color: #1f6feb; }
+    .ck-keyword { color: #ff7b72; } .ck-string { color: #a5d6ff; } .ck-comment { color: #8b949e; font-style: italic; }
+    .ck-number, .ck-constant, .ck-attr { color: #79c0ff; } .ck-function { color: #d2a8ff; } .ck-type { color: #ffa657; } .ck-tag { color: #7ee787; }
     .codify-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
     #codify-add { background: var(--accent, #1877f2); color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
     #codify-status { font-size: 12px; color: #8b949e; margin: 0; }
