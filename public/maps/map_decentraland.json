@@ -997,6 +997,38 @@
      "height": 5,
      "length": 4,
      "label": "THE GIG PLAZA  >>"
+    },
+    {
+     "angle": 0,
+     "width": 7,
+     "height": 4.2,
+     "length": 5,
+     "label": "DIAL-UP CORNER",
+     "alcove": "dialup"
+    },
+    {
+     "angle": 135,
+     "width": 7,
+     "height": 4.2,
+     "length": 5,
+     "label": "FLASH GAMES ARCADE",
+     "alcove": "flash"
+    },
+    {
+     "angle": 225,
+     "width": 7,
+     "height": 4.2,
+     "length": 5,
+     "label": "BROWSER WARS",
+     "alcove": "browsers"
+    },
+    {
+     "angle": 315,
+     "width": 7,
+     "height": 4.2,
+     "length": 5,
+     "label": "CHAT ROOMS",
+     "alcove": "chat"
     }
    ]
   },

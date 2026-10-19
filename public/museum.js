@@ -437,6 +437,7 @@
   const TIMELINE = [
     [1969, 'arpanet', 'ARPANET', 'The first packet-switched network: its first message, "LO", crashed while typing LOGIN.'],
     [1985, 'win1', 'Windows 1.0', 'Tiled windows on top of MS-DOS, with Calculator, Clock, Notepad and Reversi.'],
+    [1989, 'aol', '"You\'ve got mail!"', 'A cheerful voice announced every new message, and millions of people discovered that hearing it was more exciting than reading the mail.', 'early'],
     [1991, 'firstsite', 'The first website', 'Tim Berners-Lee published the first web page at CERN.'],
     [1993, 'mosaic', 'NCSA Mosaic', 'The browser that showed images inline with text and made the web popular.'],
     [1995, 'win95', 'Windows 95', 'The Start button, the taskbar and plug and play reached millions of homes.'],
@@ -492,19 +493,27 @@
     [1993, 'mosaic', 'Mosaic', 'A browser that placed pictures inline with text. Suddenly the web looked like a magazine anyone could flip through.', 'early'],
     [1993, 'dog', 'Nobody knows who you are', 'A 1993 magazine cartoon joked that online nobody can tell who (or what) is typing on the other side. It became the classic shorthand for internet anonymity.', 'early'],
     [1994, 'yahoo', 'A guide to the web', 'Two Stanford students kept a hand-made list of their favorite sites, sorted by topic. It grew into Yahoo!, the front door of the web for years.', 'early'],
+    [1994, 'modem', 'The dial-up handshake', 'Screech, hiss, bong: two modems negotiating a connection. Nobody could use the phone, and a single photo loaded one stripe at a time.', 'early'],
+    [1994, 'netscape', 'Netscape Navigator', 'The browser with a meteor shower logo. It came on floppy disks, cost money for businesses and made the web feel like a frontier.', 'early'],
+    [1994, 'geocities', 'GeoCities', 'Free homepages sorted into themed "neighborhoods". Under-construction GIFs were not a phase, they were a lifestyle.', 'early'],
     [1995, 'amazon', 'Amazon opens', 'An online bookstore started in a garage. Legend says a bell rang for every order, until there were far too many orders to ring it.', 'dotcom'],
     [1995, 'ebay', 'A broken laser pointer', 'One of the first sales on AuctionWeb, later eBay: a broken laser pointer for $14.83. The buyer said he collected broken laser pointers.', 'dotcom', 'laser'],
     [1996, 'spacejam', 'The Space Jam website', 'A movie promo site made of planet-shaped buttons on a starfield. It stayed online, almost untouched, for more than two decades.', 'dotcom'],
+    [1996, 'icq', 'ICQ "Uh-oh!"', 'You were a nine-digit number and a little green flower. The "uh-oh" sound meant someone, somewhere, wanted to chat.', 'dotcom'],
     [1996, 'hotmail', 'Free webmail', 'Email you could read from any browser, for free. Every message ended with an invite to sign up: one of the first viral growth loops.', 'dotcom'],
     [1998, 'hampster', 'The Hampster Dance', 'A page of looping dancing hamster GIFs with a sped-up song. People forwarded it by email until it was one of the first viral web pages.', 'dotcom'],
     [1998, 'google98', 'Google (beta)', 'Two PhD students ranked pages by the links pointing to them. Behind a sparse beta page sat a better search engine than anyone else had.', 'dotcom'],
+    [1999, 'msn', 'MSN Messenger', 'Away messages written like poetry, nudges that shook the window and song lyrics as status. Logging off was a dramatic act.', 'dotcom'],
+    [1999, 'y2k', 'The Y2K bug', 'Two-digit years threatened to turn 2000 into 1900. Thousands of engineers patched it in time, so the end of the world quietly did not happen.', 'dotcom'],
     [1999, 'napster', 'Napster', 'Millions swapped MP3 files directly between their own computers. The service lost in court, but music distribution was never the same.', 'dotcom'],
     [2000, 'dotcomcrash', 'The dot-com bust', 'Investors poured money into anything ending in .com. When the bubble burst in March 2000 many startups vanished, but the cables and the ideas stayed.', 'dotcom'],
+    [2000, 'flash', 'Flash games', 'Animated games played in the browser between classes. Every one started with a loading bar and a "skip intro" button.', 'dotcom'],
     [2001, 'wikipedia', 'Wikipedia', 'A free encyclopedia that anyone can edit sounded impossible. Volunteers turned it into one of the most visited sites on Earth.', 'dotcom'],
     [2002, 'friendster', 'Friendster', 'Profiles, testimonials and friends of friends. It grew so fast that its servers could not keep up with everybody logging in.', 'dotcom'],
     [2003, 'myspace', 'MySpace profiles', 'Custom HTML, glitter backgrounds, an auto-playing song and a ranked Top 8 of friends: the first web design project for a whole generation.', 'dotcom'],
     [2004, 'thefacebook', 'Thefacebook', 'Started in a college dorm as an online directory for students, then slowly opened up to everyone.', 'web2'],
     [2004, 'gmail', 'Gmail', 'Announced on April Fools\' Day with 1 GB of free storage, so many people thought it was a joke. Invites were traded like treasure.', 'web2'],
+    [2004, 'orkut', 'Orkut', 'Scraps, testimonials and communities about everything. Huge in Brazil and India, where it felt like the whole country was online at once.', 'web2'],
     [2005, 'youtube05', '"Me at the zoo"', 'The first video uploaded to YouTube: 19 seconds of a co-founder standing in front of the elephants.', 'web2'],
     [2006, 'tweet', 'The first tweet', 'A short status update, "just setting up my twttr". Real-time micro posts became a new way to spread news.', 'web2'],
     [2007, 'iphone', 'The iPhone', 'A phone, a music player and an internet communicator in one touch screen. When apps arrived, the web moved into every pocket.', 'mobile', 'phone'],
@@ -513,9 +522,14 @@
     [2007, 'rickroll', 'Rickrolling', 'A link that promises something exciting but secretly opens a 1987 music video. The prank turned the song into an internet anthem.', 'mobile'],
     [2008, 'github', 'GitHub', 'Git hosting with pull requests, forks and profiles. Open source turned into a social network of millions of developers.', 'mobile'],
     [2008, 'stackoverflow', 'Stack Overflow', 'Questions, voted answers and a green check mark. The place every developer lands after pasting an error message into a search box.', 'mobile'],
+    [2008, 'chrome', 'Google Chrome', 'A minimal browser with one box for addresses and searches, and every tab in its own process. Introduced with a comic book.', 'mobile'],
     [2009, 'genesis', 'Bitcoin genesis block', 'The first block of the Bitcoin blockchain carried a newspaper headline about bank bailouts. Shown here as a piece of history only, not as an investment.', 'mobile'],
+    [2009, 'minecraft', 'Minecraft alpha', 'A tiny indie game about placing and breaking blocks. People built castles, computers and whole cities, one cube at a time.', 'mobile'],
+    [2009, 'nodejs', 'Node.js', 'JavaScript left the browser and moved to the server. Suddenly front-end developers could ship a back end over the weekend.', 'mobile'],
     [2010, 'instagram', 'Instagram\'s first photo', 'A dog near a taco stand, posted in a square frame. Vintage filters made quick phone snapshots look like old film.', 'mobile'],
     [2012, 'gangnam', 'One billion views', 'A K-pop music video and its horse-riding dance became the first video to pass one billion views.', 'mobile'],
+    [2013, 'slack', 'Slack', 'Team chat with channels, emoji reactions and integrations. Email inboxes got lighter, notification badges got heavier.', 'mobile'],
+    [2013, 'react', 'React', 'A library that redraws the screen from data, with HTML-like syntax inside JavaScript. Controversial at launch, everywhere a few years later.', 'mobile'],
     [2014, 'icebucket', 'Ice Bucket Challenge', 'Film yourself under a bucket of ice water, nominate three friends. The chain raised awareness and funds for ALS research.', 'mobile'],
     [2015, 'dress', 'The Dress', 'A washed-out photo of a striped dress split the internet: blue and black, or white and gold? Scientists studied it too.', 'mobile'],
     [2016, 'pokemongo', 'Pokemon GO', 'An augmented reality game sent millions of players walking around parks and streets, phone in hand, looking for creatures.', 'modern'],
@@ -981,6 +995,115 @@
       ctx.fillStyle = '#868e96'; ctx.fillText('Message...', 44, 341);
       ctx.fillStyle = '#212529'; roundRect(ctx, 446, 320, 32, 32, 16); ctx.fill();
     },
+    aol(ctx, w, h) {
+      ctx.fillStyle = '#0b3d91'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#c0c0c0'; ctx.fillRect(60, 60, w - 120, h - 120);
+      ctx.fillStyle = '#000080'; ctx.fillRect(60, 60, w - 120, 24);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial'; ctx.fillText('Welcome!', 70, 77);
+      ctx.fillStyle = '#ffd43b'; ctx.fillRect(110, 130, 120, 80); ctx.strokeStyle = '#8a6d00'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(110, 130); ctx.lineTo(170, 175); ctx.lineTo(230, 130); ctx.stroke();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 26px Arial'; ctx.fillText("You've got mail!", 250, 180);
+      ctx.font = '14px Arial'; ctx.fillText('3 new messages', 260, 210);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.fillText('ONLINE SERVICE · 1989', 120, 40);
+    },
+    modem(ctx, w, h) {
+      ctx.fillStyle = '#1b1b1f'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#d9d2c3'; ctx.fillRect(90, 200, 330, 70); ctx.fillStyle = '#b8b1a3'; ctx.fillRect(90, 260, 330, 10);
+      ['HS', 'AA', 'CD', 'OH', 'RD', 'SD', 'TR', 'MR'].forEach((led, i) => { ctx.fillStyle = i % 3 ? '#e03131' : '#51cf66'; ctx.beginPath(); ctx.arc(130 + i * 36, 225, 6, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#333'; ctx.font = '10px Arial'; ctx.fillText(led, 122 + i * 36, 248); });
+      ctx.strokeStyle = '#74c0fc'; ctx.lineWidth = 3; ctx.beginPath();
+      for (let x = 20; x < w - 20; x += 4) ctx.lineTo(x, 110 + Math.sin(x * 0.21) * 30 * Math.sin(x * 0.013) + ((x * 7) % 13) - 6);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px Courier New'; ctx.fillText('EEEE-KRRRR-BONG', 120, 50);
+      ctx.font = '16px Courier New'; ctx.fillStyle = '#adb5bd'; ctx.fillText('CONNECT 28800 · do not pick up the phone', 60, 330);
+    },
+    netscape(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Netscape Navigator', 'http://home.netscape.com/');
+      const sky = ctx.createLinearGradient(0, top, 0, top + 200); sky.addColorStop(0, '#081a4a'); sky.addColorStop(1, '#2b6cb0');
+      ctx.fillStyle = sky; ctx.fillRect(330, top + 14, 150, 150);
+      ctx.fillStyle = '#0b1f3a'; ctx.fillRect(330, top + 124, 150, 40);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 96px Times New Roman'; ctx.fillText('N', 365, top + 140);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(470, top + 24); ctx.lineTo(420, top + 70); ctx.stroke();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 24px Times New Roman'; ctx.fillText('Welcome to Netscape', 20, top + 40);
+      ctx.font = '15px Times New Roman'; ['What\'s New!', 'What\'s Cool!', 'Net Search', 'Net Directory'].forEach((link, i) => { ctx.fillStyle = '#0000ee'; ctx.fillText(link, 30, top + 80 + i * 30); });
+      ctx.fillStyle = '#555555'; ctx.fillText('Document: Done', 20, h - 14);
+    },
+    icq(ctx, w, h) {
+      ctx.fillStyle = '#f1f3f5'; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; ctx.fillStyle = i === 0 ? '#e03131' : '#40c057'; ctx.beginPath(); ctx.ellipse(130 + Math.cos(a) * 46, 170 + Math.sin(a) * 46, 30, 18, a, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#ffd43b'; ctx.beginPath(); ctx.arc(130, 170, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 44px Arial'; ctx.fillText('Uh-oh!', 250, 150);
+      ctx.font = '18px Courier New'; ctx.fillText('UIN: 123456789', 250, 200);
+      ctx.fillStyle = '#2f9e44'; ctx.fillText('Online (4)', 250, 240); ctx.fillStyle = '#c92a2a'; ctx.fillText('Away (11)', 250, 270);
+    },
+    y2k(ctx, w, h) {
+      ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold 70px Courier New'; ctx.fillText('23:59:59', 90, 130);
+      ctx.fillStyle = '#ffd43b'; ctx.font = 'bold 40px Courier New'; ctx.fillText('31-12-99', 150, 190);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px Arial'; ctx.fillText('next: 01-01-00  =  1900 ?', 90, 260);
+      ctx.fillStyle = '#51cf66'; ctx.font = '18px Courier New'; ctx.fillText('PATCHED. NOTHING HAPPENED. YOU\'RE WELCOME.', 30, 330);
+    },
+    flash(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      const sky = ctx.createLinearGradient(0, 30, 0, 280); sky.addColorStop(0, '#ffa94d'); sky.addColorStop(1, '#ffe066');
+      ctx.fillStyle = sky; ctx.fillRect(30, 30, 452, 250);
+      ctx.fillStyle = '#5c940d'; ctx.fillRect(30, 230, 452, 50);
+      ctx.fillStyle = '#212529'; ctx.beginPath(); ctx.arc(140, 210, 20, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(132, 200, 16, 30);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(130, 120, 252, 24); ctx.fillStyle = '#e03131'; ctx.fillRect(132, 122, 248 * 0.99, 20);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Arial'; ctx.fillText('LOADING... 99%', 200, 110);
+      ctx.fillStyle = '#343a40'; ctx.fillRect(370, 290, 112, 30); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial'; ctx.fillText('SKIP INTRO >>', 378, 310);
+      ctx.fillStyle = '#495057'; ctx.font = '13px Arial'; ctx.fillText('Plugin required · right-click: About Flash Player', 30, 350);
+    },
+    orkut(ctx, w, h) {
+      const top = newBrowser(ctx, w, h, 'www.orkut.com/Profile', '#f8f0f8');
+      ctx.fillStyle = '#d6336c'; ctx.font = 'bold 34px Verdana'; ctx.fillText('orkut', 20, top + 44);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(20, top + 60, 140, 170); ctx.fillStyle = '#adb5bd'; ctx.beginPath(); ctx.arc(90, top + 120, 30, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(58, top + 152, 64, 60);
+      ctx.fillStyle = '#000000'; ctx.font = '15px Verdana'; ['scraps (128)', 'fans: 42', 'cool: ★★★', 'communities (300)'].forEach((line, i) => ctx.fillText(line, 180, top + 90 + i * 30));
+      ctx.fillStyle = '#d6336c'; ctx.font = 'bold 14px Verdana'; ctx.fillText('"I hate waking up early"', 180, top + 230);
+    },
+    chrome(ctx, w, h) {
+      ctx.fillStyle = '#dee2e6'; ctx.fillRect(0, 0, w, h);
+      ['New Tab', 'Docs', 'Maps'].forEach((tab, i) => { ctx.fillStyle = i ? '#ced4da' : '#ffffff'; ctx.beginPath(); ctx.moveTo(10 + i * 130, 40); ctx.lineTo(24 + i * 130, 10); ctx.lineTo(126 + i * 130, 10); ctx.lineTo(140 + i * 130, 40); ctx.fill(); ctx.fillStyle = '#212529'; ctx.font = '13px Arial'; ctx.fillText(tab, 40 + i * 130, 30); });
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 40, w, h - 40);
+      ctx.strokeStyle = '#adb5bd'; ctx.strokeRect(20, 52, w - 40, 28); ctx.fillStyle = '#868e96'; ctx.font = '14px Arial'; ctx.fillText('Search or type a URL', 32, 71);
+      for (let i = 0; i < 8; i++) { ctx.fillStyle = ['#ffe3e3', '#e7f5ff', '#ebfbee', '#fff9db'][i % 4]; ctx.fillRect(40 + (i % 4) * 112, 110 + Math.floor(i / 4) * 110, 100, 90); }
+      ctx.fillStyle = '#212529'; ctx.font = 'bold 14px Arial'; ctx.fillText('Most visited', 40, 102);
+    },
+    minecraft(ctx, w, h) {
+      ctx.fillStyle = '#8ec5ff'; ctx.fillRect(0, 0, w, h);
+      const s = 32;
+      for (let x = 0; x < w; x += s) {
+        const top = 200 + Math.round(Math.sin(x * 0.02) * 2) * s;
+        for (let y = top; y < h; y += s) { ctx.fillStyle = y === top ? '#5c9e31' : y < top + s * 3 ? '#8b5a2b' : '#7a7a7a'; ctx.fillRect(x, y, s - 1, s - 1); }
+      }
+      ctx.fillStyle = '#6b4423'; ctx.fillRect(320, 104, 32, 64); ctx.fillStyle = '#2f9e44'; ctx.fillRect(288, 40, 96, 64);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Courier New'; ctx.fillText('Minecraft Alpha', 14, 30);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(w - 60, 14, 16, 16);
+    },
+    nodejs(ctx, w, h) {
+      ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#3c873a'; ctx.beginPath();
+      for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; ctx.lineTo(420 + Math.cos(a) * 50, 90 + Math.sin(a) * 50); }
+      ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px Arial'; ctx.fillText('JS', 403, 100);
+      ctx.font = '18px Courier New';
+      [['#7ee787', '$ node server.js'], ['#c9d1d9', 'Server running at'], ['#79c0ff', 'http://127.0.0.1:8000/'], ['#c9d1d9', ''], ['#7ee787', '$ npm install left-pad'], ['#c9d1d9', 'added 1 package']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 24, 60 + i * 32); });
+      ctx.fillStyle = '#8b949e'; ctx.font = '14px Arial'; ctx.fillText('event loop · non-blocking I/O · 2009', 24, 350);
+    },
+    slack(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#3f0e40'; ctx.fillRect(0, 0, 150, h);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Arial'; ctx.fillText('acme-team', 14, 30);
+      ['# general', '# random', '# deploys', '# coffee'].forEach((ch, i) => { ctx.fillStyle = i === 0 ? '#1164a3' : '#3f0e40'; ctx.fillRect(0, 50 + i * 30, 150, 28); ctx.fillStyle = '#ffffff'; ctx.font = '14px Arial'; ctx.fillText(ch, 16, 69 + i * 30); });
+      [['Ana', 'shipped it'], ['Bo', 'which "it"?'], ['Ana', ':tada:'], ['Cy', 'reverting...']].forEach(([who, msg], i) => { ctx.fillStyle = '#212529'; ctx.font = 'bold 14px Arial'; ctx.fillText(who, 170, 50 + i * 60); ctx.font = '14px Arial'; ctx.fillText(msg, 170, 70 + i * 60); });
+      ctx.fillStyle = '#868e96'; ctx.font = 'italic 13px Arial'; ctx.fillText('Your manager is typing...', 170, h - 20);
+    },
+    react(ctx, w, h) {
+      ctx.fillStyle = '#20232a'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#61dafb'; ctx.lineWidth = 6;
+      [0, Math.PI / 3, -Math.PI / 3].forEach((a) => { ctx.beginPath(); ctx.ellipse(140, 190, 110, 40, a, 0, Math.PI * 2); ctx.stroke(); });
+      ctx.fillStyle = '#61dafb'; ctx.beginPath(); ctx.arc(140, 190, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '16px Courier New';
+      [['#c678dd', 'function Hello() {'], ['#abb2bf', '  return ('], ['#e06c75', '    <h1>Hi</h1>'], ['#abb2bf', '  );'], ['#c678dd', '}']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 290, 130 + i * 28); });
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.fillText('React · 2013', 300, 60);
+    },
     here(ctx, w, h) {
       const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, '#1b1036'); sky.addColorStop(1, '#3b5bdb');
       ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
@@ -1221,6 +1344,79 @@
     group.add(strip);
   }
 
+  // Themed side alcoves off the ring (local frame: x across, z outward,
+  // statics go to `still` (merged), interactive parts to `live`)
+  function buildAlcove(still, live, door, start, length, height, wallMaterial) {
+    const end = start + length + 0.4;
+    still.add(box(door.width + 0.6, height, 0.3, wallMaterial, 0, height / 2, end - 0.15));
+    const screen = (kind, w, h, x, y, z, rotationY = Math.PI) => {
+      const plane = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: artifactTexture(kind) }), x, y, z);
+      plane.rotation.y = rotationY;
+      live.add(plane);
+    };
+    const back = end - 0.3;
+    const info = (text, title) => {
+      const anchor = new THREE.Object3D();
+      anchor.position.set(0, 1.2, start + 1.2);
+      anchor.userData = { label: title, info: text };
+      live.add(PropKit.kit.interactive(anchor, 'inspect', title));
+    };
+    if (door.alcove === 'dialup') {
+      still.add(box(2.6, 0.08, 1.0, material('#8a5a33'), 0, 1.05, back - 0.6));
+      [-1.2, 1.2].forEach((x) => still.add(box(0.08, 0.75, 0.9, material('#5d4037'), x, 0.67, back - 0.6)));
+      still.add(box(0.9, 0.75, 0.75, material('#d9d2c3'), 0, 1.47, back - 0.6));
+      screen('aol', 0.7, 0.52, 0, 1.5, back - 0.98);
+      still.add(box(0.5, 0.12, 0.3, material('#d9d2c3'), 0.9, 1.15, back - 0.8));
+      still.add(box(0.45, 0.9, 0.5, material('#d9d2c3'), -1.0, 1.55, back - 0.6));
+      screen('modem', 2.4, 1.8, 0, 3.0, back - 0.02);
+      const chair = new THREE.Group();
+      chair.add(box(0.55, 0.08, 0.55, material('#343a40'), 0, 0.75, 0));
+      chair.add(box(0.55, 0.6, 0.06, material('#343a40'), 0, 1.08, -0.25));
+      chair.position.set(0, 0, back - 1.7);
+      live.add(PropKit.kit.interactive(chair, 'sit', 'Computer chair'));
+      info('A beige PC, a CRT and a modem that sang before every session. Bonus points if someone picked up the phone mid-download.', 'Dial-up Corner');
+    } else if (door.alcove === 'flash') {
+      ['#e64980', '#4dabf7'].forEach((color, i) => {
+        const cabinet = new THREE.Group();
+        cabinet.add(box(0.9, 1.9, 0.8, material(color, { roughness: 0.5 }), 0, 0.95, 0));
+        const plane = mesh(new THREE.PlaneGeometry(0.7, 0.52), new THREE.MeshBasicMaterial({ map: artifactTexture('flash') }), 0, 1.45, 0.41);
+        cabinet.add(plane);
+        cabinet.add(box(0.9, 0.25, 0.82, glow(color, 1.4), 0, 2.0, 0));
+        cabinet.position.set(i ? 1.4 : -1.4, 0.3, back - 0.6);
+        cabinet.rotation.y = Math.PI;
+        live.add(PropKit.kit.interactive(cabinet, 'arcade', 'Flash Games Arcade'));
+      });
+      screen('flash', 2.4, 1.8, 0, 3.0, back - 0.02);
+      info('Browser games that loaded between classes. Press E at a cabinet to play.', 'Flash Games Arcade');
+    } else if (door.alcove === 'browsers') {
+      [['netscape', -2], ['mosaic', 0], ['chrome', 2]].forEach(([kind, x]) => {
+        still.add(box(1.9, 1.5, 0.1, material('#212529'), x, 2.2, back - 0.05));
+        screen(kind, 1.8, 1.35, x, 2.2, back - 0.11);
+        still.add(box(0.8, 1.0, 0.8, material('#f1f3f5'), x, 0.8, back - 1.2));
+      });
+      info('Netscape, Internet Explorer, Firefox, Chrome: every few years a new browser promised the web would finally render the same everywhere.', 'Browser Wars');
+    } else if (door.alcove === 'chat') {
+      ['#ff922b', '#845ef7'].forEach((color, i) => {
+        const bag = sphere(0.55, material(color, { roughness: 1 }), 0, 0.55, 0, 12);
+        bag.scale.y = 0.65;
+        const seat = new THREE.Group();
+        seat.add(bag);
+        seat.position.set(i ? 1.3 : -1.3, 0.3, back - 1.8);
+        live.add(PropKit.kit.interactive(seat, 'sit', 'Beanbag'));
+      });
+      screen('icq', 1.8, 1.35, -1.2, 2.2, back - 0.02);
+      screen('msn', 1.8, 1.35, 1.2, 2.2, back - 0.02);
+      info('Buddy lists, away messages and the sound of someone coming online. Chat rooms were the first social networks.', 'Chat Room Nostalgia');
+    }
+    const title = { dialup: 'Dial-up Corner', flash: 'Flash Games Arcade', browsers: 'Browser Wars', chat: 'Chat Room Nostalgia' }[door.alcove];
+    if (title) {
+      const sign = textSprite(title, { width: 4, background: 'rgba(36, 22, 74, 0.92)' });
+      sign.position.set(0, height - 0.6, end - 1.2);
+      live.add(sign);
+    }
+    still.add(box(door.width - 0.4, 0.06, 0.4, glow('#ffd8a8', 1.2), 0, height - 0.05, end - 1.5));
+  }
+
   Object.assign(builders, {
     // ONE ring corridor around the Underground Lounge (same center), entered
     // from the lounge through a portal (data.portal, degrees; 90 = +x). The 43
@@ -1306,6 +1502,7 @@
         plane.rotation.y = Math.PI;
         sign.add(plane);
         group.add(sign);
+        if (door.alcove) buildAlcove(holder, sign, door, start, length, doorHeight, surfaces.wall);
       });
       // Exhibits: clockwise from the portal, alternating outer / inner wall
       const items = ARTIFACTS;
