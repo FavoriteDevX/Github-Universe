@@ -1693,7 +1693,7 @@ function animate() {
   {
     // Footsteps: stone in Genesis Plaza and on paths, an echo underground, grass elsewhere
     const here = City.districtAt(avatar.position.x, avatar.position.z);
-    const surface = avatar.position.y < -20 ? 'cave' : here && ['plaza', 'techsquare', 'festival', 'apple', 'hotel'].includes(here.world.key) ? 'stone' : here && ['lobby', 'house', 'arcade', 'gallery'].includes(here.world.key) ? 'wood' : 'grass';
+    const surface = avatar.position.y < -20 ? 'cave' : here && ['plaza', 'techsquare', 'apple', 'hotel'].includes(here.world.key) ? 'stone' : here && ['lobby', 'house', 'arcade', 'gallery'].includes(here.world.key) ? 'wood' : 'grass';
     const ticks = currentTicks();
     // Distance to the nearest firepit (for the crackling fire sound)
     let fireDistance = Infinity;

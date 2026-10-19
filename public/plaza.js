@@ -2224,7 +2224,7 @@
       group.add(poolGlow);
       const places = (window.MULTIVERSE_WORLDS || []);
       const sections = [
-        { title: 'Top Rated', items: ['apple', 'festival', 'equalizer', 'techsquare', 'gamer'].map((key) => places.find((world) => world.key === key)).filter(Boolean) },
+        { title: 'Top Rated', items: ['apple', 'equalizer', 'techsquare', 'gamer'].map((key) => places.find((world) => world.key === key)).filter(Boolean) },
         { title: 'Events Explorer', items: places.filter((world) => world.world).slice(0, 5) },
         { title: 'Dev News', news: true }
       ];

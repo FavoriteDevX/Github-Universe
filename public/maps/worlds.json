@@ -282,21 +282,6 @@
   "color": "#4dabf7"
  },
  {
-  "key": "festival",
-  "file": "map_festival.json",
-  "name": "Soundwave Festival",
-  "description": "A big music event amplifying Spotify: LED gate, main stage, lasers, sound waves and a dancing crowd",
-  "cell": [
-   -1,
-   3
-  ],
-  "span": [
-   2,
-   2
-  ],
-  "color": "#1db954"
- },
- {
   "key": "hotel",
   "file": "map_hotel.json",
   "name": "Multiverse Hotel",
