@@ -450,6 +450,27 @@
   "color": "#5a3a24"
  },
  {
+  "key": "devlife",
+  "file": "map_devlife_museum.json",
+  "name": "Developers Daily Life",
+  "description": "A two-floor museum of everyday engineering chaos: Too Many Tabs, Mission Control, the Blue Screen of Death, node_modules, merge conflicts, Vim and a giant rubber duck",
+  "region": {
+   "center": [
+    -232,
+    -136
+   ],
+   "size": [
+    86,
+    72
+   ]
+  },
+  "color": "#0b7285",
+  "spawn": [
+   0,
+   26
+  ]
+ },
+ {
   "key": "museum",
   "file": "map_museum.json",
   "name": "Museum of Forgotten Tech",
