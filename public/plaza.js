@@ -759,8 +759,8 @@
     //   - Warm plank floor, maroon rugs under every furniture group.
     //   - Central glass tube with falling water, dark metal base and top rings
     //     and a curved gold "Welcome to Multiverse" sign; it rises through the
-    //     mezzanine opening into the ceiling oculus. The player lands inside it.
-    //   - The oculus is the UNDERSIDE OF THE ENTRANCE POOL: a glowing water
+    //     mezzanine opening into the square ceiling opening. The player lands inside it.
+    //   - The square opening is the UNDERSIDE OF THE ENTRANCE POOL: a glowing water
     //     ceiling with rippling caustics. It is the main light of the hall (one
     //     SpotLight straight down, caustics on the floor and the tube, faint god
     //     rays); it follows the day/night cycle softly and never goes dark.
@@ -783,7 +783,8 @@
       const upperY = 6.4; // mezzanine deck
       const upperIn = 14; // mezzanine inner edge
       const ceilY = 16; // ceiling
-      const openR = 11; // ceiling oculus (under the entrance pool)
+      const openR = 11; // reach of the pool light on the floor
+      const openHalf = 9.5; // square ceiling opening under the square entrance pool
       const poolY = 23.5; // underside of the pool water
       const gapAngle = 2 * Math.asin(5.5 / outer); // portal opening at +x (angle PI/2)
       // In three.js cylinders, theta 0 points to +z and PI/2 to +x
@@ -941,7 +942,7 @@
         }
         ctx.putImageData(image, 0, 0);
       });
-      // Pool tiles seen from below (the oculus walls)
+      // Pool tiles seen from below (the walls of the square opening)
       const poolTiles = PropKit.kit.canvasTexture('lounge2|poolTiles', 128, 128, (ctx, cw, ch) => {
         ctx.fillStyle = '#8fd8ec'; ctx.fillRect(0, 0, cw, ch);
         ctx.fillStyle = '#c9f1fb';
@@ -995,7 +996,13 @@
       }
 
       // ---- Ceiling: wood ring, dark curved bands with amber strips -----------
-      const ceiling = mesh(new THREE.RingGeometry(openR, outer, 96, 1), ceilingWood, 0, ceilY, 0);
+      // Round ceiling with a square opening, like the square pool above it
+      const ceilingShape = new THREE.Shape();
+      ceilingShape.absarc(0, 0, outer, 0, Math.PI * 2, false);
+      const squareHole = new THREE.Path();
+      squareHole.moveTo(-openHalf, -openHalf); squareHole.lineTo(openHalf, -openHalf); squareHole.lineTo(openHalf, openHalf); squareHole.lineTo(-openHalf, openHalf); squareHole.closePath();
+      ceilingShape.holes.push(squareHole);
+      const ceiling = mesh(new THREE.ShapeGeometry(ceilingShape, 96), ceilingWood, 0, ceilY, 0);
       ceiling.rotation.x = Math.PI / 2;
       group.add(ceiling);
       // Thick band: a lathe of a flattened ellipse around the axis
@@ -1010,16 +1017,27 @@
         strip.rotation.x = Math.PI / 2;
         group.add(quiet(strip));
       };
-      bandRing(openR + 0.7, ceilY - 0.45, 1.0, 0.6);
+      // Square frame around the opening: thick dark beams with amber strips
+      [[0, openHalf + 0.7, openHalf * 2 + 2.8, 1.4], [0, -(openHalf + 0.7), openHalf * 2 + 2.8, 1.4], [openHalf + 0.7, 0, 1.4, openHalf * 2], [-(openHalf + 0.7), 0, 1.4, openHalf * 2]].forEach(([x, z, w, d]) => {
+        decor.add(box(w, 1.2, d, band, x, ceilY - 0.45, z));
+        const strip = box(w > d ? w - 0.6 : 0.14, 0.12, w > d ? 0.14 : d, amber, x + (w > d ? 0 : -Math.sign(x) * 0.45), ceilY - 1.08, z + (w > d ? -Math.sign(z) * 0.45 : 0));
+        group.add(quiet(strip));
+      });
       bandRing(19.5, ceilY - 0.4, 1.4, 0.5);
       bandRing(outer - 0.6, ceilY - 0.3, 0.8, 0.4);
 
       // ---- The oculus: underside of the entrance pool (main light) ------------
       // Its tiled walls rise to the glowing water ceiling; the pool tunnel
       // above ends just over the water, so nothing of the city shows through.
-      const well = mesh(new THREE.CylinderGeometry(openR, openR, poolY - ceilY + 0.2, 64, 1, true), new THREE.MeshBasicMaterial({ map: repeated(poolTiles, 40, 4), color: '#bfe6f2', side: THREE.DoubleSide }), 0, (poolY + ceilY) / 2, 0);
-      group.add(quiet(well));
-      const water = mesh(new THREE.CircleGeometry(openR + 0.1, 64), new THREE.MeshBasicMaterial({ color: '#e6fbff', side: THREE.DoubleSide }), 0, poolY, 0);
+      const wellHeight = poolY - ceilY + 0.2;
+      const wellMaterial = new THREE.MeshBasicMaterial({ map: repeated(poolTiles, 10, 4), color: '#bfe6f2', side: THREE.DoubleSide });
+      [0, 1, 2, 3].forEach((side) => {
+        const wall = mesh(new THREE.PlaneGeometry(openHalf * 2, wellHeight), wellMaterial, 0, (poolY + ceilY) / 2, 0);
+        wall.rotation.y = side * Math.PI / 2;
+        wall.position.set(Math.sin(side * Math.PI / 2) * openHalf, (poolY + ceilY) / 2, Math.cos(side * Math.PI / 2) * openHalf);
+        group.add(quiet(wall));
+      });
+      const water = mesh(new THREE.PlaneGeometry(openHalf * 2 + 0.2, openHalf * 2 + 0.2), new THREE.MeshBasicMaterial({ color: '#e6fbff', side: THREE.DoubleSide }), 0, poolY, 0);
       water.rotation.x = Math.PI / 2;
       group.add(quiet(water));
       const causticLayer = (repeat, opacity, extra = {}) => {
@@ -1028,7 +1046,7 @@
       };
       const ceilingRipples = [causticLayer(3, 0.55, { color: '#7fd8ff' }), causticLayer(4.5, 0.45, { color: '#ffffff' })];
       ceilingRipples.forEach((layer, i) => {
-        const sheet = mesh(new THREE.CircleGeometry(openR + 0.1, 64), layer.material, 0, poolY - 0.05 - i * 0.05, 0);
+        const sheet = mesh(new THREE.PlaneGeometry(openHalf * 2 + 0.2, openHalf * 2 + 0.2), layer.material, 0, poolY - 0.05 - i * 0.05, 0);
         sheet.rotation.x = Math.PI / 2;
         group.add(quiet(sheet));
       });
@@ -1052,8 +1070,9 @@
         group.add(quiet(sheet));
       });
       // Faint god rays: one wide shaft under the oculus and four thin ones
-      const rayGeometry = (rTop, rBottom, height) => {
-        const geometry = new THREE.CylinderGeometry(rTop, rBottom, height, 32, 4, true);
+      const rayGeometry = (rTop, rBottom, height, sides = 32) => {
+        const geometry = new THREE.CylinderGeometry(rTop, rBottom, height, sides, 4, true);
+        if (sides === 4) geometry.rotateY(Math.PI / 4); // square shaft under the square opening
         const colors = [];
         const position = geometry.attributes.position;
         for (let k = 0; k < position.count; k++) { const t = (position.getY(k) + height / 2) / height; colors.push(t * 0.8, t * 0.95, t); }
@@ -1061,7 +1080,7 @@
         return geometry;
       };
       const rayMaterial = new THREE.MeshBasicMaterial({ color: '#bfefff', vertexColors: true, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-      group.add(quiet(mesh(rayGeometry(openR - 0.6, openR + 1.6, ceilY - 0.4), rayMaterial, 0, (ceilY + 0.4) / 2, 0)));
+      group.add(quiet(mesh(rayGeometry((openHalf - 0.4) * Math.SQRT2, (openHalf + 1.4) * Math.SQRT2, ceilY - 0.4, 4), rayMaterial, 0, (ceilY + 0.4) / 2, 0)));
       const shafts = quiet(new THREE.InstancedMesh(rayGeometry(1.1, 2.2, poolY - 1), rayMaterial, 4));
       for (let i = 0; i < 4; i++) {
         const [x, z] = toXZ(0.4 + i * Math.PI / 2, 7);
