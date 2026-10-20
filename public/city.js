@@ -7,8 +7,16 @@
 const City = (() => {
   const PARCEL_SIZE = 16;
   const CELL_SIZE = 64; // 4x4 parcels per city block
+  const DISTRICT_GROWTH = 1.5; // grid districts (not the plaza) are built 1.5x bigger
   const ROAD_WIDTH = 8;
-  const WORLD_LIMIT = 640; // last walkable coordinate of Genesis City (meters)
+  const WORLD_LIMIT = 960; // last walkable coordinate of Genesis City (meters)
+  // Like Decentraland, the whole city is one grid of 16 m parcels: districts
+  // sit on it as estates, roads one parcel wide run between them at irregular
+  // spacing (maps/land.json), and the rest are small community scenes or
+  // empty parcels for sale. The center (where the generated neighborhoods,
+  // paths and gardens are) is the "commons": parcels there are not for sale.
+  const CORE_HALF = 400;
+  let landLayout = { roadsX: [], roadsZ: [], sceneChance: 0.24 };
   const CITY_RADIUS = 4; // cells -4..4 => 576m x 576m city
   const GROUND_LEVEL = -0.3;
   const { material, glow, repeated, windowsTexture, roadTexture, textSprite } = PropKit.kit;
@@ -23,7 +31,6 @@ const City = (() => {
   let hemisphere;
   let stars;
   let moon;
-  let clouds;
   let rain;
   let snow;
   let streetLampHeads;
@@ -44,6 +51,411 @@ const City = (() => {
   }
 
   // --------------------------------------------------------------------------
+  // Land parcels (shared rules with server.js: same hash, same roads)
+  // --------------------------------------------------------------------------
+  const parcelOf = (x, z) => [Math.floor(x / PARCEL_SIZE), Math.floor(-z / PARCEL_SIZE)];
+  const parcelCenter = (px, pz) => [px * PARCEL_SIZE + PARCEL_SIZE / 2, -(pz * PARCEL_SIZE + PARCEL_SIZE / 2)];
+  function parcelHash(px, pz) {
+    let h = Math.imul((px * 374761393 + pz * 668265263) | 0, 1274126177);
+    h ^= h >>> 13;
+    return ((h >>> 0) % 1000) / 1000;
+  }
+  function inCore(x, z) {
+    return Math.abs(x) < CORE_HALF && Math.abs(z) < CORE_HALF;
+  }
+  function setLandLayout(layout) {
+    if (layout) landLayout = layout;
+  }
+  function isRoadParcel(px, pz) {
+    return landLayout.roadsX.includes(px) || landLayout.roadsZ.includes(pz);
+  }
+  function isSceneParcel(px, pz) {
+    return parcelHash(px, pz) < landLayout.sceneChance;
+  }
+  // Seas: irregular blobs near the edges (maps/land.json) with islands
+  function blobRadius(r, angle, seed) {
+    return r * (1 + 0.16 * Math.sin(3 * angle + seed) + 0.08 * Math.sin(5 * angle + seed * 2));
+  }
+  function insideBlob(x, z, cx, cz, r, seed) {
+    const dx = x - cx;
+    const dz = z - cz;
+    return Math.hypot(dx, dz) < blobRadius(r, Math.atan2(dz, dx), seed);
+  }
+  function seaAt(x, z) {
+    const seas = landLayout.seas || [];
+    for (let i = 0; i < seas.length; i++) {
+      const sea = seas[i];
+      if (!insideBlob(x, z, sea.x, sea.z, sea.r, i + 1)) continue;
+      const island = (sea.islands || []).find((candidate, k) => insideBlob(x, z, candidate.x, candidate.z, candidate.r, i * 7 + k + 3));
+      return island ? { sea, island } : { sea, island: null };
+    }
+    return null;
+  }
+
+  // What is at a point: 'district', 'sea', 'road', 'commons' (center), 'scene'
+  // (a community build, not for sale) or 'land' (empty parcel for sale;
+  // island parcels count as land too)
+  function landAt(x, z) {
+    if (districtAt(x, z)) return 'district';
+    const water = seaAt(x, z);
+    if (water && !water.island) return 'sea';
+    const [px, pz] = parcelOf(x, z);
+    if (water) return 'land';
+    if (isRoadParcel(px, pz)) return 'road';
+    if (inCore(x, z)) return 'commons';
+    return isSceneParcel(px, pz) ? 'scene' : 'land';
+  }
+
+  // Natural grass for one parcel (no visible tiling: soft multi-scale noise,
+  // clover patches and blades) and interlocking pavers for the roads
+  function parcelTextures() {
+    const grass = PropKit.kit.canvasTexture('parcelGrass', 512, 512, (ctx, w) => {
+      let seed = 3;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      ctx.fillStyle = '#5f8f3a';
+      ctx.fillRect(0, 0, w, w);
+      // Large soft patches, then smaller ones (wrapping at the edges so parcels join seamlessly)
+      [[14, 90, 160, 0.16], [60, 25, 60, 0.18], [220, 6, 18, 0.22]].forEach(([count, minR, maxR, alpha]) => {
+        for (let k = 0; k < count; k++) {
+          const x = random() * w;
+          const y = random() * w;
+          const r = minR + random() * (maxR - minR);
+          const light = random() < 0.5;
+          [[0, 0], [w, 0], [-w, 0], [0, w], [0, -w]].forEach(([ox, oy]) => {
+            const patch = ctx.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+            patch.addColorStop(0, light ? `rgba(168, 201, 92, ${alpha})` : `rgba(38, 74, 28, ${alpha})`);
+            patch.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = patch;
+            ctx.fillRect(x + ox - r, y + oy - r, r * 2, r * 2);
+          });
+        }
+      });
+      // Blades of grass
+      for (let k = 0; k < 7000; k++) {
+        const x = random() * w;
+        const y = random() * w;
+        const tone = random();
+        ctx.strokeStyle = tone < 0.33 ? 'rgba(140, 186, 80, 0.55)' : tone < 0.66 ? 'rgba(52, 96, 34, 0.5)' : 'rgba(110, 150, 60, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (random() - 0.5) * 3, y - 2 - random() * 5); ctx.stroke();
+      }
+      // Tiny flowers and pebbles
+      for (let k = 0; k < 40; k++) {
+        ctx.fillStyle = ['#f8f9fa', '#ffe066', '#e599f7', '#ced4da'][k % 4];
+        ctx.beginPath(); ctx.arc(random() * w, random() * w, 1.2 + random() * 1.3, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+    const road = PropKit.kit.canvasTexture('parcelRoad', 512, 512, (ctx, w) => {
+      let seed = 8;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      ctx.fillStyle = '#8d877c';
+      ctx.fillRect(0, 0, w, w);
+      // Herringbone-like interlocking pavers with worn, rounded stones
+      const brick = 48;
+      for (let y = 0; y < w; y += brick / 2) {
+        for (let x = ((y / (brick / 2)) % 2) * (brick / 2) - brick; x < w + brick; x += brick) {
+          const l = 62 + random() * 12;
+          ctx.fillStyle = `hsl(${32 + random() * 10}, ${8 + random() * 8}%, ${l}%)`;
+          const bx = x + 2;
+          const by = y + 2;
+          const bw = brick - 4;
+          const bh = brick / 2 - 4;
+          ctx.beginPath();
+          ctx.moveTo(bx + 4, by); ctx.arcTo(bx + bw, by, bx + bw, by + bh, 4); ctx.arcTo(bx + bw, by + bh, bx, by + bh, 4);
+          ctx.arcTo(bx, by + bh, bx, by, 4); ctx.arcTo(bx, by, bx + bw, by, 4); ctx.fill();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.fillRect(bx + 3, by + 1, bw - 6, 2);
+        }
+      }
+      for (let k = 0; k < 1500; k++) {
+        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.fillRect(random() * w, random() * w, 1 + random() * 2, 1 + random() * 2);
+      }
+    });
+    return { grass, road };
+  }
+
+  // The parcel ground (instanced: a few draw calls for the whole city). Empty
+  // parcels are just grass, demarcated like in Decentraland by a thin stone
+  // edging along every parcel line and a small marker stone at each corner.
+  function buildLand() {
+    const districtRects = districts.filter((district) => !district.world.world).map(({ layout }) => ({
+      minX: layout.center.x - layout.size[0] / 2 - 2, maxX: layout.center.x + layout.size[0] / 2 + 2,
+      minZ: layout.center.z - layout.size[1] / 2 - 2, maxZ: layout.center.z + layout.size[1] / 2 + 2
+    }));
+    const overlapsDistrict = (px, pz) => {
+      const x0 = px * PARCEL_SIZE;
+      const z1 = -pz * PARCEL_SIZE;
+      const z0 = z1 - PARCEL_SIZE;
+      return districtRects.some((rect) => x0 < rect.maxX && x0 + PARCEL_SIZE > rect.minX && z0 < rect.maxZ && z1 > rect.minZ);
+    };
+    const holes = undergroundHoles();
+    const overlapsHole = (x, z) => holes.some((hole) => Math.abs(x - hole.x) < hole.size / 2 + PARCEL_SIZE / 2 && Math.abs(z - hole.z) < hole.size / 2 + PARCEL_SIZE / 2);
+    const grassSpots = [];
+    const roadSpots = [];
+    const count = Math.round((WORLD_LIMIT * 2) / PARCEL_SIZE);
+    for (let i = 0; i < count; i++) {
+      for (let j = 0; j < count; j++) {
+        const px = i - count / 2;
+        const pz = j - count / 2;
+        if (overlapsDistrict(px, pz)) continue;
+        const [x, z] = parcelCenter(px, pz);
+        if (overlapsHole(x, z)) continue;
+        const water = seaAt(x, z);
+        if (water && !water.island) continue;
+        if (!water && isRoadParcel(px, pz)) roadSpots.push([x, z]);
+        // Like Decentraland, Genesis City itself (the commons) stays paved with
+        // stone; grass only covers the parcels for sale around it and islands
+        else if (water || !inCore(x, z)) grassSpots.push([x, z, px, pz]);
+      }
+    }
+    const { grass, road } = parcelTextures();
+    // The ground lies 1 cm above the paved base; polygon offset keeps it on top
+    // even on GPUs with a low-precision depth buffer
+    const onTop = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 };
+    const plane = new THREE.PlaneGeometry(PARCEL_SIZE, PARCEL_SIZE).rotateX(-Math.PI / 2);
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const color = new THREE.Color();
+    const grassMesh = new THREE.InstancedMesh(plane, new THREE.MeshStandardMaterial({ map: grass, roughness: 1, ...onTop }), grassSpots.length);
+    grassSpots.forEach(([x, z, px, pz], index) => {
+      // Each parcel is rotated a quarter turn at random so the grass never repeats visibly
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.012, z), quaternion.setFromAxisAngle(up, Math.floor(parcelHash(px, pz) * 4) * Math.PI / 2), new THREE.Vector3(1, 1, 1));
+      grassMesh.setMatrixAt(index, matrix);
+      grassMesh.setColorAt(index, color.setHSL(0, 0, 0.94 + parcelHash(pz, px) * 0.08));
+    });
+    const roadMesh = new THREE.InstancedMesh(plane, new THREE.MeshStandardMaterial({ map: road, roughness: 0.95, ...onTop }), roadSpots.length);
+    roadSpots.forEach(([x, z], index) => {
+      matrix.makeTranslation(x, GROUND_LEVEL + 0.014, z);
+      roadMesh.setMatrixAt(index, matrix);
+    });
+    // Demarcation: low stone edging on the west and south side of each grass
+    // parcel (so every shared line gets exactly one), and corner marker stones
+    const stone = new THREE.MeshStandardMaterial({ color: '#cfc8b8', roughness: 0.9 });
+    const edges = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stone, grassSpots.length * 2);
+    const corners = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.28, 0.35, 6).translate(0, 0.175, 0), new THREE.MeshStandardMaterial({ color: '#e9e4d8', roughness: 0.8 }), grassSpots.length);
+    grassSpots.forEach(([x, z], index) => {
+      matrix.compose(new THREE.Vector3(x - PARCEL_SIZE / 2, GROUND_LEVEL + 0.03, z), quaternion.identity(), new THREE.Vector3(0.18, 0.06, PARCEL_SIZE));
+      edges.setMatrixAt(index * 2, matrix);
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.03, z + PARCEL_SIZE / 2), quaternion, new THREE.Vector3(PARCEL_SIZE, 0.06, 0.18));
+      edges.setMatrixAt(index * 2 + 1, matrix);
+      matrix.makeTranslation(x - PARCEL_SIZE / 2, GROUND_LEVEL, z + PARCEL_SIZE / 2);
+      corners.setMatrixAt(index, matrix);
+    });
+    [grassMesh, roadMesh, edges, corners].forEach((instanced) => {
+      instanced.raycast = () => {};
+      instanced.receiveShadow = true;
+      instanced.castShadow = false;
+      instanced.userData.alwaysVisible = true;
+      scene.add(instanced);
+    });    buildSeas();
+  }
+
+  // Water surfaces, sandy shores and island rims. The water sits 35 cm above
+  // the ground so the avatar wades in it; islands are flat and walkable.
+  let seaWater = null;
+  function blobShape(cx, cz, r, seed, grow = 0) {
+    const shape = new THREE.Shape();
+    for (let i = 0; i <= 72; i++) {
+      const angle = (i / 72) * Math.PI * 2;
+      const radius = blobRadius(r, angle, seed) + grow;
+      // Shape y maps to -z after the ground rotation
+      const x = cx + Math.cos(angle) * radius;
+      const y = -(cz + Math.sin(angle) * radius);
+      if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+    }
+    return shape;
+  }
+  // Decentraland-style palm: a curved trunk of stacked rings and broad,
+  // drooping leaves (one merged geometry, instanced everywhere)
+  const palmSpots = [];
+  function palmGeometry() {
+    const parts = [];
+    let x = 0;
+    let y = 0;
+    for (let i = 0; i < 9; i++) {
+      const ring = new THREE.CylinderGeometry(0.26 - i * 0.012, 0.3 - i * 0.012, 0.8, 7);
+      ring.rotateZ(-0.035 * i);
+      ring.translate(x, y + 0.4, 0);
+      parts.push({ geometry: ring, color: i % 2 ? '#9c7a54' : '#8a6a47' });
+      x += 0.04 * i;
+      y += 0.78;
+    }
+    const top = new THREE.Vector3(x, y, 0);
+    parts.push({ geometry: new THREE.SphereGeometry(0.42, 7, 5).translate(top.x, top.y, top.z), color: '#6b8f3a' });
+    for (let f = 0; f < 8; f++) {
+      const leaf = new THREE.PlaneGeometry(0.9, 3.6, 1, 4);
+      // Bend the leaf down along its length
+      const position = leaf.attributes.position;
+      for (let v = 0; v < position.count; v++) {
+        const along = (position.getY(v) + 1.8) / 3.6;
+        position.setZ(v, -along * along * 1.4);
+        position.setX(v, position.getX(v) * (1 - along * 0.6));
+      }
+      leaf.rotateX(-Math.PI / 2 + 0.35);
+      leaf.translate(0, 0, 1.8);
+      leaf.rotateY((f / 8) * Math.PI * 2);
+      leaf.translate(top.x, top.y, top.z);
+      parts.push({ geometry: leaf, color: f % 2 ? '#4f9a3c' : '#3d8a35' });
+    }
+    return mergeGeometries(parts);
+  }
+  function buildPalms() {
+    // A few palm groves on the commons around Genesis Plaza too
+    const random = seededRandom(2024);
+    for (let g = 0; g < 26; g++) {
+      const angle = random() * Math.PI * 2;
+      const radius = 105 + random() * 260;
+      const cx = Math.cos(angle) * radius;
+      const cz = Math.sin(angle) * radius;
+      for (let t = 0; t < 3; t++) {
+        const x = cx + (random() - 0.5) * 9;
+        const z = cz + (random() - 0.5) * 9;
+        if (insideDistrict(x, z, 4) || nearPath(x, z, 4)) continue;
+        palmSpots.push({ x, z, y: GROUND_LEVEL, size: 0.9 + random() * 0.4, turn: random() * 6.28 });
+      }
+    }
+    if (!palmSpots.length) return;
+    const palms = new THREE.InstancedMesh(palmGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, side: THREE.DoubleSide, flatShading: true }), palmSpots.length);
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    palmSpots.forEach(({ x, y, z, size, turn }, index) => {
+      matrix.compose(new THREE.Vector3(x, y, z), quaternion.setFromAxisAngle(up, turn), new THREE.Vector3(size, size, size));
+      palms.setMatrixAt(index, matrix);
+    });
+    palms.castShadow = false;
+    palms.receiveShadow = true;
+    palms.raycast = () => {};
+    palms.userData.alwaysVisible = true;
+    scene.add(palms);
+  }
+
+  function buildSeas() {
+    const seas = landLayout.seas || [];
+    if (!seas.length) return;
+    const ripples = PropKit.kit.canvasTexture('seaRipples', 256, 256, (ctx, w) => {
+      const image = ctx.createImageData(w, w);
+      for (let y = 0; y < w; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = Math.sin((x / w) * Math.PI * 6 + Math.sin((y / w) * Math.PI * 4) * 1.5);
+          const b = Math.cos((y / w) * Math.PI * 8 + Math.sin((x / w) * Math.PI * 2) * 2);
+          const i = (y * w + x) * 4;
+          image.data[i] = 128 + a * 40;
+          image.data[i + 1] = 128 + b * 40;
+          image.data[i + 2] = 255;
+          image.data[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(image, 0, 0);
+    });
+    const normalMap = ripples.clone();
+    normalMap.needsUpdate = true;
+    normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+    normalMap.repeat.set(1 / 14, 1 / 14);
+    const onTop = { polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 };
+    const water = new THREE.MeshStandardMaterial({ color: '#1c7fb5', roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.88, normalMap, normalScale: new THREE.Vector2(0.5, 0.5), ...onTop });
+    const shallow = new THREE.MeshStandardMaterial({ color: '#3fb6c9', roughness: 0.2, transparent: true, opacity: 0.9, ...onTop });
+    const sand = new THREE.MeshStandardMaterial({ color: '#e3cf9f', roughness: 1, ...onTop });
+    const islandGrass = new THREE.MeshStandardMaterial({ color: '#6aa84f', roughness: 1 });
+    const group = new THREE.Group();
+    seas.forEach((sea, i) => {
+      const seed = i + 1;
+      const add = (shape, materialToUse, y) => {
+        const surface = new THREE.Mesh(new THREE.ShapeGeometry(shape), materialToUse);
+        surface.rotation.x = -Math.PI / 2;
+        surface.position.y = y;
+        surface.raycast = () => {};
+        surface.receiveShadow = true;
+        group.add(surface);
+      };
+      add(blobShape(sea.x, sea.z, sea.r, seed, 9), sand, GROUND_LEVEL + 0.02);
+      add(blobShape(sea.x, sea.z, sea.r, seed, 3), shallow, GROUND_LEVEL + 0.3);
+      add(blobShape(sea.x, sea.z, sea.r, seed, 0), water, GROUND_LEVEL + 0.35);
+      (sea.islands || []).forEach((island, k) => {
+        const islandSeed = i * 7 + k + 3;
+        // Flat walkable island: sandy rim and a grass top 0.5 m above the ground
+        const rim = new THREE.Mesh(new THREE.ExtrudeGeometry(blobShape(island.x, island.z, island.r, islandSeed, 3), { depth: 0.45, bevelEnabled: true, bevelSize: 2, bevelThickness: 0.3, bevelSegments: 2, curveSegments: 8 }), sand);
+        rim.rotation.x = -Math.PI / 2;
+        rim.position.y = GROUND_LEVEL;
+        group.add(rim);
+        const top = new THREE.Mesh(new THREE.ShapeGeometry(blobShape(island.x, island.z, island.r, islandSeed, -2)), islandGrass);
+        top.rotation.x = -Math.PI / 2;
+        top.position.y = GROUND_LEVEL + 0.78;
+        top.receiveShadow = true;
+        group.add(top);
+        sharedCollidables.push(rim, top);
+        // Palms on the small islands (the big one hosts a district)
+        if (island.r < 40) {
+          const random = seededRandom(islandSeed * 97);
+          const count = Math.max(2, Math.round(island.r / 5));
+          for (let t = 0; t < count; t++) {
+            const angle = random() * Math.PI * 2;
+            const distance = random() * island.r * 0.65;
+            palmSpots.push({ x: island.x + Math.cos(angle) * distance, z: island.z + Math.sin(angle) * distance, y: GROUND_LEVEL + 0.78, size: 0.8 + random() * 0.5, turn: random() * 6.28 });
+          }
+        }
+      });
+    });
+    // Palms along every shore (on dry land just outside the sand)
+    seas.forEach((sea, i) => {
+      const random = seededRandom(i * 131 + 7);
+      for (let t = 0; t < 40; t++) {
+        const angle = random() * Math.PI * 2;
+        const radius = blobRadius(sea.r, angle, i + 1) + 12 + random() * 10;
+        const x = sea.x + Math.cos(angle) * radius;
+        const z = sea.z + Math.sin(angle) * radius;
+        if (Math.abs(x) > WORLD_LIMIT - 4 || Math.abs(z) > WORLD_LIMIT - 4 || insideDistrict(x, z, 2) || seaAt(x, z)) continue;
+        palmSpots.push({ x, z, y: GROUND_LEVEL, size: 0.85 + random() * 0.5, turn: random() * 6.28 });
+      }
+    });
+    group.userData.alwaysVisible = true;
+    scene.add(group);
+    seaWater = normalMap;
+  }
+
+  // Community buildings are instanced (no raycast): the avatar physics asks
+  // this instead, so you cannot walk through them
+  const sceneSolids = new Map();
+  let landScenes = 0;
+  function solidAt(x, z, y) {
+    const [px, pz] = parcelOf(x, z);
+    const solid = sceneSolids.get(`${px},${pz}`);
+    return Boolean(solid) && y < solid.top && x > solid.minX && x < solid.maxX && z > solid.minZ && z < solid.maxZ;
+  }
+
+  // Owned parcels: a fenced plot with the owner's sign (only these become 3D objects)
+  let ownedGroup = null;
+  function buildOwnedParcels() {
+    if (!scene) return;
+    if (ownedGroup) scene.remove(ownedGroup);
+    ownedGroup = new THREE.Group();
+    const { box } = PropKit.kit;
+    const post = material('#7048e8');
+    const plate = new THREE.MeshStandardMaterial({ color: '#9775fa', transparent: true, opacity: 0.35, roughness: 1 });
+    Object.entries(landOwners).forEach(([parcel, land]) => {
+      if (landSigns.has(parcel)) return;
+      const [px, pz] = parcel.split(',').map(Number);
+      const x = px * PARCEL_SIZE + PARCEL_SIZE / 2;
+      const z = -(pz * PARCEL_SIZE + PARCEL_SIZE / 2);
+      if (inCore(x, z)) return;
+      const plot = new THREE.Group();
+      plot.position.set(x, GROUND_LEVEL, z);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(PARCEL_SIZE - 0.4, PARCEL_SIZE - 0.4).rotateX(-Math.PI / 2), plate);
+      floor.position.y = 0.03;
+      floor.raycast = () => {};
+      plot.add(floor);
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => plot.add(box(0.3, 1.4, 0.3, post, sx * 7.6, 0.7, sz * 7.6)));
+      const sign = textSprite(`${land.owner} · parcel ${parcel}`, { width: 6, background: 'rgba(80, 50, 160, 0.9)' });
+      sign.position.y = 3;
+      plot.add(sign);
+      ownedGroup.add(plot);
+    });
+    scene.add(ownedGroup);
+  }
+
+  // --------------------------------------------------------------------------
   // District layout
   // --------------------------------------------------------------------------
   function layoutFor(world) {
@@ -54,12 +466,15 @@ const City = (() => {
     }
     const [cellX, cellZ] = world.cell;
     const [spanX, spanZ] = world.span || [1, 1];
+    // Districts around the plaza are 50% bigger than the original grid cell
+    // (more realistic scale); Genesis Plaza keeps its own size
+    const cellSize = world.key === 'plaza' ? CELL_SIZE : CELL_SIZE * DISTRICT_GROWTH;
     // Scenes are nudged off the grid so Genesis City feels like one organic place
     const jitter = world.key === 'plaza' ? [0, 0] : (() => { const random = seededRandom(world.key.split('').reduce((sum, c) => sum * 31 + c.charCodeAt(0), 7)); return [(random() - 0.5) * 18, (random() - 0.5) * 18]; })();
     const spread = 1.25; // extra room between scenes for paths and gardens
     return {
-      center: new THREE.Vector3((cellX + (spanX - 1) / 2) * CELL_SIZE * (world.key === 'plaza' ? 1 : spread) + jitter[0], world.elevation || 0, (cellZ + (spanZ - 1) / 2) * CELL_SIZE * (world.key === 'plaza' ? 1 : spread) + jitter[1]),
-      size: [spanX * CELL_SIZE - ROAD_WIDTH, spanZ * CELL_SIZE - ROAD_WIDTH],
+      center: new THREE.Vector3((cellX + (spanX - 1) / 2) * cellSize * (world.key === 'plaza' ? 1 : spread) + jitter[0], world.elevation || 0, (cellZ + (spanZ - 1) / 2) * cellSize * (world.key === 'plaza' ? 1 : spread) + jitter[1]),
+      size: [spanX * cellSize - ROAD_WIDTH, spanZ * cellSize - ROAD_WIDTH],
       cells: { minX: cellX, maxX: cellX + spanX - 1, minZ: cellZ, maxZ: cellZ + spanZ - 1 }
     };
   }
@@ -90,7 +505,7 @@ const City = (() => {
 
     // Some scenes from the original maps were built small: "scale" in worlds.json
     // enlarges the whole scene (positions and sizes) to human scale
-    const sceneScale = world.scale || 1;
+    const sceneScale = (world.scale || 1) * (world.cell && world.key !== 'plaza' ? DISTRICT_GROWTH : 1);
     const scaled = (value) => (Array.isArray(value) ? value.map((v) => v * sceneScale) : typeof value === 'number' ? value * sceneScale : value);
     mapData.blocks.forEach((blockData) => root.add(PropKit.buildBlock(sceneScale === 1 ? blockData : { ...blockData, position: scaled(blockData.position), scale: scaled(blockData.scale) })));
 
@@ -119,24 +534,21 @@ const City = (() => {
     // A ring of trees frames the World
     const random = seededRandom(key.length * 977);
     const count = 120;
-    const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.3, 0.4, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), count);
-    const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material('#ffffff', { flatShading: true }), count);
+    // Realistic leafy trees (one instanced mesh: bark, foliage and leaf cards)
+    const trees = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry(), PropKit.kit.treeMaterial(), count);
     const matrix = new THREE.Matrix4();
-    const color = new THREE.Color();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
     for (let i = 0; i < count; i++) {
       const angle = random() * Math.PI * 2;
       const distance = Math.max(size[0], size[1]) * 0.62 + 10 + random() * (radius - Math.max(size[0], size[1]) * 0.62 - 20);
-      const treeScale = 1 + random() * 1.2;
-      const x = Math.cos(angle) * distance;
-      const z = Math.sin(angle) * distance;
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), new THREE.Quaternion(), new THREE.Vector3(treeScale, treeScale * 2.6, treeScale));
-      trunks.setMatrixAt(i, matrix);
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + treeScale * 3.6, z), new THREE.Quaternion(), new THREE.Vector3(treeScale * 2, treeScale * 2.2, treeScale * 2));
-      crowns.setMatrixAt(i, matrix);
-      crowns.setColorAt(i, color.setHSL(0.26 + random() * 0.08, 0.5, 0.3 + random() * 0.12));
+      const treeScale = 0.8 + random() * 0.8;
+      matrix.compose(new THREE.Vector3(Math.cos(angle) * distance, GROUND_LEVEL, Math.sin(angle) * distance), quaternion.setFromAxisAngle(up, random() * 6.28), new THREE.Vector3(treeScale, treeScale * (0.9 + random() * 0.3), treeScale));
+      trees.setMatrixAt(i, matrix);
     }
-    trunks.castShadow = crowns.castShadow = true;
-    island.add(trunks, crowns);
+    trees.castShadow = false;
+    trees.raycast = () => {};
+    island.add(trees);
     return island;
   }
 
@@ -157,8 +569,9 @@ const City = (() => {
 
   function undergroundHoles() {
     const holes = [];
-    districts.forEach((district) => district.mapData.blocks.filter((block) => block.type === 'square_pool').forEach((block) => {
-      holes.push({ x: district.layout.center.x + block.position[0], z: district.layout.center.z + block.position[2], size: block.scale[0] });
+    // Square pools and blocks with a "hole" (stair shafts going underground)
+    districts.forEach((district) => district.mapData.blocks.filter((block) => block.type === 'square_pool' || block.hole).forEach((block) => {
+      holes.push({ x: district.layout.center.x + block.position[0], z: district.layout.center.z + block.position[2], size: block.hole || block.scale[0] });
     }));
     return holes;
   }
@@ -218,20 +631,9 @@ const City = (() => {
     const pavers = repeated(PropKit.kit.cobbleTexture('#cfc6b8'), 1, 1);
     pavers.repeat.set(1 / 8, 1 / 8);
     const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: pavers, roughness: 0.95 }));
-    // Real grass only on the outskirts, past the city
+    // Real grass for lawns (the parcel grid is built in finalize, once every district exists)
     const texture = repeated(grassTexture, 1, 1);
     texture.repeat.set(1 / 10, 1 / 10);
-    const outskirts = new THREE.Shape();
-    outskirts.moveTo(-edge, -edge); outskirts.lineTo(edge, -edge); outskirts.lineTo(edge, edge); outskirts.lineTo(-edge, edge); outskirts.closePath();
-    const cityEdge = new THREE.Path();
-    cityEdge.absarc(0, 0, 400, 0, Math.PI * 2, true);
-    outskirts.holes.push(cityEdge);
-    const lawnRing = new THREE.Mesh(new THREE.ShapeGeometry(outskirts, 64), new THREE.MeshStandardMaterial({ map: texture, roughness: 1 }));
-    lawnRing.rotation.x = -Math.PI / 2;
-    lawnRing.position.y = GROUND_LEVEL + 0.012;
-    lawnRing.receiveShadow = true;
-    lawnRing.raycast = () => {};
-    scene.add(lawnRing);
     grassMaterialForLawns = new THREE.MeshStandardMaterial({ map: texture, roughness: 1 });
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = GROUND_LEVEL;
@@ -439,6 +841,7 @@ const City = (() => {
       signMaterial.map = landSignTexture(parcel, owner);
       signMaterial.needsUpdate = true;
     });
+    buildOwnedParcels();
   }
 
   // Outskirts: past the neighborhoods the land fades out gradually (sparse
@@ -450,26 +853,24 @@ const City = (() => {
     const quaternion = new THREE.Quaternion();
     const up = new THREE.Vector3(0, 1, 0);
     const sparse = [];
-    for (let i = 0; i < 900; i++) {
+    for (let i = 0; i < 2200; i++) {
       const x = (random() * 2 - 1) * (WORLD_LIMIT - 20);
       const z = (random() * 2 - 1) * (WORLD_LIMIT - 20);
       const radius = Math.max(Math.abs(x), Math.abs(z));
-      // Density falls off from the neighborhoods to the edge
-      if (radius < 380 || random() > 0.9 - (radius - 380) / 400) continue;
-      if (insideDistrict(x, z, 6) || nearPath(x, z, 5)) continue;
+      // A few trees, rocks and grass tufts on the empty parcels (never on roads)
+      if (radius < CORE_HALF + 4 || random() > 0.45) continue;
+      if (landAt(x, z) !== 'land' || landAt(x + 3, z + 3) !== 'land' || landAt(x - 3, z - 3) !== 'land' || random() > 0.5) continue;
       sparse.push({ x, z, kind: random(), size: 0.6 + random() * 0.9 });
     }
     const trees = sparse.filter((spot) => spot.kind < 0.45);
     const rocks = sparse.filter((spot) => spot.kind >= 0.45 && spot.kind < 0.6);
     const tufts = sparse.filter((spot) => spot.kind >= 0.6);
-    const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.3, 3, 6).translate(0, 1.5, 0), material('#5d4037'), trees.length);
-    const crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2, 0), material('#3f7f3a', { flatShading: true }), trees.length);
+    const trunk = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry(), PropKit.kit.treeMaterial(), trees.length);
     trees.forEach(({ x, z, size }, index) => {
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion, new THREE.Vector3(size, size, size));
+      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion.setFromAxisAngle(up, x * 7), new THREE.Vector3(size * 0.85, size * 0.9, size * 0.85));
       trunk.setMatrixAt(index, matrix);
-      matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 3.6 * size, z), quaternion.setFromAxisAngle(up, x), new THREE.Vector3(size, size * 1.1, size));
-      crown.setMatrixAt(index, matrix);
     });
+    const crown = new THREE.Group(); // (the realistic tree mesh includes its crown)
     const rock = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), material('#8a8f94', { flatShading: true, roughness: 1 }), rocks.length);
     rocks.forEach(({ x, z, size }, index) => {
       matrix.compose(new THREE.Vector3(x, GROUND_LEVEL + 0.3, z), quaternion.setFromAxisAngle(up, z), new THREE.Vector3(size * 1.4, size * 0.7, size));
@@ -508,7 +909,7 @@ const City = (() => {
     }
     [trunk, crown, rock, tuft, pines, hills].forEach((instanced) => {
       instanced.raycast = () => {};
-      instanced.castShadow = instanced !== hills && instanced !== pines;
+      instanced.castShadow = instanced !== hills && instanced !== pines && instanced !== trunk; // thousands of trees: no shadow pass
       instanced.receiveShadow = true;
       scene.add(instanced);
     });
@@ -538,11 +939,85 @@ const City = (() => {
     });
   }
 
+  // Merges simple non-indexed geometries into one (for instanced trees)
+  function mergeGeometries(parts) {
+    const positions = [];
+    const normals = [];
+    const colors = [];
+    parts.forEach(({ geometry, color }) => {
+      const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+      flat.computeVertexNormals();
+      positions.push(...flat.attributes.position.array);
+      normals.push(...flat.attributes.normal.array);
+      const c = new THREE.Color(color);
+      for (let i = 0; i < flat.attributes.position.count; i++) colors.push(c.r, c.g, c.b);
+    });
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    merged.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    merged.computeBoundingSphere();
+    return merged;
+  }
+
+  // Privacy: belts of Roblox-style layered pines (and a few round trees)
+  // around every district, so each one feels like its own place. Entrances
+  // stay open because no tree grows on a path.
+  function buildDistrictTreeBelts() {
+    const random = seededRandom(31337);
+    const pine = PropKit.kit.realisticTreeGeometry('pine');
+    const round = PropKit.kit.realisticTreeGeometry('broadleaf');
+    const pines = [];
+    const rounds = [];
+    districts.forEach((district) => {
+      // The plaza, the beach (it looks out to the sea) and the Glass Cube (a
+      // store on an open square of the city) stay open
+      if (district.world.world || ['plaza', 'beach', 'glasscube'].includes(district.world.key)) return;
+      const { center, size } = district.layout;
+      [5, 10].forEach((offset, row) => {
+        const halfX = size[0] / 2 + offset;
+        const halfZ = size[1] / 2 + offset;
+        const perimeter = 4 * (halfX + halfZ);
+        const steps = Math.floor(perimeter / (row ? 6.5 : 4.8));
+        for (let i = 0; i < steps; i++) {
+          let t = (i / steps) * perimeter;
+          let x;
+          let z;
+          if (t < 2 * halfX) { x = -halfX + t; z = -halfZ; } else if ((t -= 2 * halfX) < 2 * halfZ) { x = halfX; z = -halfZ + t; } else if ((t -= 2 * halfZ) < 2 * halfX) { x = halfX - t; z = halfZ; } else { t -= 2 * halfX; x = -halfX; z = halfZ - t; }
+          x += center.x + (random() - 0.5) * 2.4;
+          z += center.z + (random() - 0.5) * 2.4;
+          if (random() < 0.12) continue; // natural gaps
+          if (nearPath(x, z, 5.5) || insideDistrict(x, z, 2) || Math.abs(x) > WORLD_LIMIT - 5 || Math.abs(z) > WORLD_LIMIT - 5) continue;
+          const [px, pz] = parcelOf(x, z);
+          if (isRoadParcel(px, pz)) continue;
+          (random() < 0.8 ? pines : rounds).push({ x, z, size: 0.75 + random() * 0.55, turn: random() * Math.PI * 2 });
+        }
+      });
+    });
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    [[pine, pines], [round, rounds]].forEach(([geometry, spots]) => {
+      if (!spots.length) return;
+      const trees = new THREE.InstancedMesh(geometry, PropKit.kit.treeMaterial(), spots.length);
+      spots.forEach(({ x, z, size, turn }, index) => {
+        matrix.compose(new THREE.Vector3(x, GROUND_LEVEL, z), quaternion.setFromAxisAngle(up, turn), new THREE.Vector3(size, size * (0.9 + (index % 5) * 0.06), size));
+        trees.setMatrixAt(index, matrix);
+      });
+      trees.castShadow = false; // thousands of instances: the shadow pass would draw them all again
+      trees.receiveShadow = true;
+      trees.raycast = () => {};
+      trees.userData.alwaysVisible = true;
+      scene.add(trees);
+    });
+  }
+
   // Organic scatter of points of interest around the scenes
   function buildNeighborhoods() {
     const { box, cylinder, sphere, mesh, glow: glowMaterial, interactive, labelTexture } = PropKit.kit;
     const random = seededRandom(2024);
     const trees = [];
+    const shrubs = [];
     const houses = [];
     const sculptures = [];
     const kiosks = [];
@@ -565,21 +1040,33 @@ const City = (() => {
       { type: 'supertree', scale: [8, 16, 8], radius: 150, angle: 5.0 },
       { type: 'column_hall', scale: [20, 10, 14], color: '#cdb4db', label: 'Gallery of Open Source', radius: 190, angle: 2.0, face: true },
       { type: 'light_pavilion', scale: [24, 16, 24], label: 'Pavilion of Light', radius: 140, angle: 1.55, face: true },
-      { type: 'mini_hotel', scale: [10, 6, 10], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
-      { type: 'lodge_hotel', scale: [20, 10, 16], label: 'The Hotel', radius: 215, angle: 3.3, face: true, reserve: 34 },
+      { type: 'mini_hotel', scale: [15, 9, 15], label: 'Genesis Capsule Inn', radius: 128, angle: 2.9, face: true },
       { type: 'forest_garden', scale: [30, 1, 30], label: 'Multiverse Forest', radius: 175, angle: 1.05, face: true },
       { type: 'forest_garden', scale: [26, 1, 26], label: 'Multiverse Forest II', radius: 240, angle: 4.75, face: true },
-      { type: 'mini_hotel', scale: [9, 7, 9], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
+      { type: 'mini_hotel', scale: [14, 12, 14], label: 'Neon Cube Hotel', radius: 170, angle: 6.0, face: true, variant: 'cube' },
       { type: 'promenade', scale: [14, 1, 54], color: '#b9b4d6', radius: 150, angle: 3.9, face: true },
       { type: 'promenade', scale: [14, 1, 54], color: '#d6c7b4', radius: 165, angle: 0.15, face: true },
-      { type: 'promenade', scale: [12, 1, 46], color: '#c5d6e0', radius: 180, angle: 5.2, face: true }
+      { type: 'promenade', scale: [12, 1, 46], color: '#c5d6e0', radius: 180, angle: 5.2, face: true },
+      // Open squares near the spawn (squares.js)
+      { type: 'round_pavilion', scale: [30, 8, 30], label: 'The Round Pavilion', radius: 118, angle: 2.55, face: true },
+      { type: 'wave_cube', scale: [16, 16, 16], label: 'The Wave Cube', radius: 122, angle: 1.95, face: true },
+      { type: 'retro_arcade', scale: [26, 9, 16], label: 'Retro Arcade', radius: 128, angle: 3.75, face: true },
+      { type: 'screen_amphitheater', scale: [34, 12, 34], label: 'Open Stage', radius: 135, angle: 1.25, face: true },
+      { type: 'ring_colosseum', scale: [26, 12, 26], label: 'The Ring', radius: 150, angle: 4.35, face: true },
+      // More firepits with benches and "Fry your Code" around the commons
+      { type: 'firepit', scale: [16, 1, 16], radius: 112, angle: 3.1 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 140, angle: 0.95 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 160, angle: 5.75 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 200, angle: 2.25 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 230, angle: 4.0 },
+      { type: 'firepit', scale: [16, 1, 16], radius: 260, angle: 0.4 }
     ];
     const placedLandmarks = coworkSpots.map(({ x, z }) => ({ x, z, size: 13, landmark: null }));
     LANDMARKS.forEach((landmark) => {
       const size = landmark.reserve || Math.max(landmark.scale[0], landmark.scale[2]) / 2 + 3;
-      for (let attempt = 0; attempt < 60; attempt++) {
-        const angle = landmark.angle + attempt * 0.13;
-        const radius = landmark.radius + (attempt % 5) * 12;
+      for (let attempt = 0; attempt < 160; attempt++) {
+        const angle = landmark.angle + attempt * 0.11;
+        const radius = landmark.radius + (attempt % 8) * 13;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         if (insideDistrict(x, z, size) || nearPath(x, z, size) || placedLandmarks.some((other) => Math.hypot(other.x - x, other.z - z) < other.size + size)) continue;
@@ -596,16 +1083,17 @@ const City = (() => {
         const roll = random();
         if (roll < 0.42) {
           lawns.push({ x, z, size: 7 + random() * 4 });
-          const count = 3 + Math.floor(random() * 5);
-          for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * 12, z: z + (random() - 0.5) * 12, size: 0.8 + random() * 0.8, shade: random() });
-        } else if (roll < 0.56) houses.push({ x, z, width: 6 + random() * 3, depth: 6 + random() * 3, height: 3.5 + random() * 2, hue: random(), roof: random(), turn: random() * Math.PI });
+          const count = 5 + Math.floor(random() * 6);
+          for (let t = 0; t < count; t++) trees.push({ x: x + (random() - 0.5) * 16, z: z + (random() - 0.5) * 16, size: 0.8 + random() * 0.8, shade: random() });
+          for (let t = 0; t < 4; t++) shrubs.push({ x: x + (random() - 0.5) * 14, z: z + (random() - 0.5) * 14, size: 0.6 + random() * 0.6, turn: random() * Math.PI });
+        } else if (roll < 0.56) houses.push({ x, z, width: 9 + random() * 4, depth: 9 + random() * 4, height: 6 + random() * 3, hue: random(), roof: random(), turn: random() * Math.PI });
         else if (roll < 0.65) sculptures.push({ x, z, hue: random(), kind: Math.floor(random() * 3), size: 1.5 + random() * 1.5 });
         else if (roll < 0.72) kiosks.push({ x, z, hue: random(), turn: random() * Math.PI });
         else if (roll < 0.79) spots.push({ type: 'campfire', x, z });
         else if (roll < 0.85) spots.push({ type: 'art', x, z, link: COMMUNITY_LINKS[Math.floor(random() * COMMUNITY_LINKS.length)], seed: Math.floor(random() * 1000), turn: random() * Math.PI * 2 });
         else if (roll < 0.9) spots.push({ type: 'picnic', x, z, turn: random() * Math.PI });
         else if (roll < 0.94) spots.push({ type: 'sale', x, z });
-        else midrises.push({ x, z, width: 9 + random() * 5, depth: 9 + random() * 5, height: 8 + random() * 10, hue: random() });
+        else midrises.push({ x, z, width: 11 + random() * 6, depth: 11 + random() * 6, height: 14 + random() * 18, hue: random() });
       }
     }
 
@@ -622,20 +1110,37 @@ const City = (() => {
       if (solid) { sharedCollidables.push(instanced); pickables.push(instanced); }
     };
 
-    // Trees (round, Decentraland-style, with autumn accents)
-    const trunkMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.35, 1, 6).translate(0, 0.5, 0), material('#6d4c41'), Math.max(1, trees.length));
-    const crownMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), material('#ffffff', { roughness: 0.9 }), Math.max(1, trees.length));
-    trunkMesh.count = crownMesh.count = trees.length;
-    trees.forEach((tree, index) => {
-      matrix.compose(position.set(tree.x, GROUND_LEVEL, tree.z), quaternion.identity(), scale.set(tree.size, tree.size * 2.5, tree.size));
-      trunkMesh.setMatrixAt(index, matrix);
-      matrix.compose(position.set(tree.x, GROUND_LEVEL + tree.size * 3.4, tree.z), quaternion.identity(), scale.set(tree.size * 1.9, tree.size * 1.7, tree.size * 1.9));
-      crownMesh.setMatrixAt(index, matrix);
-      if (tree.shade > 0.68) crownMesh.setColorAt(index, color.set(['#ff7f50', '#f78fb3', '#ffb347', '#ff4d6d'][Math.floor(tree.shade * 100) % 4]));
-      else crownMesh.setColorAt(index, color.setHSL(0.27 + tree.shade * 0.08, 0.5, 0.34 + tree.shade * 0.12));
+    // Realistic leafy trees (green, blossom and autumn broadleaf, some pines) with low leafy shrubs
+    const treeGroups = { broadleaf_green: [], broadleaf_blossom: [], broadleaf_autumn: [], pine_green: [] };
+    trees.forEach((tree) => {
+      const key = tree.shade > 0.86 ? 'broadleaf_blossom' : tree.shade > 0.7 ? 'broadleaf_autumn' : tree.shade < 0.22 ? 'pine_green' : 'broadleaf_green';
+      treeGroups[key].push(tree);
     });
-    addInstanced(trunkMesh);
-    addInstanced(crownMesh, false);
+    Object.entries(treeGroups).forEach(([key, list]) => {
+      if (!list.length) return;
+      const [kind, variant] = key.split('_');
+      const mesh = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry(kind), PropKit.kit.treeMaterial(variant), list.length);
+      list.forEach((tree, index) => {
+        quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), tree.x * 3.1 + tree.z);
+        matrix.compose(position.set(tree.x, GROUND_LEVEL, tree.z), quaternion, scale.set(tree.size * 0.8, tree.size * (0.75 + tree.shade * 0.2), tree.size * 0.8));
+        mesh.setMatrixAt(index, matrix);
+      });
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      sharedCollidables.push(mesh);
+      pickables.push(mesh);
+    });
+    if (shrubs.length) {
+      const shrubMesh = new THREE.InstancedMesh(PropKit.kit.realisticTreeGeometry('broadleaf'), PropKit.kit.treeMaterial('green'), shrubs.length);
+      shrubs.forEach((shrub, index) => {
+        quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), shrub.turn);
+        // A squashed leafy crown sunk into the ground reads as a bush
+        matrix.compose(position.set(shrub.x, GROUND_LEVEL - 1.7 * shrub.size, shrub.z), quaternion, scale.set(shrub.size * 0.55, shrub.size * 0.5, shrub.size * 0.55));
+        shrubMesh.setMatrixAt(index, matrix);
+      });
+      shrubMesh.receiveShadow = true;
+      scene.add(shrubMesh);
+    }
 
     // Cottages with rounded walls and pyramid roofs, turned in every direction
     const houseMap = repeated(windowsTexture('#ffffff', '#ffe9a8'), 2, 1);
@@ -724,8 +1229,14 @@ const City = (() => {
           spotGroup.add(log);
         }
         const flame = mesh(new THREE.ConeGeometry(0.6, 1.6, 7), glowMaterial('#ff9f1c', 2, { transparent: true, opacity: 0.9 }), 0, 1.2, 0);
-        spotGroup.add(flame);
-        animatedCity.push((time) => { flame.scale.set(1, 0.8 + Math.sin(time * 14 + spot.x) * 0.25, 1); });
+        const core = mesh(new THREE.ConeGeometry(0.32, 1.1, 7), glowMaterial('#ffe8a3', 3, { transparent: true, opacity: 0.95 }), 0, 0.95, 0);
+        [flame, core].forEach((part) => { part.castShadow = false; spotGroup.add(part); });
+        animatedCity.push((time) => {
+          flame.scale.set(1 + Math.sin(time * 9 + spot.z) * 0.06, 0.8 + Math.sin(time * 14 + spot.x) * 0.25, 1);
+          core.scale.set(1, 0.85 + Math.sin(time * 19 + spot.z) * 0.2, 1);
+        });
+        // Flickering firelight on the ground and benches (stronger at night)
+        FireLights.register(spotGroup, { radius: 8, height: 1.3, strength: 0.9 });
         for (let i = 0; i < 4; i++) {
           const angle = (i / 4) * Math.PI * 2 + 0.4;
           const bench = new THREE.Group();
@@ -903,15 +1414,6 @@ const City = (() => {
     stars = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3)), new THREE.PointsMaterial({ color: '#ffffff', size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
     scene.add(stars);
 
-    clouds = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), material('#ffffff', { roughness: 1, transparent: true, opacity: 0.92, flatShading: true }), 60);
-    const matrix = new THREE.Matrix4();
-    for (let i = 0; i < 60; i++) {
-      const cloudScale = new THREE.Vector3(18 + random() * 22, 5 + random() * 5, 12 + random() * 14);
-      matrix.compose(new THREE.Vector3((random() - 0.5) * 1400, 90 + random() * 50, (random() - 0.5) * 1400 + 200), new THREE.Quaternion(), cloudScale);
-      clouds.setMatrixAt(i, matrix);
-    }
-    clouds.castShadow = false;
-    scene.add(clouds);
 
     rain = createPrecipitation(4000, '#a5c8ff', 0.35, true);
     snow = createPrecipitation(2500, '#ffffff', 1.4, false);
@@ -961,6 +1463,7 @@ const City = (() => {
   }
 
   function updateEnvironment({ ticks, weather, camera, focus, deltaSeconds, time }) {
+    if (seaWater) seaWater.offset.set(time * 0.012, time * 0.008);
     const colors = skyAt(ticks);
     const stormFactor = weather === 'clear' ? 1 : weather === 'thunder' ? 0.45 : 0.65;
     const gray = new THREE.Color('#7b8794');
@@ -1010,8 +1513,6 @@ const City = (() => {
     moon.position.set(camera.position.x - Math.cos(sunAngle) * 900, Math.max(-200, -Math.sin(sunAngle) * 700 + 150), camera.position.z - 500);
     moon.visible = night > 0.1 && weather === 'clear';
     stars.position.copy(camera.position);
-    clouds.material.color.set(weather === 'clear' ? '#ffffff' : '#9aa5b1');
-    clouds.position.x = (time * 2) % 200;
     nightWindowMaterials.forEach((windowMaterial) => { windowMaterial.emissive.setScalar(night * 0.9); });
     if (streetLampHeads) streetLampHeads.material.emissiveIntensity = 0.2 + night * 2.2;
     if (lampHalos) lampHalos.material.opacity = night * 0.22;
@@ -1096,7 +1597,7 @@ const City = (() => {
   }
 
   function buildSkyline() {
-    const ringRadius = (CITY_RADIUS + 0.5) * CELL_SIZE + 90;
+    const ringRadius = 600; // brand towers stand on the land around the bigger districts
     const random = seededRandom(4242);
     const towerTexture = repeated(windowsTexture('#2b2f3a', '#ffe9a8'), 3, 10);
     const towerMaterial = new THREE.MeshStandardMaterial({ map: towerTexture, emissiveMap: towerTexture, emissive: '#000000', roughness: 0.4, metalness: 0.4 });
@@ -1172,8 +1673,8 @@ const City = (() => {
   }
 
   // --------------------------------------------------------------------------
-  // Horizon: red low-poly mesas with autumn trees, a sweeping arch landmark and
-  // puffy cumulus clouds, so the sky around Genesis City never feels empty
+  // Horizon: red low-poly mesas with autumn trees and a sweeping arch landmark,
+  // so the sky around Genesis City never feels empty (clouds: the Minecraft layer)
   // --------------------------------------------------------------------------
   function buildHorizon() {
     const random = seededRandom(9001);
@@ -1186,7 +1687,7 @@ const City = (() => {
     let crownIndex = 0;
     for (let i = 0; i < 26; i++) {
       const angle = (i / 26) * Math.PI * 2 + random() * 0.15;
-      const distance = 650 + random() * 250;
+      const distance = WORLD_LIMIT + 130 + random() * 220;
       const radius = 35 + random() * 50;
       const height = 30 + random() * 70;
       const mesa = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.75, radius, height, 7), rock);
@@ -1222,25 +1723,6 @@ const City = (() => {
       arch.add(ring);
     }
 
-    // Puffy cumulus clouds made of clustered spheres
-    const cloudMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, emissive: '#ffffff', emissiveIntensity: 0.15 });
-    for (let i = 0; i < 18; i++) {
-      const cloud = new THREE.Group();
-      const puffs = 5 + Math.floor(random() * 4);
-      for (let p = 0; p < puffs; p++) {
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), cloudMaterial);
-        const size = 14 + random() * 16;
-        puff.scale.set(size, size * 0.8, size);
-        puff.position.set((p - puffs / 2) * 14 + random() * 6, random() * 10 + (p % 2) * 8, random() * 10);
-        cloud.add(puff);
-      }
-      const angle = random() * Math.PI * 2;
-      const distance = 350 + random() * 450;
-      cloud.position.set(Math.cos(angle) * distance, 130 + random() * 90, Math.sin(angle) * distance);
-      cloud.traverse((node) => { node.raycast = () => {}; });
-      scene.add(cloud);
-      animatedCity.push((time) => { cloud.position.x += Math.sin(time * 0.01 + i) * 0.02; });
-    }
   }
 
   // Called once every district is loaded
@@ -1254,19 +1736,24 @@ const City = (() => {
 
   function finalize() {
     prepareGround();
+    buildLand();
     buildPaths();
+    buildDistrictTreeBelts();
     buildNeighborhoods();
+    buildPalms();
     buildOutskirts();
     buildSkyline();
     buildHorizon();
   }
 
   return {
-    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, paths, setLandOwners, prepareGround,
+    PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, CORE_HALF, seaAt, paths, setLandOwners, prepareGround, landAt, isRoadParcel, isSceneParcel, setLandLayout, solidAt,
     landOwner: (parcel) => (landOwners[parcel] ? landOwners[parcel].owner : null),
     get landOwners() { return landOwners; },
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,
     // Objects the walking avatar can stand on or bump into around a point
+    // Objects added at runtime (event stages...) that the avatar can stand on
+    addCollidable(object) { sharedCollidables.push(object); },
     collidablesAt(x, z) {
       const district = districtAt(x, z);
       return district ? [district.root, ...sharedCollidables] : sharedCollidables;

@@ -118,7 +118,7 @@ const Equalizer = (() => {
       spawn(group, ring, 1.2, (p, t) => { ring.scale.setScalar(1 + t * 3); ring.material.opacity = 1 - t; ring.rotation.y += 0.05; });
     } else if (kind === 'bubbles') {
       tone(880, 0.08, { type: 'triangle', volume: 0.1 }); tone(1320, 0.1, { type: 'triangle', volume: 0.1, delay: 0.09 });
-      ['Hey! 👋', 'git push?', 'LGTM ✅'].forEach((text, i) => {
+      ['Hey!', 'git push?', 'LGTM'].forEach((text, i) => {
         const bubble = textSprite(text, { width: 2.6, color: '#111111', background: 'rgba(255, 255, 255, 0.95)' });
         bubble.position.set(position.x + (i - 1) * 1.2, position.y + 1.5, position.z);
         spawn(group, bubble, 2.2, (p, t) => { bubble.position.y = position.y + 1.5 + t * 4 + i * 0.6; bubble.material.opacity = 1 - t; });
@@ -217,9 +217,9 @@ const Equalizer = (() => {
     jukebox.add(jukeboxLabel);
     jukebox.position.set(0, 0.4, core + 7);
     jukebox.userData.onInteract = () => {
-      if (music) { stopMusic(); return '🔇 Music stopped.'; }
+      if (music) { stopMusic(); return 'Music stopped.'; }
       startMusic();
-      return '🎶 The Graphic Equalizer is playing! Jump from icon to icon.';
+      return 'The Graphic Equalizer is playing! Jump from icon to icon.';
     };
     group.add(interactive(jukebox, 'jukebox', 'Graphic Equalizer jukebox'));
     const title = textSprite(label || 'Graphic Equalizer · The Tower of Icons', { width: 12, background: 'rgba(24, 119, 242, 0.9)' });

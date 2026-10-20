@@ -650,10 +650,12 @@
       for (let x = -w / 2; x <= w / 2 + 0.01; x += w / 6) group.add(box(0.12, h, 0.12, steel, x, h / 2, d / 2));
       group.add(box(w + 0.4, 0.5, d + 0.4, material('#f5f5f7'), 0, h + 0.25, 0));
       for (let i = 0; i < 4; i++) group.add(box(w * 0.8, 0.05, 1.2, glow('#ffffff', 0.9), 0, h - 0.05, -d / 2 + (i + 0.5) * (d / 4)));
-      // Official ads: Apple's own YouTube channel uploads playing on a screen behind the Genius Bar
+      // Indoor billboard behind the Genius Bar: a silent reel of clips from three
+      // official videos, played back to back (reel.html; the sound stays off)
       const adScreen = box(w * 0.32, w * 0.18, 0.1, material('#000000'), w * 0.3, h * 0.55, -d / 2 + 0.4);
       group.add(adScreen);
-      VideoScreens.register(adScreen, w * 0.32, w * 0.18, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
+      const STORE_REEL = [['bJKTjCk7KV4', 127, 156], ['bJKTjCk7KV4', 159, 187], ['tBjgG1Sj86g', 202, 217], ['tR8O3pE1Ypk', 38, 68]];
+      VideoScreens.register(adScreen, w * 0.32, w * 0.18, `reel.html?s=${encodeURIComponent(STORE_REEL.map(([id, start, end]) => `${id}:${start}-${end}`).join(','))}&silent=1`);
       // Ad carousel on the right wall: cycles through every banner in assets/ads/ads.json
       const carouselFace = new THREE.MeshBasicMaterial({ map: productBoard('Mac', 'Add your banners to assets/ads', '#000000', '#ffffff') });
       const carousel = box(0.15, w * 0.22, d * 0.6, [material('#1d1d1f'), carouselFace, material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f')], w / 2 - 0.4, h * 0.5, 0);
@@ -758,9 +760,20 @@
       const steel = material('#adb5bd', { metalness: 0.8, roughness: 0.3 });
       [-1, 1].forEach((side) => inner.add(box(0.5, h * 0.45, 0.5, steel, side * w * 0.3, -h * 0.28, 0)));
       inner.add(box(w + 0.4, h * 0.55 + 0.4, 0.5, material('#1d1d1f'), 0, h * 0.22, -0.1));
-      const screen = box(w, h * 0.55, 0.05, material('#000000'), 0, h * 0.22, 0.2);
+      // Until the video loads (or when it is blocked or far away) the screen
+      // shows the Mac ad banners in rotation instead of a black panel
+      const posterFace = new THREE.MeshBasicMaterial({ map: productBoard('Mac', 'Apple on YouTube', '#000000', '#ffffff') });
+      const screen = box(w, h * 0.55, 0.05, [material('#000000'), material('#000000'), material('#000000'), material('#000000'), posterFace, material('#000000')], 0, h * 0.22, 0.2);
       inner.add(screen);
       group.add(inner);
+      adList().then((ads) => {
+        const files = ads.map((ad) => ad.file).filter(Boolean);
+        if (!files.length) return;
+        let index = Math.floor(Math.random() * files.length);
+        const show = () => loadAd(files[index++ % files.length], (texture) => { posterFace.map = texture; posterFace.needsUpdate = true; });
+        show();
+        setInterval(show, 7000);
+      });
       VideoScreens.register(screen, w, h * 0.55, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
     },
 
@@ -864,6 +877,56 @@
       group.add(diagonal);
       animate(group, (time) => { logos.forEach((logo, i) => { logo.material.opacity = 0.75 + Math.sin(time * 1.5 + i) * 0.25; }); });
       group.userData.label = 'House of MAC';
+    },
+
+    // macOS section: an arc of lit banner panels (the macOS ads in
+    // public/assets/ads, listed in the block's "images") on an aluminum deck,
+    // under a big "macOS" sign; E on a panel shows its title
+    macosSection(group, { w, h, d, data }) {
+      const banners = (data && data.banners) || [];
+      const aluminum = material('#c9ccd1', { metalness: 0.7, roughness: 0.35 });
+      group.add(box(w, 0.2, d, aluminum, 0, 0.1, 0));
+      group.add(box(w + 0.3, 0.06, d + 0.3, glow('#4dabf7', 1.2), 0, 0.03, 0));
+      // The sign: macOS in light letters on a dark gradient bar
+      const signTexture = canvasTexture('macosSectionSign', 1024, 256, (ctx, cw, ch) => {
+        const gradient = ctx.createLinearGradient(0, 0, cw, 0);
+        gradient.addColorStop(0, '#1c1c2e'); gradient.addColorStop(0.5, '#23233f'); gradient.addColorStop(1, '#1c1c2e');
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, cw, ch);
+        const text = ctx.createLinearGradient(cw * 0.3, 0, cw * 0.7, 0);
+        text.addColorStop(0, '#7dd3fc'); text.addColorStop(0.5, '#c4b5fd'); text.addColorStop(1, '#f9a8d4');
+        ctx.fillStyle = text; ctx.font = '600 150px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('macOS', cw / 2, ch / 2 + 6);
+      });
+      const sign = box(w * 0.45, w * 0.45 / 4, 0.2, [material('#1c1c2e'), material('#1c1c2e'), material('#1c1c2e'), material('#1c1c2e'), new THREE.MeshBasicMaterial({ map: signTexture }), new THREE.MeshBasicMaterial({ map: signTexture })], 0, h - 0.4, 0);
+      group.add(sign);
+      [-1, 1].forEach((side) => group.add(box(0.18, h - 0.4, 0.18, aluminum, side * w * 0.2, (h - 0.4) / 2, 0)));
+      // Banner panels on an arc facing the visitors (+z of the block)
+      const count = Math.max(1, banners.length);
+      const radius = w * 0.62;
+      const panelWidth = Math.min(4.6, (Math.PI * 0.62 * radius) / count - 0.4);
+      banners.forEach((banner, index) => {
+        const angle = (index - (count - 1) / 2) * (Math.PI * 0.62 / count);
+        const panel = new THREE.Group();
+        panel.position.set(Math.sin(angle) * radius, 0, -Math.cos(angle) * radius + radius - d * 0.15);
+        panel.rotation.y = -angle;
+        const face = new THREE.MeshBasicMaterial({ color: '#111111' });
+        const frameHeight = panelWidth * 0.62;
+        const board = box(panelWidth, frameHeight, 0.08, [material('#0d0d0f'), material('#0d0d0f'), material('#0d0d0f'), material('#0d0d0f'), face, material('#0d0d0f')], 0, 1.4 + frameHeight / 2, 0);
+        panel.add(board);
+        panel.add(box(panelWidth + 0.24, frameHeight + 0.24, 0.06, material('#2b2d33', { metalness: 0.8, roughness: 0.3 }), 0, 1.4 + frameHeight / 2, -0.06));
+        panel.add(box(0.12, 1.4, 0.12, aluminum, 0, 0.7, -0.05));
+        panel.add(box(1.2, 0.08, 0.6, aluminum, 0, 0.24, 0));
+        loadAd(banner.file, (texture) => {
+          face.map = texture; face.color.set('#ffffff'); face.needsUpdate = true;
+          const aspect = texture.image.width / texture.image.height;
+          board.scale.y = (panelWidth / aspect) / frameHeight;
+          board.position.y = 1.4 + (panelWidth / aspect) / 2;
+        });
+        panel.userData.label = 'macOS';
+        panel.userData.info = banner.title || 'macOS';
+        group.add(interactive(panel, 'inspect', banner.title || 'macOS'));
+      });
+      group.userData.label = 'macOS section';
     },
 
     // Freestanding ad boards (official product logo + name). When the ad banner
@@ -1060,7 +1123,7 @@
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
     [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/beach_arena/, 'beachArena'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
-    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/mac_flagship/, 'macFlagship'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
+    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/mac_flagship/, 'macFlagship'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/macos_section/, 'macosSection'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();

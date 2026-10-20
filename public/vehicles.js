@@ -151,7 +151,7 @@ const Vehicles = (() => {
     hooks.scene.add(model);
     mounted = { key, model, heading: 0, last: hooks.avatarPosition().clone() };
     hooks.setVehicle(key);
-    hooks.system(`🏎️ You are riding the ${MODELS[key].name}. Hold Shift to boost, press E to get off.`);
+    hooks.system(`You are riding the ${MODELS[key].name}. Hold Shift to boost, press E to get off.`);
   }
 
   function dismount() {

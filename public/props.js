@@ -179,42 +179,113 @@ const PropKit = (() => {
   }
 
   // Glass curtain wall: mullions, spandrel bands, sky reflections, a few lit offices
+  // Realistic curtain wall: 4 x 8 windows per tile (same layout as before so
+  // every building keeps its proportions). Each window shows depth (ceiling
+  // light, floor shadow), blinds or curtains, furniture silhouettes in the lit
+  // offices, a sky reflection with cloud streaks, metal mullions, spandrel
+  // panels with seams and rain streaks under the sills.
   function windowsTexture(wallColor, litColor = '#ffe9a8') {
-    return canvasTexture(`windows|${wallColor}|${litColor}`, 256, 512, (ctx, w, h) => {
+    return canvasTexture(`windows|${wallColor}|${litColor}`, 512, 1024, (ctx, w, h) => {
+      let seed = wallColor.length * 131 + litColor.length * 17 + 7;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
       ctx.fillStyle = wallColor;
       ctx.fillRect(0, 0, w, h);
-      let seed = wallColor.length * 131 + 7;
-      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      // Facade grain
+      for (let i = 0; i < 4000; i++) {
+        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+        ctx.fillRect(random() * w, random() * h, 1 + random() * 2, 1 + random() * 2);
+      }
       const columns = 4;
       const rows = 8;
       const cw = w / columns;
       const rh = h / rows;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < columns; col++) {
-          const x = col * cw + 5;
-          const y = row * rh + 8;
-          const lit = random() < 0.16;
-          const glass = ctx.createLinearGradient(x, y, x + cw, y + rh);
+          const x = col * cw + 8;
+          const y = row * rh + 18;
+          const gw = cw - 16;
+          const gh = rh - 34;
+          const lit = random() < 0.18;
           if (lit) {
-            glass.addColorStop(0, litColor);
-            glass.addColorStop(1, shade(litColor, -0.2));
+            // Lit office: warm ceiling glow fading to the floor, furniture silhouettes
+            const room = ctx.createLinearGradient(0, y, 0, y + gh);
+            room.addColorStop(0, shade(litColor, 0.08));
+            room.addColorStop(0.55, litColor);
+            room.addColorStop(1, shade(litColor, -0.35));
+            ctx.fillStyle = room;
+            ctx.fillRect(x, y, gw, gh);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fillRect(x + gw * 0.15, y + 3, gw * 0.7, 3);
+            ctx.fillStyle = 'rgba(40, 30, 20, 0.45)';
+            ctx.fillRect(x + gw * 0.1, y + gh * 0.68, gw * 0.45, gh * 0.08); // desk
+            ctx.fillRect(x + gw * 0.18, y + gh * 0.5, gw * 0.12, gh * 0.18); // monitor
+            if (random() < 0.5) { ctx.beginPath(); ctx.arc(x + gw * 0.8, y + gh * 0.7, gw * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x + gw * 0.78, y + gh * 0.7, gw * 0.04, gh * 0.3); } // plant
           } else {
-            glass.addColorStop(0, 'rgba(178, 214, 240, 0.95)');
-            glass.addColorStop(0.45, 'rgba(70, 104, 140, 0.95)');
-            glass.addColorStop(1, 'rgba(40, 58, 86, 0.95)');
+            // Dark glass reflecting the sky: a vertical gradient shared by the whole facade
+            const sky = ctx.createLinearGradient(0, 0, 0, h);
+            sky.addColorStop(0, 'rgba(196, 222, 242, 0.96)');
+            sky.addColorStop(0.5, 'rgba(110, 146, 178, 0.96)');
+            sky.addColorStop(1, 'rgba(58, 80, 108, 0.96)');
+            ctx.fillStyle = sky;
+            ctx.fillRect(x, y, gw, gh);
+            // Interior depth seen through the glass
+            ctx.fillStyle = 'rgba(20, 30, 45, 0.28)';
+            ctx.fillRect(x, y + gh * 0.62, gw, gh * 0.38);
+            // Cloud streaks in the reflection
+            for (let c = 0; c < 2; c++) {
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+              ctx.beginPath();
+              ctx.ellipse(x + random() * gw, y + random() * gh * 0.6, gw * (0.25 + random() * 0.3), 4 + random() * 6, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
-          ctx.fillStyle = glass;
-          ctx.fillRect(x, y, cw - 10, rh - 18);
-          // Soft diagonal sky reflection
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-          ctx.beginPath(); ctx.moveTo(x, y + rh * 0.5); ctx.lineTo(x + cw * 0.5, y); ctx.lineTo(x + cw * 0.7, y); ctx.lineTo(x, y + rh * 0.75); ctx.fill();
+          // Blinds (horizontal slats) or a curtain on some windows
+          const cover = random();
+          if (cover < 0.25) {
+            const depth = gh * (0.2 + random() * 0.5);
+            ctx.fillStyle = 'rgba(225, 222, 210, 0.85)';
+            ctx.fillRect(x, y, gw, depth);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            for (let k = 4; k < depth; k += 5) ctx.fillRect(x, y + k, gw, 1);
+          } else if (cover < 0.35) {
+            ctx.fillStyle = 'rgba(240, 236, 225, 0.75)';
+            ctx.fillRect(x, y, gw * 0.28, gh);
+            ctx.fillRect(x + gw * 0.72, y, gw * 0.28, gh);
+          }
+          // Diagonal glare
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.beginPath(); ctx.moveTo(x, y + gh * 0.55); ctx.lineTo(x + gw * 0.5, y); ctx.lineTo(x + gw * 0.68, y); ctx.lineTo(x, y + gh * 0.8); ctx.fill();
+          // Window frame and the vertical split of the pane
+          ctx.strokeStyle = 'rgba(30, 34, 40, 0.75)';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, gw, gh);
+          ctx.fillStyle = 'rgba(30, 34, 40, 0.6)';
+          ctx.fillRect(x + gw / 2 - 1, y, 2, gh);
+          // Sill and rain streaks under it
+          ctx.fillStyle = shade(wallColor, 0.15);
+          ctx.fillRect(x - 3, y + gh + 2, gw + 6, 4);
+          for (let k = 0; k < 4; k++) {
+            const sx = x + random() * gw;
+            const streak = ctx.createLinearGradient(0, y + gh + 6, 0, y + gh + 22);
+            streak.addColorStop(0, 'rgba(0, 0, 0, 0.12)');
+            streak.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = streak;
+            ctx.fillRect(sx, y + gh + 6, 2, 16);
+          }
         }
-        // Spandrel band between floors
-        ctx.fillStyle = shade(wallColor, 0.08);
-        ctx.fillRect(0, row * rh, w, 6);
+        // Spandrel band between floors, with panel seams
+        ctx.fillStyle = shade(wallColor, 0.06);
+        ctx.fillRect(0, row * rh, w, 10);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.fillRect(0, row * rh + 10, w, 2);
       }
-      ctx.fillStyle = shade(wallColor, -0.1);
-      for (let col = 0; col <= columns; col++) ctx.fillRect(col * cw - 2, 0, 4, h);
+      // Mullions with a metallic highlight
+      for (let col = 0; col <= columns; col++) {
+        ctx.fillStyle = shade(wallColor, -0.12);
+        ctx.fillRect(col * cw - 3, 0, 6, h);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.fillRect(col * cw - 3, 0, 1, h);
+      }
     });
   }
 
@@ -269,6 +340,8 @@ const PropKit = (() => {
     copy.wrapS = THREE.RepeatWrapping;
     copy.wrapT = THREE.RepeatWrapping;
     copy.repeat.set(repeatX, repeatY);
+    // Sharp at grazing angles (floors and roads seen from the avatar's height)
+    copy.anisotropy = 8;
     return copy;
   }
 
@@ -414,60 +487,365 @@ const PropKit = (() => {
             ctx.fillStyle = `rgba(${random() < 0.5 ? '255, 255, 255' : '60, 40, 20'}, 0.05)`;
             ctx.beginPath(); ctx.arc(x + random() * width, y + random() * rowHeight, 4 + random() * 10, 0, Math.PI * 2); ctx.fill();
           }
+          // Worn bevel: light on the top edge, shadow on the bottom edge
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+          ctx.fillRect(x + 3 + r, y + 4, width - 6 - r * 2, 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+          ctx.fillRect(x + 3 + r, y + rowHeight - 6, width - 6 - r * 2, 3);
+          // Fine grain of the stone
+          for (let i = 0; i < 70; i++) {
+            ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.08)';
+            ctx.fillRect(x + 4 + random() * (width - 8), y + 4 + random() * (rowHeight - 8), 1 + random() * 2, 1 + random() * 2);
+          }
+          // An occasional crack
+          if (random() < 0.12) {
+            ctx.strokeStyle = 'rgba(40, 30, 20, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            let cx = x + 10 + random() * (width - 20);
+            let cy = y + 6;
+            ctx.moveTo(cx, cy);
+            while (cy < y + rowHeight - 8) { cx += (random() - 0.5) * 8; cy += 4 + random() * 6; ctx.lineTo(cx, cy); }
+            ctx.stroke();
+          }
           x += width;
         }
+      }
+      // Moss and dirt in some joints
+      for (let i = 0; i < 90; i++) {
+        ctx.fillStyle = random() < 0.4 ? 'rgba(90, 110, 60, 0.18)' : 'rgba(50, 40, 30, 0.12)';
+        const row = Math.floor(random() * (h / rowHeight));
+        ctx.fillRect(random() * w, row * rowHeight - 1, 6 + random() * 14, 3);
       }
     });
   }
 
   function brickTexture(base = '#b5533c') {
-    return canvasTexture(`brick|${base}`, 256, 256, (ctx, w, h) => {
-      ctx.fillStyle = '#d9cbb8';
+    return canvasTexture(`brick|${base}`, 512, 512, (ctx, w, h) => {
+      let seed = 13;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      // Mortar with sand grain
+      ctx.fillStyle = '#cfc2ae';
       ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 3000; i++) {
+        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.08)';
+        ctx.fillRect(random() * w, random() * h, 1, 1);
+      }
       for (let row = 0; row < 16; row++) {
         for (let col = 0; col < 5; col++) {
-          ctx.fillStyle = shade(base, ((row * 3 + col * 7) % 5 - 2) * 0.03);
-          ctx.fillRect(col * 56 + (row % 2) * 28 - 28, row * 16 + 2, 52, 13);
+          const x = col * 112 + (row % 2) * 56 - 56;
+          const y = row * 32 + 3;
+          const tone = shade(base, ((row * 3 + col * 7) % 5 - 2) * 0.035 + (random() - 0.5) * 0.04);
+          const gradient = ctx.createLinearGradient(x, y, x, y + 26);
+          gradient.addColorStop(0, shade(tone, 0.05));
+          gradient.addColorStop(1, shade(tone, -0.06));
+          ctx.fillStyle = gradient;
+          ctx.fillRect(x + 2, y, 104, 26);
+          // Pores and chipped corners
+          for (let i = 0; i < 40; i++) {
+            ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.07)';
+            ctx.fillRect(x + 4 + random() * 98, y + 2 + random() * 22, 1 + random() * 2, 1 + random() * 2);
+          }
+          if (random() < 0.3) { ctx.fillStyle = '#cfc2ae'; ctx.fillRect(x + (random() < 0.5 ? 2 : 100), y, 6, 5); }
         }
       }
     });
   }
 
+  // Wood planks with grain lines, knots, nail heads and varied boards
   function plankTexture(base = '#a8743f') {
-    return canvasTexture(`plank|${base}`, 256, 256, (ctx, w, h) => {
-      for (let i = 0; i < 8; i++) {
-        ctx.fillStyle = shade(base, ((i * 5) % 3 - 1) * 0.05);
-        ctx.fillRect(0, i * 32, w, 30);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-        ctx.fillRect(((i * 73) % 200) + 20, i * 32, 2, 30);
+    return canvasTexture(`plank|${base}`, 512, 512, (ctx, w, h) => {
+      let seed = 17;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      const boards = 8;
+      const height = h / boards;
+      for (let i = 0; i < boards; i++) {
+        const y = i * height;
+        const tone = shade(base, (random() - 0.5) * 0.12);
+        ctx.fillStyle = tone;
+        ctx.fillRect(0, y, w, height);
+        // Grain: long wavy lines
+        for (let g = 0; g < 14; g++) {
+          ctx.strokeStyle = random() < 0.5 ? 'rgba(60, 35, 15, 0.12)' : 'rgba(255, 230, 190, 0.08)';
+          ctx.lineWidth = 1 + random();
+          ctx.beginPath();
+          const gy = y + 4 + random() * (height - 8);
+          ctx.moveTo(0, gy);
+          for (let x = 0; x <= w; x += 32) ctx.lineTo(x, gy + Math.sin(x * 0.02 + g) * 2.5);
+          ctx.stroke();
+        }
+        // Knots
+        if (random() < 0.5) {
+          const kx = random() * w;
+          const ky = y + height / 2;
+          const knot = ctx.createRadialGradient(kx, ky, 0, kx, ky, 9);
+          knot.addColorStop(0, 'rgba(50, 25, 10, 0.55)');
+          knot.addColorStop(1, 'rgba(50, 25, 10, 0)');
+          ctx.fillStyle = knot;
+          ctx.beginPath(); ctx.ellipse(kx, ky, 14, 6, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        // Board joints (seams) and end cuts with nails
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.fillRect(0, y + height - 2, w, 2);
+        const cut = ((i * 173) % (w - 60)) + 30;
+        ctx.fillRect(cut, y, 2, height - 2);
+        ctx.fillStyle = 'rgba(40, 40, 40, 0.6)';
+        [[cut - 8, y + 10], [cut - 8, y + height - 14], [cut + 10, y + 10], [cut + 10, y + height - 14]].forEach(([nx, ny]) => { ctx.beginPath(); ctx.arc(nx, ny, 2, 0, Math.PI * 2); ctx.fill(); });
       }
     });
   }
 
+  // Plaster with fine sand grain, soft stains and hairline cracks
   function stuccoTexture(base = '#f1e3c8') {
-    return canvasTexture(`stucco|${base}`, 128, 128, (ctx, w, h) => {
+    return canvasTexture(`stucco|${base}`, 512, 512, (ctx, w, h) => {
+      let seed = 29;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
       ctx.fillStyle = base;
       ctx.fillRect(0, 0, w, h);
-      for (let i = 0; i < 900; i++) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${((i * 13) % 7) * 0.008})`;
-        ctx.fillRect((i * 37) % w, (i * 91) % h, 2, 2);
+      for (let i = 0; i < 9000; i++) {
+        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.045)' : 'rgba(255, 255, 255, 0.06)';
+        ctx.fillRect(random() * w, random() * h, 1 + random() * 1.5, 1 + random() * 1.5);
+      }
+      for (let i = 0; i < 8; i++) {
+        const x = random() * w;
+        const y = random() * h;
+        const r = 50 + random() * 110;
+        const stain = ctx.createRadialGradient(x, y, 0, x, y, r);
+        stain.addColorStop(0, 'rgba(90, 70, 40, 0.06)');
+        stain.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = stain;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      ctx.strokeStyle = 'rgba(60, 50, 40, 0.18)';
+      ctx.lineWidth = 0.8;
+      for (let c = 0; c < 3; c++) {
+        let x = random() * w;
+        let y = random() * h;
+        ctx.beginPath(); ctx.moveTo(x, y);
+        for (let k = 0; k < 10; k++) { x += (random() - 0.5) * 16; y += 4 + random() * 8; ctx.lineTo(x, y); }
+        ctx.stroke();
       }
     });
   }
 
+  // Clay roof tiles with rounded overlaps, shading and weathering
   function roofTileTexture(base = '#c0392b') {
-    return canvasTexture(`rooftile|${base}`, 128, 128, (ctx, w, h) => {
-      ctx.fillStyle = shade(base, -0.1);
+    return canvasTexture(`rooftile|${base}`, 512, 512, (ctx, w, h) => {
+      let seed = 41;
+      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      ctx.fillStyle = shade(base, -0.2);
       ctx.fillRect(0, 0, w, h);
-      for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 9; col++) {
-          ctx.fillStyle = shade(base, (row % 2) * 0.04);
+      const size = 64;
+      for (let row = 0; row < h / size + 1; row++) {
+        for (let col = -1; col < w / size + 1; col++) {
+          const x = col * size + (row % 2) * size / 2;
+          const y = row * size;
+          const tone = shade(base, (random() - 0.5) * 0.12);
+          const gradient = ctx.createLinearGradient(x - size / 2, 0, x + size / 2, 0);
+          gradient.addColorStop(0, shade(tone, -0.08));
+          gradient.addColorStop(0.5, shade(tone, 0.08));
+          gradient.addColorStop(1, shade(tone, -0.1));
+          ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(col * 16 + (row % 2) * 8, row * 16 + 14, 8, Math.PI, 0);
+          ctx.moveTo(x - size / 2 + 2, y);
+          ctx.lineTo(x - size / 2 + 2, y + size * 0.7);
+          ctx.quadraticCurveTo(x, y + size * 1.02, x + size / 2 - 2, y + size * 0.7);
+          ctx.lineTo(x + size / 2 - 2, y);
           ctx.fill();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+          ctx.fillRect(x - size / 2 + 2, y + size * 0.86, size - 4, 3);
+          if (random() < 0.15) { ctx.fillStyle = 'rgba(70, 80, 50, 0.25)'; ctx.beginPath(); ctx.arc(x + (random() - 0.5) * 20, y + size * 0.6, 6 + random() * 8, 0, Math.PI * 2); ctx.fill(); }
         }
       }
     });
+  }
+
+  // --------------------------------------------------------------------------
+  // Realistic trees: one texture atlas (bark | dense foliage | leaf cluster
+  // with transparent gaps) and merged tree geometries with UVs into each
+  // region. Crowns are an organic leafy core plus crossed "leaf cards" cut
+  // out with alphaTest, like trees in real games. One material for all trees.
+  // --------------------------------------------------------------------------
+  const treeAtlases = new Map();
+  const LEAF_PALETTES = {
+    green: ['#2f5d23', '#3b7029', '#4a8532', '#5d9a3a', '#6fae46', '#2a4f1f', '#86bf55'],
+    blossom: ['#d6336c', '#e64980', '#f06595', '#f783ac', '#faa2c1', '#c2255c', '#fcc2d7'],
+    autumn: ['#a33a0b', '#c2410c', '#e8590c', '#f08c00', '#fab005', '#862e0b', '#ffd43b']
+  };
+  function treeAtlas(variant = 'green') {
+    if (treeAtlases.has(variant)) return treeAtlases.get(variant);
+    let treeAtlasTexture = null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1536;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    let seed = 99;
+    const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    // Bark (0..512): vertical fissures and plates
+    ctx.fillStyle = '#5a4331';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 260; i++) {
+      const x = random() * 512;
+      ctx.strokeStyle = random() < 0.5 ? 'rgba(30, 20, 12, 0.55)' : 'rgba(150, 125, 100, 0.25)';
+      ctx.lineWidth = 1 + random() * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      for (let y = 0; y <= 512; y += 32) ctx.lineTo(x + Math.sin(y * 0.05 + i) * 4 + (random() - 0.5) * 3, y);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 40; i++) {
+      ctx.fillStyle = 'rgba(90, 110, 60, 0.18)';
+      ctx.beginPath(); ctx.ellipse(random() * 512, random() * 512, 6 + random() * 18, 3 + random() * 8, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Leaves are drawn as small pointed ellipses with a midrib
+    const leaf = (x, y, size, angle, color) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, -size);
+      ctx.quadraticCurveTo(size * 0.55, 0, 0, size);
+      ctx.quadraticCurveTo(-size * 0.55, 0, 0, -size);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 230, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -size * 0.9); ctx.lineTo(0, size * 0.9); ctx.stroke();
+      ctx.restore();
+    };
+    const greens = LEAF_PALETTES[variant] || LEAF_PALETTES.green;
+    // Dense foliage (512..1024): fully covered, darker inside, light on top
+    ctx.fillStyle = greens[0];
+    ctx.fillRect(512, 0, 512, 512);
+    for (let i = 0; i < 5200; i++) {
+      const y = random() * 512;
+      const shadeIndex = Math.min(greens.length - 1, Math.floor(random() * 4 + (1 - y / 512) * 3));
+      leaf(512 + random() * 512, y, 5 + random() * 7, random() * Math.PI * 2, greens[shadeIndex]);
+    }
+    // Leaf cluster cut-out (1024..1536): a few twigs full of leaves, transparent gaps
+    ctx.clearRect(1024, 0, 512, 512);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(1024, 0, 512, 512); ctx.clip();
+    for (let cluster = 0; cluster < 9; cluster++) {
+      const cx = 1024 + 70 + random() * 372;
+      const cy = 70 + random() * 372;
+      ctx.strokeStyle = '#4a3726';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(1024 + 256, 500); ctx.quadraticCurveTo(cx, cy + 120, cx, cy); ctx.stroke();
+      for (let i = 0; i < 160; i++) {
+        const angle = random() * Math.PI * 2;
+        const distance = Math.pow(random(), 0.7) * 85;
+        leaf(cx + Math.cos(angle) * distance, cy + Math.sin(angle) * distance, 7 + random() * 8, angle + Math.PI / 2, greens[Math.floor(random() * greens.length)]);
+      }
+    }
+    ctx.restore();
+    treeAtlasTexture = new THREE.CanvasTexture(canvas);
+    treeAtlasTexture.encoding = THREE.sRGBEncoding;
+    treeAtlasTexture.anisotropy = 4;
+    treeAtlases.set(variant, treeAtlasTexture);
+    return treeAtlasTexture;
+  }
+
+  // variant: 'green' (default), 'blossom' (pink cherry trees) or 'autumn'
+  const treeMaterials = new Map();
+  function treeMaterial(variant = 'green') {
+    if (!treeMaterials.has(variant)) treeMaterials.set(variant, new THREE.MeshStandardMaterial({ map: treeAtlas(variant), vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.85 }));
+    return treeMaterials.get(variant);
+  }
+
+  // Merges parts { geometry, region: 0 bark | 1 foliage | 2 leaf cards, color }
+  function mergeTreeParts(parts) {
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const colors = [];
+    parts.forEach(({ geometry, region, color }) => {
+      const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+      if (!flat.attributes.normal) flat.computeVertexNormals();
+      positions.push(...flat.attributes.position.array);
+      normals.push(...flat.attributes.normal.array);
+      const uv = flat.attributes.uv.array;
+      for (let i = 0; i < uv.length; i += 2) uvs.push((region + Math.min(0.999, Math.max(0.001, uv[i]))) / 3, uv[i + 1]);
+      const tint = new THREE.Color(color || '#ffffff');
+      for (let i = 0; i < flat.attributes.position.count; i++) colors.push(tint.r, tint.g, tint.b);
+    });
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    merged.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    merged.computeBoundingSphere();
+    return merged;
+  }
+
+  // A lumpy, organic crown core (an icosphere pushed in and out)
+  function leafyCore(radius, seed) {
+    const core = new THREE.IcosahedronGeometry(radius, 1);
+    const position = core.attributes.position;
+    for (let i = 0; i < position.count; i++) {
+      const v = new THREE.Vector3(position.getX(i), position.getY(i), position.getZ(i));
+      const n = 1 + 0.16 * Math.sin(v.x * 2.1 + seed) * Math.cos(v.y * 1.7 + seed * 2) + 0.08 * Math.sin(v.z * 3.3 + seed);
+      v.multiplyScalar(n);
+      v.y *= 0.85;
+      position.setXYZ(i, v.x, v.y, v.z);
+    }
+    core.computeVertexNormals();
+    return core;
+  }
+
+  const treeGeometryCache = new Map();
+  // kind: 'broadleaf' (round crown) or 'pine'. Height about 7-9 m at scale 1.
+  function realisticTreeGeometry(kind = 'broadleaf') {
+    if (treeGeometryCache.has(kind)) return treeGeometryCache.get(kind);
+    const parts = [];
+    if (kind === 'pine') {
+      parts.push({ geometry: new THREE.CylinderGeometry(0.22, 0.38, 7.5, 8).translate(0, 3.75, 0), region: 0, color: '#d8cfc6' });
+      [[2.9, 3.4, 2.6], [2.4, 3.1, 4.4], [1.9, 2.8, 6.0], [1.3, 2.4, 7.5]].forEach(([radius, height, y], i) => {
+        parts.push({ geometry: new THREE.ConeGeometry(radius, height, 10, 1, true).translate(0, y, 0), region: 1, color: i % 2 ? '#a9c9a0' : '#c2dcb6' });
+        // Drooping needle cards around each tier
+        for (let k = 0; k < 6; k++) {
+          const card = new THREE.PlaneGeometry(radius * 1.1, height * 0.8);
+          card.rotateX(-0.5);
+          card.translate(0, y - height * 0.15, radius * 0.55);
+          card.rotateY((k / 6) * Math.PI * 2 + i * 0.4);
+          parts.push({ geometry: card, region: 2, color: '#8fb07f' });
+        }
+      });
+    } else {
+      parts.push({ geometry: new THREE.CylinderGeometry(0.2, 0.34, 4.2, 8).translate(0, 2.1, 0), region: 0, color: '#ffffff' });
+      // Branches reaching into the crown
+      [[0.9, 0.6], [-0.8, 2.2], [0.3, 4.1]].forEach(([tilt, turn]) => {
+        const branch = new THREE.CylinderGeometry(0.07, 0.13, 2.4, 6).translate(0, 1.2, 0);
+        branch.rotateZ(tilt);
+        branch.rotateY(turn);
+        branch.translate(0, 3.4, 0);
+        parts.push({ geometry: branch, region: 0, color: '#ffffff' });
+      });
+      parts.push({ geometry: leafyCore(2.5, 1.3).translate(0, 5.6, 0), region: 1, color: '#ffffff' });
+      parts.push({ geometry: leafyCore(1.6, 2.7).translate(1.3, 6.4, 0.6), region: 1, color: '#e6f2d8' });
+      parts.push({ geometry: leafyCore(1.5, 4.1).translate(-1.2, 6.2, -0.8), region: 1, color: '#d6e8c6' });
+      // Leaf cards sticking out of the crown (they break the round silhouette)
+      for (let k = 0; k < 14; k++) {
+        const card = new THREE.PlaneGeometry(2.8, 2.8);
+        card.rotateX((k % 3 - 1) * 0.6);
+        card.rotateY((k / 14) * Math.PI * 2 * 3);
+        const angle = (k / 14) * Math.PI * 2;
+        card.translate(Math.cos(angle) * 2.2, 4.8 + (k % 4) * 0.7, Math.sin(angle) * 2.2);
+        parts.push({ geometry: card, region: 2, color: '#ffffff' });
+      }
+    }
+    const geometry = mergeTreeParts(parts);
+    treeGeometryCache.set(kind, geometry);
+    return geometry;
+  }
+
+  // A single (non-instanced) realistic tree, scaled to `height` meters
+  function realisticTree(kind = 'broadleaf', height = 7, variant = 'green') {
+    const tree = new THREE.Mesh(realisticTreeGeometry(kind), treeMaterial(variant));
+    tree.scale.setScalar(height / (kind === 'pine' ? 8.8 : 8));
+    tree.castShadow = true;
+    tree.receiveShadow = true;
+    return tree;
   }
 
   // Box with rounded vertical edges (softer, less "blocky" buildings)
@@ -1336,7 +1714,14 @@ const PropKit = (() => {
       group.add(inner);
     },
 
-    plant(group, { w, h, color }) {
+    plant(group, { w, h, color, type }) {
+      // Trees ("round_tree", "pine_tree"...) are realistic leafy trees standing on the ground
+      if (/tree/.test(type || '')) {
+        const tree = realisticTree(/pine|conifer|fir/.test(type) ? 'pine' : 'broadleaf', Math.max(3, h * 1.15));
+        tree.position.y = -h / 2;
+        group.add(tree);
+        return;
+      }
       group.add(cylinder(w * 0.35, w * 0.28, h * 0.3, material('#dfe4ea'), 0, -h * 0.35, 0, 10));
       group.add(mesh(new THREE.IcosahedronGeometry(w * 0.55, 0), material(color, { flatShading: true }), 0, h * 0.1, 0));
       group.add(mesh(new THREE.IcosahedronGeometry(w * 0.4, 0), material(shade(color, 0.08), { flatShading: true }), 0, h * 0.38, 0));
@@ -1480,8 +1865,110 @@ const PropKit = (() => {
   const kit = {
     material, glow, shade, mesh, box, cylinder, sphere, facedBox, animate, orientation, textSprite, seat, roundedBoxGeometry,
     labelTexture, windowsTexture, gridTexture, roadTexture, repeated, codeScreenTexture, artTexture, canvasTexture,
-    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive
+    cobbleTexture, brickTexture, plankTexture, stuccoTexture, roofTileTexture, roundedSlab, roundedUnitBox, mergeByMaterial, laptop, interactive,
+    treeMaterial, realisticTreeGeometry, realisticTree
   };
 
   return { buildBlock, registerBuilder, kit, textSprite, material, glow, animatedObjects, interactables };
+})();
+
+// ============================================================================
+// FIRE LIGHTS: FLICKERING FIRELIGHT AND SHADOWS AROUND FIREPITS AND CAMPFIRES
+// ============================================================================
+// Every fire registers here. Each one gets a warm pool of light painted on the
+// ground (cheap, always on, brighter at night). On top of that a small pool of
+// real point lights follows the fires nearest to the camera: they flicker like
+// flames, and at night the closest one also casts soft shadows of the benches,
+// logs and cursors around it (a point light shadow renders the scene six
+// times, so only one fire casts them). By day the fires barely light anything.
+const FireLights = (() => {
+  const fires = [];
+  const lights = [];
+  const LIGHT_COUNT = 2;
+  const RANGE = 70;
+  const probe = new THREE.Vector3();
+  let glowTexture = null;
+  let scene = null;
+
+  function groundGlowTexture() {
+    if (glowTexture) return glowTexture;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gradient.addColorStop(0, 'rgba(255, 170, 80, 1)');
+    gradient.addColorStop(0.25, 'rgba(255, 120, 40, 0.55)');
+    gradient.addColorStop(0.6, 'rgba(200, 70, 20, 0.16)');
+    gradient.addColorStop(1, 'rgba(120, 40, 10, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+    glowTexture = new THREE.CanvasTexture(canvas);
+    return glowTexture;
+  }
+
+  // group: the fire (its origin is the center of the fire, on the ground)
+  function register(group, { radius = 9, height = 1.2, strength = 1 } = {}) {
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(radius * 2, radius * 2), new THREE.MeshBasicMaterial({ map: groundGlowTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, polygonOffset: true, polygonOffsetFactor: -4 }));
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = 0.06;
+    glow.raycast = () => {};
+    glow.renderOrder = 1;
+    group.add(glow);
+    fires.push({ group, glow, height, strength, phase: Math.random() * 10 });
+  }
+
+  function ensureLights() {
+    if (lights.length || !scene) return;
+    for (let i = 0; i < LIGHT_COUNT; i++) {
+      const light = new THREE.PointLight('#ff8a3d', 0, 26, 2);
+      light.shadow.mapSize.set(512, 512);
+      light.shadow.bias = -0.004;
+      light.shadow.radius = 4;
+      light.shadow.camera.near = 0.3;
+      light.shadow.camera.far = 26;
+      light.userData.shadowCapable = false; // the quality governor leaves it alone
+      scene.add(light);
+      lights.push(light);
+    }
+  }
+
+  function init(targetScene) {
+    scene = targetScene;
+  }
+
+  // night: 0 by day, 1 at night; quality: 0 (minimum) .. 3 (high)
+  function update(camera, time, night, quality = 2) {
+    if (!scene) return;
+    ensureLights();
+    const flickerOf = (fire) => 0.78 + Math.sin(time * 9.7 + fire.phase) * 0.09 + Math.sin(time * 23.3 + fire.phase * 1.7) * 0.07 + Math.sin(time * 3.1 + fire.phase * 0.6) * 0.06;
+    // Ground glow on every fire (stronger at night)
+    const nearby = [];
+    fires.forEach((fire) => {
+      if (!fire.group.parent) return;
+      const flicker = flickerOf(fire);
+      fire.glow.material.opacity = Math.min(1, (0.12 + night * 0.85) * flicker * fire.strength);
+      fire.glow.scale.setScalar(0.94 + flicker * 0.08);
+      fire.group.getWorldPosition(probe);
+      const distance = probe.distanceTo(camera.position);
+      if (distance < RANGE) nearby.push({ fire, distance, position: probe.clone(), flicker });
+    });
+    nearby.sort((a, b) => a.distance - b.distance);
+    // castShadow only flips at dusk and dawn (flipping it recompiles the shaders);
+    // with no fire nearby the shadow map simply stops updating
+    const castShadows = night > 0.5 && quality >= 2;
+    lights.forEach((light, index) => {
+      const entry = nearby[index];
+      light.castShadow = castShadows && index === 0;
+      light.shadow.autoUpdate = Boolean(entry) && light.castShadow;
+      if (!entry) { light.intensity = 0; return; }
+      const { fire, position, flicker } = entry;
+      // The light dances a little with the flames
+      light.position.set(position.x + Math.sin(time * 6.3 + fire.phase) * 0.12, position.y + fire.height + Math.sin(time * 8.1 + fire.phase) * 0.08, position.z + Math.cos(time * 5.7 + fire.phase) * 0.12);
+      light.color.setHSL(0.07 + Math.sin(time * 4 + fire.phase) * 0.01, 1, 0.55);
+      light.intensity = (0.25 + night * 4.2) * flicker * fire.strength;
+      light.distance = 14 + night * 18;
+    });
+  }
+
+  return { init, register, update };
 })();

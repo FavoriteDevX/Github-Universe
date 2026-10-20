@@ -13,6 +13,7 @@ const VideoScreens = (() => {
   let cssScene = null;
   let lastOcclusionCheck = 0;
   let soundOn = false;
+  let audible = null; // the nearest active screen (the only one with sound)
   const occlusionRay = new THREE.Raycaster();
   const worldPosition = new THREE.Vector3();
   const worldQuaternion = new THREE.Quaternion();
@@ -49,7 +50,8 @@ const VideoScreens = (() => {
     element.style.pointerEvents = 'auto';
     element.style.background = '#000';
     const iframe = document.createElement('iframe');
-    iframe.src = soundOn ? screen.source.replace('mute=1', 'mute=0') : screen.source;
+    // Only the nearest screen plays sound, so streams never overlap
+    iframe.src = soundOn && screen === audible ? screen.source.replace('mute=1', 'mute=0').replace('muted=true', 'muted=false') : screen.source;
     iframe.title = 'Video screen';
     iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
     iframe.allowFullscreen = true;
@@ -83,8 +85,24 @@ const VideoScreens = (() => {
     const now = performance.now();
     const checkOcclusion = now - lastOcclusionCheck > 400;
     if (checkOcclusion) lastOcclusionCheck = now;
+    // Which active screen is the nearest one (re-checked twice a second)
+    if (checkOcclusion) {
+      let nearest = null;
+      let best = Infinity;
+      screens.forEach((screen) => {
+        if (!screen.anchor.parent || !screen.source) return;
+        screen.anchor.getWorldPosition(worldPosition);
+        const distance = worldPosition.distanceTo(avatarPosition);
+        if (distance < screen.distance && distance < best) { best = distance; nearest = screen; }
+      });
+      if (nearest !== audible) {
+        const previous = audible;
+        audible = nearest;
+        if (soundOn) [previous, nearest].forEach((screen) => { if (screen && screen.object) removeIframe(screen); });
+      }
+    }
     screens.forEach((screen) => {
-      if (!screen.anchor.parent || !screen.source) return;
+      if (!screen.anchor.parent || !screen.source) { if (screen.object) removeIframe(screen); return; }
       screen.anchor.getWorldPosition(worldPosition);
       const near = worldPosition.distanceTo(avatarPosition) < screen.distance;
       if (near && !screen.object) createIframe(screen);

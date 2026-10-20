@@ -1,0 +1,20 @@
+{
+  "name": "github-multiverse-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart contracts of GitHub Multiverse (MVC token) with Hardhat tests",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "node": "hardhat node"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.29.1"
+  }
+}

@@ -18,5 +18,29 @@
  {
   "file": "mac-apps.jpg",
   "title": "Mac apps"
+ },
+ {
+  "file": "imac-colors.jpg",
+  "title": "iMac G3: No artificial colors."
+ },
+ {
+  "file": "macos-tahoe.jpg",
+  "title": "macOS Tahoe"
+ },
+ {
+  "file": "macos-finder-apps.jpg",
+  "title": "macOS apps"
+ },
+ {
+  "file": "macos-creator-studio.jpg",
+  "title": "Apple Creator Studio"
+ },
+ {
+  "file": "macos-logic-packs.jpg",
+  "title": "Logic Pro packs"
+ },
+ {
+  "file": "macos-logic-pro.jpg",
+  "title": "Logic Pro for iPad"
  }
 ]

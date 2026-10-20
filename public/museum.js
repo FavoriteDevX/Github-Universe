@@ -292,7 +292,7 @@
         for (let i = 0; i < 60; i++) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i * 83) % w, (i * 47) % h, 2, 2); }
         ctx.fillStyle = '#ffff00'; ctx.font = 'bold 34px Comic Sans MS, cursive'; ctx.fillText('~*~ My Cool Homepage ~*~', 40, 60);
         ctx.fillStyle = '#00ff00'; ctx.font = '22px Times New Roman'; ctx.fillText('You are visitor #0001337', 120, 120);
-        ctx.fillStyle = '#ffd700'; ctx.fillRect(120, 160, 270, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 22px Arial'; ctx.fillText('🚧 UNDER CONSTRUCTION 🚧', 128, 193);
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(120, 160, 270, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 22px Arial'; ctx.fillText('UNDER CONSTRUCTION', 128, 193);
         ctx.fillStyle = '#ff00ff'; ctx.font = '22px Times New Roman'; ctx.fillText('Sign my guestbook! · My webring ->', 70, 270);
         ctx.fillStyle = '#00ffff'; ctx.fillText('Best viewed at 800x600', 140, 330);
       } else if (kind === 'browser') {
@@ -417,7 +417,7 @@
         ctx.fillStyle = '#000033'; ctx.fillRect(0, 0, w, h);
         for (let i = 0; i < 80; i++) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i * 53) % w, (i * 97) % h, 2, 2); }
         ctx.fillStyle = '#ff00ff'; ctx.font = 'bold 30px Comic Sans MS, cursive'; ctx.fillText('Welcome 2 my homepage!!!', 30, 70);
-        ctx.fillStyle = '#ffff00'; ctx.fillRect(140, 140, 230, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 18px Arial'; ctx.fillText('🚧 UNDER CONSTRUCTION 🚧', 150, 172);
+        ctx.fillStyle = '#ffff00'; ctx.fillRect(140, 140, 230, 50); ctx.fillStyle = '#000'; ctx.font = 'bold 18px Arial'; ctx.fillText('UNDER CONSTRUCTION', 150, 172);
         ctx.fillStyle = '#00ff00'; ctx.font = '18px Courier New'; ctx.fillText('You are visitor #000451', 140, 250);
         ctx.fillStyle = '#00ffff'; ctx.fillText('[Sign my guestbook] [Webring >>]', 90, 300);
       } else if (kind === 'macos9') {
@@ -437,6 +437,7 @@
   const TIMELINE = [
     [1969, 'arpanet', 'ARPANET', 'The first packet-switched network: its first message, "LO", crashed while typing LOGIN.'],
     [1985, 'win1', 'Windows 1.0', 'Tiled windows on top of MS-DOS, with Calculator, Clock, Notepad and Reversi.'],
+    [1989, 'aol', '"You\'ve got mail!"', 'A cheerful voice announced every new message, and millions of people discovered that hearing it was more exciting than reading the mail.', 'early'],
     [1991, 'firstsite', 'The first website', 'Tim Berners-Lee published the first web page at CERN.'],
     [1993, 'mosaic', 'NCSA Mosaic', 'The browser that showed images inline with text and made the web popular.'],
     [1995, 'win95', 'Windows 95', 'The Start button, the taskbar and plug and play reached millions of homes.'],
@@ -463,68 +464,1158 @@
     ['tamagotchi', 'Virtual pet keychain', 'Needed feeding during class. Many did not survive.']
   ];
 
-  const HISTORY = [
-    ['arpanet', 'ARPANET (1969)', 'The first packet-switched network connected UCLA, SRI, UCSB and the University of Utah. Its first message, "LO", crashed while typing "LOGIN".'],
-    ['email', 'First network email (1971)', 'Ray Tomlinson sent the first email between two computers and chose the @ sign to separate user and host.'],
-    ['basic', 'Home computers & BASIC (1977-1985)', 'Computers booted straight into BASIC: millions of people wrote their first program at a blinking READY prompt.'],
-    ['bbs', 'Bulletin Board Systems (1978-1995)', 'Dial-up BBSes with ANSI art hosted message boards, file libraries and door games, one caller at a time.'],
-    ['dos', 'The command line era (1981)', 'DOS prompts, AUTOEXEC.BAT and CONFIG.SYS: tuning memory to run one more program.'],
-    ['usenet', 'Usenet & the birth of Linux (1991)', 'On comp.os.minix a student announced "just a hobby" operating system. It became Linux.'],
-    ['firstsite', 'The first website (1991)', 'At CERN, Tim Berners-Lee published the first web page, explaining what the World Wide Web was.'],
-    ['browser', 'Graphical browsers (1993)', 'Browsers that showed images inline with text made the web accessible to everyone.'],
-    ['irc', 'IRC chat rooms (1988-2000s)', 'Internet Relay Chat channels were where developers met, helped each other and shipped open source.'],
-    ['homepage', 'Personal homepages (1995-2000)', 'Starry backgrounds, visitor counters, guestbooks, webrings and "under construction" banners.'],
-    ['search', 'Web directories & search (1994-1998)', 'Before ranking algorithms, hand-curated directories and early engines helped people find pages.'],
-    ['desktop', 'The desktop GUI (1990s)', 'Start menus, title bars and error dialogs: the windows-and-mouse era went mainstream.']
+  // --------------------------------------------------------------------------
+  // HALL OF INTERNET HISTORY: a chronological museum walk from 1969 to today.
+  // Inspired by the idea of an "internet artifacts" timeline; every
+  // illustration below is an original canvas recreation drawn in code and
+  // every description is our own short text. Blocks:
+  //   history_ring  one ring corridor around the Underground Lounge, 1969 at
+  //                 the lounge portal, all the way around to "You are here"
+  //   gallery_link  promenade from the ring to the Minimal Art Gallery
+  // --------------------------------------------------------------------------
+  const ERAS = {
+    early: { name: 'Early Internet', years: '1969 - 1994', frame: '#6b4423', accent: '#ffcf7a', sign: '#3a2416' },
+    dotcom: { name: 'Dot-com Boom', years: '1995 - 2003', frame: '#8d99a6', accent: '#7fd8ff', sign: '#14324a' },
+    web2: { name: 'Web 2.0', years: '2004 - 2006', frame: '#f1f3f5', accent: '#8ce99a', sign: '#1f5130' },
+    mobile: { name: 'Mobile & Social', years: '2007 - 2015', frame: '#212529', accent: '#ff8fab', sign: '#4a1428' },
+    modern: { name: 'Modern Web', years: '2016 - today', frame: '#3b2a63', accent: '#b197fc', sign: '#24164a' }
+  };
+
+  // [year, illustration kind, title, short description (our own words), era, optional 3D model on a plinth]
+  const ARTIFACTS = [
+    [1969, 'lo', 'ARPANET: "LO"', 'A UCLA student tried to log in to a computer at SRI, hundreds of miles away. The system crashed after two letters, so the first message ever sent over the network was simply "LO".', 'early'],
+    [1971, 'email', 'The first network email', 'Ray Tomlinson sent a throwaway test message between two machines standing side by side, and picked the @ sign to join the user name and the host.', 'early'],
+    [1982, 'smiley', 'The smiley :-)', 'On a Carnegie Mellon message board, Scott Fahlman suggested marking jokes with a sideways face so nobody would take them literally. The face outlived the thread.', 'early'],
+    [1985, 'symbolics', 'symbolics.com', 'A Lisp machine maker registered the very first .com domain. For months almost nobody else bothered to get one.', 'early'],
+    [1988, 'irc', 'Internet Relay Chat', 'A Finnish student wrote IRC to replace a bulletin board chat. Channels starting with # are still where many developer communities hang out.', 'early'],
+    [1991, 'firstsite', 'The first website', 'Tim Berners-Lee put the first web page online at CERN. It explained what the World Wide Web was and how anyone could publish their own pages.', 'early'],
+    [1993, 'coffeepot', 'The Trojan Room coffee pot', 'Researchers at Cambridge pointed a camera at the shared coffee pot to avoid walking to an empty one. Once the picture went on the web, it became the first famous webcam.', 'early', 'coffeepot'],
+    [1993, 'mosaic', 'Mosaic', 'A browser that placed pictures inline with text. Suddenly the web looked like a magazine anyone could flip through.', 'early'],
+    [1993, 'dog', 'Nobody knows who you are', 'A 1993 magazine cartoon joked that online nobody can tell who (or what) is typing on the other side. It became the classic shorthand for internet anonymity.', 'early'],
+    [1994, 'yahoo', 'A guide to the web', 'Two Stanford students kept a hand-made list of their favorite sites, sorted by topic. It grew into Yahoo!, the front door of the web for years.', 'early'],
+    [1994, 'modem', 'The dial-up handshake', 'Screech, hiss, bong: two modems negotiating a connection. Nobody could use the phone, and a single photo loaded one stripe at a time.', 'early'],
+    [1994, 'netscape', 'Netscape Navigator', 'The browser with a meteor shower logo. It came on floppy disks, cost money for businesses and made the web feel like a frontier.', 'early'],
+    [1994, 'geocities', 'GeoCities', 'Free homepages sorted into themed "neighborhoods". Under-construction GIFs were not a phase, they were a lifestyle.', 'early'],
+    [1995, 'amazon', 'Amazon opens', 'An online bookstore started in a garage. Legend says a bell rang for every order, until there were far too many orders to ring it.', 'dotcom'],
+    [1995, 'ebay', 'A broken laser pointer', 'One of the first sales on AuctionWeb, later eBay: a broken laser pointer for $14.83. The buyer said he collected broken laser pointers.', 'dotcom', 'laser'],
+    [1996, 'spacejam', 'The Space Jam website', 'A movie promo site made of planet-shaped buttons on a starfield. It stayed online, almost untouched, for more than two decades.', 'dotcom'],
+    [1996, 'icq', 'ICQ "Uh-oh!"', 'You were a nine-digit number and a little green flower. The "uh-oh" sound meant someone, somewhere, wanted to chat.', 'dotcom'],
+    [1996, 'hotmail', 'Free webmail', 'Email you could read from any browser, for free. Every message ended with an invite to sign up: one of the first viral growth loops.', 'dotcom'],
+    [1998, 'hampster', 'The Hampster Dance', 'A page of looping dancing hamster GIFs with a sped-up song. People forwarded it by email until it was one of the first viral web pages.', 'dotcom'],
+    [1998, 'google98', 'Google (beta)', 'Two PhD students ranked pages by the links pointing to them. Behind a sparse beta page sat a better search engine than anyone else had.', 'dotcom'],
+    [1999, 'msn', 'MSN Messenger', 'Away messages written like poetry, nudges that shook the window and song lyrics as status. Logging off was a dramatic act.', 'dotcom'],
+    [1999, 'y2k', 'The Y2K bug', 'Two-digit years threatened to turn 2000 into 1900. Thousands of engineers patched it in time, so the end of the world quietly did not happen.', 'dotcom'],
+    [1999, 'napster', 'Napster', 'Millions swapped MP3 files directly between their own computers. The service lost in court, but music distribution was never the same.', 'dotcom'],
+    [2000, 'dotcomcrash', 'The dot-com bust', 'Investors poured money into anything ending in .com. When the bubble burst in March 2000 many startups vanished, but the cables and the ideas stayed.', 'dotcom'],
+    [2000, 'flash', 'Flash games', 'Animated games played in the browser between classes. Every one started with a loading bar and a "skip intro" button.', 'dotcom'],
+    [2001, 'wikipedia', 'Wikipedia', 'A free encyclopedia that anyone can edit sounded impossible. Volunteers turned it into one of the most visited sites on Earth.', 'dotcom'],
+    [2002, 'friendster', 'Friendster', 'Profiles, testimonials and friends of friends. It grew so fast that its servers could not keep up with everybody logging in.', 'dotcom'],
+    [2003, 'myspace', 'MySpace profiles', 'Custom HTML, glitter backgrounds, an auto-playing song and a ranked Top 8 of friends: the first web design project for a whole generation.', 'dotcom'],
+    [2004, 'thefacebook', 'Thefacebook', 'Started in a college dorm as an online directory for students, then slowly opened up to everyone.', 'web2'],
+    [2004, 'gmail', 'Gmail', 'Announced on April Fools\' Day with 1 GB of free storage, so many people thought it was a joke. Invites were traded like treasure.', 'web2'],
+    [2004, 'orkut', 'Orkut', 'Scraps, testimonials and communities about everything. Huge in Brazil and India, where it felt like the whole country was online at once.', 'web2'],
+    [2005, 'youtube05', '"Me at the zoo"', 'The first video uploaded to YouTube: 19 seconds of a co-founder standing in front of the elephants.', 'web2'],
+    [2006, 'tweet', 'The first tweet', 'A short status update, "just setting up my twttr". Real-time micro posts became a new way to spread news.', 'web2'],
+    [2007, 'iphone', 'The iPhone', 'A phone, a music player and an internet communicator in one touch screen. When apps arrived, the web moved into every pocket.', 'mobile', 'phone'],
+    [2007, 'charlie', 'Charlie bit my finger', 'A home video of a baby biting his big brother\'s finger, shared for the family, became one of the most watched clips of its time.', 'mobile'],
+    [2007, 'chipmunk', 'Dramatic Chipmunk', 'Five seconds: a small rodent turns its head, the camera zooms, the music stings. Perfect comic timing.', 'mobile'],
+    [2007, 'rickroll', 'Rickrolling', 'A link that promises something exciting but secretly opens a 1987 music video. The prank turned the song into an internet anthem.', 'mobile'],
+    [2008, 'github', 'GitHub', 'Git hosting with pull requests, forks and profiles. Open source turned into a social network of millions of developers.', 'mobile'],
+    [2008, 'stackoverflow', 'Stack Overflow', 'Questions, voted answers and a green check mark. The place every developer lands after pasting an error message into a search box.', 'mobile'],
+    [2008, 'chrome', 'Google Chrome', 'A minimal browser with one box for addresses and searches, and every tab in its own process. Introduced with a comic book.', 'mobile'],
+    [2009, 'genesis', 'Bitcoin genesis block', 'The first block of the Bitcoin blockchain carried a newspaper headline about bank bailouts. Shown here as a piece of history only, not as an investment.', 'mobile'],
+    [2009, 'minecraft', 'Minecraft alpha', 'A tiny indie game about placing and breaking blocks. People built castles, computers and whole cities, one cube at a time.', 'mobile'],
+    [2009, 'nodejs', 'Node.js', 'JavaScript left the browser and moved to the server. Suddenly front-end developers could ship a back end over the weekend.', 'mobile'],
+    [2010, 'instagram', 'Instagram\'s first photo', 'A dog near a taco stand, posted in a square frame. Vintage filters made quick phone snapshots look like old film.', 'mobile'],
+    [2012, 'gangnam', 'One billion views', 'A K-pop music video and its horse-riding dance became the first video to pass one billion views.', 'mobile'],
+    [2013, 'slack', 'Slack', 'Team chat with channels, emoji reactions and integrations. Email inboxes got lighter, notification badges got heavier.', 'mobile'],
+    [2013, 'react', 'React', 'A library that redraws the screen from data, with HTML-like syntax inside JavaScript. Controversial at launch, everywhere a few years later.', 'mobile'],
+    [2014, 'icebucket', 'Ice Bucket Challenge', 'Film yourself under a bucket of ice water, nominate three friends. The chain raised awareness and funds for ALS research.', 'mobile'],
+    [2015, 'dress', 'The Dress', 'A washed-out photo of a striped dress split the internet: blue and black, or white and gold? Scientists studied it too.', 'mobile'],
+    [2016, 'pokemongo', 'Pokemon GO', 'An augmented reality game sent millions of players walking around parks and streets, phone in hand, looking for creatures.', 'modern'],
+    [2017, 'fortnite', 'Fortnite Battle Royale', 'A free battle royale with building and dance emotes that doubled as a hangout and a stage for virtual concerts.', 'modern'],
+    [2020, 'amongus', 'Among Us', 'A small 2018 game exploded during the 2020 lockdowns: friends on a call, trying to find the impostor on a spaceship.', 'modern'],
+    [2021, 'wordle', 'Wordle', 'One five-letter word per day, six tries and a shareable grid of colored squares. A tiny game made as a gift became a daily ritual.', 'modern'],
+    [2021, 'copilot', 'GitHub Copilot', 'An AI pair programmer that suggests whole lines and functions right inside the editor.', 'modern'],
+    [2022, 'chatgpt', 'ChatGPT', 'A conversational AI that answers in plain language. It reached about 100 million users in two months.', 'modern'],
+    [2026, 'here', 'You are here', 'Shared 3D worlds where developers meet, build and play together. You are standing inside the newest exhibit.', 'modern']
   ];
 
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Classic 90s browser window; returns the top of the page area
+  function oldBrowser(ctx, w, h, title, url, page = '#ffffff') {
+    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#000080'; ctx.fillRect(0, 0, w, 24);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial'; ctx.fillText(title, 8, 17);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(6, 30, w - 12, 22);
+    ctx.fillStyle = '#000000'; ctx.font = '13px Arial'; ctx.fillText(`Location: ${url}`, 12, 46);
+    ctx.fillStyle = page; ctx.fillRect(6, 58, w - 12, h - 64);
+    return 58;
+  }
+
+  // Modern browser window with a rounded address bar
+  function newBrowser(ctx, w, h, url, page = '#ffffff') {
+    ctx.fillStyle = '#dee2e6'; ctx.fillRect(0, 0, w, h);
+    ['#ff6b6b', '#fcc419', '#51cf66'].forEach((color, i) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(18 + i * 18, 18, 6, 0, Math.PI * 2); ctx.fill(); });
+    ctx.fillStyle = '#ffffff'; roundRect(ctx, 80, 7, w - 100, 22, 11); ctx.fill();
+    ctx.fillStyle = '#495057'; ctx.font = '13px Arial'; ctx.fillText(url, 94, 23);
+    ctx.fillStyle = page; ctx.fillRect(0, 36, w, h - 36);
+    return 36;
+  }
+
+  // Video player with a progress bar
+  function videoPlayer(ctx, x, y, vw, vh, progress = 0.35) {
+    ctx.fillStyle = '#000000'; ctx.fillRect(x, y, vw, vh);
+    ctx.fillStyle = '#333333'; ctx.fillRect(x, y + vh - 14, vw, 14);
+    ctx.fillStyle = '#e03131'; ctx.fillRect(x, y + vh - 14, vw * progress, 4);
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(x + 8, y + vh - 11); ctx.lineTo(x + 8, y + vh - 3); ctx.lineTo(x + 15, y + vh - 7); ctx.fill();
+  }
+
+  // Smartphone outline; returns the screen rectangle
+  function phoneOutline(ctx, cx, cy, pw, ph) {
+    ctx.fillStyle = '#111111'; roundRect(ctx, cx - pw / 2, cy - ph / 2, pw, ph, 22); ctx.fill();
+    ctx.strokeStyle = '#868e96'; ctx.lineWidth = 3; ctx.stroke();
+    return [cx - pw / 2 + 10, cy - ph / 2 + 34, pw - 20, ph - 70];
+  }
+
+  const ARTIFACT_DRAWINGS = {
+    lo(ctx, w, h) {
+      ctx.fillStyle = '#0b0f0b'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#9dff9d'; ctx.font = '22px Courier New, monospace';
+      ['UCLA HOST 1  ->  SRI HOST 2', '29 OCT 1969  22:30', '', '> L', '  SRI: GOT THE L', '> O', '  SRI: GOT THE O', '> G'].forEach((line, i) => ctx.fillText(line, 24, 40 + i * 30));
+      ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold 26px Courier New, monospace'; ctx.fillText('*** SYSTEM CRASH ***', 24, 290);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 86px Georgia, serif'; ctx.fillText('LO', 360, 140);
+      ctx.strokeStyle = '#9dff9d'; ctx.lineWidth = 2; ctx.strokeRect(10, 10, w - 20, h - 20);
+      ctx.fillStyle = '#9dff9d'; ctx.font = '16px Courier New'; ctx.fillText('IMP #1 ======== 50 kbit/s ======== IMP #2', 24, 350);
+    },
+    email(ctx, w, h) {
+      ctx.fillStyle = '#efe6cf'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; for (let y = 0; y < h; y += 28) ctx.fillRect(0, y, w, 14);
+      [20, w - 32].forEach((x) => { for (let y = 16; y < h; y += 28) { ctx.fillStyle = '#d6cbb0'; ctx.beginPath(); ctx.arc(x + 6, y, 6, 0, Math.PI * 2); ctx.fill(); } });
+      ctx.fillStyle = '#222222'; ctx.font = '20px Courier New, monospace';
+      ['TENEX MAIL', '', 'TO: TOMLINSON@BBN-TENEXB', 'FROM: TOMLINSON@BBN-TENEXA', '', 'QWERTYUIOP', '', '(SOMETHING LIKE THAT)'].forEach((line, i) => ctx.fillText(line, 50, 40 + i * 30));
+      ctx.fillStyle = '#1864ab'; ctx.font = 'bold 120px Georgia, serif'; ctx.fillText('@', 360, 330);
+    },
+    smiley(ctx, w, h) {
+      ctx.fillStyle = '#f8f9fa'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#212529'; ctx.font = '17px Courier New, monospace';
+      ['19-Sep-82 11:44   Scott E Fahlman', 'Subject: joke markers', '', 'I propose the following character', 'sequence for joke markers:', '', '        :-)', '', 'Read it sideways.'].forEach((line, i) => ctx.fillText(line, 20, 34 + i * 26));
+      ctx.fillStyle = '#ffd43b'; ctx.beginPath(); ctx.arc(400, 270, 80, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#212529'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.fillStyle = '#212529'; ctx.beginPath(); ctx.arc(372, 245, 9, 0, Math.PI * 2); ctx.arc(428, 245, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(400, 275, 44, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+    },
+    symbolics(ctx, w, h) {
+      ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffb000'; ctx.font = '19px Courier New, monospace';
+      ['$ whois symbolics.com', '', '   Domain Name: SYMBOLICS.COM', '   Created:     15-Mar-1985', '   Registrant:  Symbolics Inc.', '   Note:        first .com ever', '', '$ count *.com', '   6'].forEach((line, i) => ctx.fillText(line, 20, 40 + i * 30));
+      ctx.font = 'bold 58px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText('.com', 330, 340);
+    },
+    coffeepot(ctx, w, h) {
+      ctx.fillStyle = '#d9d9d9'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#00007a'; ctx.fillRect(0, 0, w, 22);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Arial'; ctx.fillText('XCoffee - Trojan Room camera', 8, 16);
+      // A grainy grayscale "webcam" frame drawn in big pixels
+      const size = 8;
+      for (let y = 30; y < h - 30; y += size) {
+        for (let x = 60; x < w - 60; x += size) {
+          const dx = (x - 256) / 70;
+          const dy = (y - 210) / 110;
+          const inPot = dx * dx + dy * dy < 1 && y > 130;
+          const coffee = inPot && y > 230;
+          const handle = Math.abs(x - 340) < 12 && y > 150 && y < 260;
+          const base = coffee ? 40 : inPot ? 170 : handle ? 60 : y > 300 ? 110 : 140;
+          const value = Math.max(0, Math.min(255, base + ((x * 7 + y * 13) % 31) - 15));
+          ctx.fillStyle = `rgb(${value}, ${value}, ${value})`; ctx.fillRect(x, y, size, size);
+        }
+      }
+      ctx.fillStyle = '#000000'; ctx.font = '14px Courier New'; ctx.fillText('frame 128x128  grayscale  refresh: 1/sec', 60, h - 10);
+    },
+    dog(ctx, w, h) {
+      ctx.fillStyle = '#fff9db'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#495057'; roundRect(ctx, 96, 40, 320, 230, 14); ctx.fill();
+      ctx.fillStyle = '#e7f5ff'; ctx.fillRect(116, 60, 280, 190);
+      ctx.fillStyle = '#212529'; ctx.font = '16px Courier New';
+      ['> hello? who is this?', '< just a regular person', '< trust me', '', '> ...'].forEach((line, i) => ctx.fillText(line, 128, 90 + i * 28));
+      ctx.fillStyle = '#868e96'; ctx.fillRect(220, 270, 72, 30); ctx.fillRect(180, 300, 152, 12);
+      ctx.fillStyle = '#e8590c'; ctx.font = 'bold 120px Georgia'; ctx.fillText('?', 430, 200);
+      ctx.fillStyle = '#495057'; ctx.font = 'italic 20px Georgia'; ctx.fillText('Online, anyone can be anyone.', 110, 350);
+    },
+    yahoo(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Guide to the World Wide Web', 'http://akebono.stanford.edu/');
+      ctx.fillStyle = '#7b2cbf'; ctx.font = 'bold 34px Times New Roman'; ctx.fillText('Yahoo!', 24, top + 40);
+      ctx.fillStyle = '#000000'; ctx.font = '14px Times New Roman'; ctx.fillText('A hand-made list of sites, sorted by topic', 150, top + 36);
+      const topics = ['Art', 'Business', 'Computers', 'Economy', 'Education', 'Entertainment', 'Government', 'Health', 'News', 'Recreation', 'Science', 'Society'];
+      topics.forEach((topic, i) => { ctx.fillStyle = '#0000ee'; ctx.font = 'bold 17px Times New Roman'; ctx.fillText(`${topic} (${(i * 37) % 90 + 12})`, 30 + (i % 2) * 230, top + 80 + Math.floor(i / 2) * 40); });
+    },
+    amazon(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Online Bookstore', 'http://www.amazon.com/', '#ffffff');
+      ctx.fillStyle = '#1c7ed6'; ctx.fillRect(16, top + 10, 110, 70);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Times New Roman'; ctx.fillText('AMAZON', 32, top + 50);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 22px Times New Roman'; ctx.fillText('Earth\'s Biggest Bookstore', 140, top + 40);
+      ctx.font = '15px Times New Roman'; ctx.fillText('One million titles, consistently low prices.', 140, top + 64);
+      ['Search our catalog', 'Spotlight: new arrivals', 'Gift certificates'].forEach((item, i) => { ctx.fillStyle = '#0000ee'; ctx.fillText(item, 30, top + 120 + i * 30); });
+      for (let i = 0; i < 4; i++) { ctx.fillStyle = ['#c92a2a', '#2b8a3e', '#5f3dc4', '#e67700'][i]; ctx.fillRect(280 + i * 50, top + 110, 38, 120); }
+      ctx.fillStyle = '#555555'; ctx.font = '12px Arial'; ctx.fillText('ding! (one more order)', 290, top + 260);
+    },
+    ebay(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'AuctionWeb', 'http://www.ebay.com/aw/', '#ffffff');
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 22px Times New Roman'; ctx.fillText('AuctionWeb: Item #1004', 20, top + 34);
+      ctx.fillStyle = '#e9ecef'; ctx.fillRect(20, top + 50, 180, 140);
+      ctx.fillStyle = '#343a40'; ctx.save(); ctx.translate(110, top + 120); ctx.rotate(-0.35); ctx.fillRect(-70, -8, 140, 16); ctx.fillStyle = '#c92a2a'; ctx.fillRect(66, -5, 10, 10); ctx.restore();
+      ctx.strokeStyle = '#000000'; ctx.beginPath(); ctx.moveTo(90, top + 100); ctx.lineTo(120, top + 140); ctx.stroke();
+      ctx.font = '16px Times New Roman'; ['Laser pointer', 'Condition: BROKEN', 'Bids: 3', 'Ends: today'].forEach((line, i) => ctx.fillText(line, 220, top + 70 + i * 26));
+      ctx.fillStyle = '#2b8a3e'; ctx.font = 'bold 30px Arial'; ctx.fillText('$14.83', 220, top + 200);
+      ctx.save(); ctx.translate(370, top + 220); ctx.rotate(-0.25); ctx.strokeStyle = '#c92a2a'; ctx.lineWidth = 5; ctx.strokeRect(-70, -26, 140, 52); ctx.fillStyle = '#c92a2a'; ctx.font = 'bold 34px Arial'; ctx.fillText('SOLD', -44, 12); ctx.restore();
+    },
+    spacejam(ctx, w, h) {
+      ctx.fillStyle = '#05051a'; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 140; i++) { ctx.fillStyle = i % 9 ? '#ffffff' : '#ffd43b'; ctx.fillRect((i * 97) % w, (i * 61) % h, i % 5 ? 1 : 2, i % 5 ? 1 : 2); }
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.beginPath(); ctx.ellipse(256, 192, 200, 120, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#e8590c'; ctx.beginPath(); ctx.arc(256, 192, 52, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(204, 192); ctx.lineTo(308, 192); ctx.moveTo(256, 140); ctx.lineTo(256, 244); ctx.stroke();
+      const planets = [[90, 110, '#4dabf7', 'PRESS'], [430, 90, '#be4bdb', 'GAMES'], [440, 290, '#69db7c', 'JAM'], [80, 290, '#ffa94d', 'STARS'], [256, 60, '#ff6b6b', 'SITE MAP'], [256, 340, '#ffd43b', 'CREDITS']];
+      planets.forEach(([x, y, color, name]) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 12px Arial'; ctx.fillText(name, x - ctx.measureText(name).width / 2, y + 42); });
+    },
+    hotmail(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Free Web-Based Email', 'http://www.hotmail.com/', '#ffffff');
+      ctx.fillStyle = '#e8590c'; ctx.font = 'bold 40px Arial'; ctx.fillText('HoTMaiL', 30, top + 56);
+      ctx.fillStyle = '#000000'; ctx.font = '16px Arial'; ctx.fillText('The world\'s free web-based email', 30, top + 84);
+      ctx.fillStyle = '#f1f3f5'; ctx.fillRect(30, top + 110, 250, 150);
+      ctx.fillStyle = '#000000'; ctx.font = '14px Arial'; ctx.fillText('Login Name', 44, top + 140); ctx.fillText('Password', 44, top + 190);
+      ctx.strokeRect(44, top + 148, 220, 22); ctx.strokeRect(44, top + 198, 220, 22);
+      ctx.fillStyle = '#adb5bd'; ctx.fillRect(44, top + 228, 70, 22); ctx.fillStyle = '#000000'; ctx.fillText('Enter', 58, top + 244);
+      ctx.fillStyle = '#1c7ed6'; ctx.font = 'italic 14px Arial'; ['P.S. Get your free', 'email at Hotmail'].forEach((line, i) => ctx.fillText(line, 310, top + 160 + i * 22));
+    },
+    hampster(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#c2255c'; ctx.font = 'bold 24px Comic Sans MS, cursive'; ctx.fillText('Welcome to the Hamster Dance!', 70, 36);
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 6; col++) {
+          const x = 30 + col * 80;
+          const y = 70 + row * 74;
+          const lean = (row + col) % 2 ? 6 : -6;
+          ctx.fillStyle = '#d9a066'; ctx.beginPath(); ctx.ellipse(x + 28, y + 34, 22, 26, lean * 0.03, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#f5deb3'; ctx.beginPath(); ctx.ellipse(x + 28, y + 40, 12, 14, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#d9a066'; ctx.beginPath(); ctx.arc(x + 14 + lean, y + 10, 7, 0, Math.PI * 2); ctx.arc(x + 42 + lean, y + 10, 7, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#000000'; ctx.fillRect(x + 20, y + 22, 4, 4); ctx.fillRect(x + 32, y + 22, 4, 4);
+          ctx.fillStyle = '#d9a066'; ctx.fillRect(x + 4 + lean, y + 26 - lean, 8, 4); ctx.fillRect(x + 44 + lean, y + 26 + lean, 8, 4);
+        }
+      }
+      ctx.fillStyle = '#5c940d'; ctx.font = '14px Courier New'; ctx.fillText('(midi loop playing...)  visitors: 0017238', 80, h - 12);
+    },
+    napster(ctx, w, h) {
+      ctx.fillStyle = '#3d3d3d'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, w, 44);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px Arial'; ctx.fillText('napster', 20, 31);
+      ctx.fillStyle = '#adb5bd'; ctx.font = '13px Arial'; ctx.fillText('Search  |  Hot List  |  Transfer  |  Chat', 150, 28);
+      ctx.fillStyle = '#d0d0d0'; ctx.fillRect(14, 58, w - 28, 26);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 13px Arial'; ['Filename', 'Size', 'Bitrate', 'User'].forEach((head, i) => ctx.fillText(head, 22 + [0, 230, 300, 380][i], 76));
+      ['band - track01.mp3', 'garage demo.mp3', 'live in 1998.mp3', 'unknown artist.mp3', 'cover song (rare).mp3'].forEach((file, i) => {
+        ctx.fillStyle = i % 2 ? '#4a4a4a' : '#555555'; ctx.fillRect(14, 88 + i * 30, w - 28, 30);
+        ctx.fillStyle = '#ffffff'; ctx.font = '13px Arial'; ctx.fillText(file, 22, 108 + i * 30); ctx.fillText(`${3 + i}.${i * 3} MB`, 252, 108 + i * 30); ctx.fillText('128', 322, 108 + i * 30); ctx.fillText(`user${i * 41 + 7}`, 402, 108 + i * 30);
+      });
+      ctx.fillStyle = '#ffffff'; ctx.fillText('Downloading 2 of 5', 22, 270);
+      ctx.fillStyle = '#222222'; ctx.fillRect(22, 284, w - 44, 22); ctx.fillStyle = '#40c057'; ctx.fillRect(22, 284, (w - 44) * 0.62, 22);
+      ctx.fillStyle = '#ffffff'; ctx.fillText('56k modem: 4.2 KB/s, 11 minutes left', 22, 336);
+    },
+    dotcomcrash(ctx, w, h) {
+      ctx.fillStyle = '#0b1e33'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; ctx.lineWidth = 1;
+      for (let x = 40; x < w; x += 50) { ctx.beginPath(); ctx.moveTo(x, 40); ctx.lineTo(x, h - 40); ctx.stroke(); }
+      for (let y = 40; y < h - 30; y += 40) { ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w - 20, y); ctx.stroke(); }
+      const points = [[40, 300], [90, 290], [140, 270], [190, 250], [230, 200], [260, 150], [290, 70], [310, 110], [340, 190], [380, 250], [420, 280], [470, 300]];
+      ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 4; ctx.beginPath(); points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.fillText('TECH STOCK INDEX', 40, 30);
+      ctx.fillStyle = '#ffd43b'; ctx.font = 'bold 16px Arial'; ctx.fillText('peak: March 2000', 300, 64);
+      ctx.fillStyle = '#adb5bd'; ctx.font = '14px Arial'; ['1995', '1997', '1999', '2001', '2002'].forEach((year, i) => ctx.fillText(year, 40 + i * 100, h - 16));
+      ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold 18px Courier New'; ctx.fillText('pets.example  -98%', 300, 330);
+    },
+    wikipedia(ctx, w, h) {
+      const top = newBrowser(ctx, w, h, 'en.wikipedia.org/wiki/Main_Page');
+      ctx.fillStyle = '#ced4da'; ctx.beginPath(); ctx.arc(80, top + 70, 50, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#495057'; ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.ellipse(80, top + 70, Math.abs(i) * 12 + 4, 50, 0, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(30, top + 70 + i * 18); ctx.lineTo(130, top + 70 + i * 18); ctx.stroke(); }
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(98, top + 20, 32, 30);
+      ctx.fillStyle = '#000000'; ctx.font = '30px Georgia, serif'; ctx.fillText('WIKIPEDIA', 160, top + 70);
+      ctx.font = 'italic 16px Georgia'; ctx.fillText('The Free Encyclopedia', 160, top + 96);
+      ctx.fillStyle = '#868e96'; for (let i = 0; i < 6; i++) ctx.fillRect(30, top + 150 + i * 26, 300 + ((i * 53) % 140), 10);
+      ctx.fillStyle = '#3366cc'; ctx.font = '15px Arial'; ctx.fillText('[edit]', 420, top + 160); ctx.fillText('[citation needed]', 360, top + 290);
+    },
+    friendster(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Friendster - profile', 'http://www.friendster.com/', '#f3f0ff');
+      ctx.fillStyle = '#5f3dc4'; ctx.font = 'bold 28px Arial'; ctx.fillText('friendster', 20, top + 40);
+      ctx.fillStyle = '#adb5bd'; ctx.fillRect(20, top + 60, 120, 140);
+      ctx.fillStyle = '#495057'; ctx.beginPath(); ctx.arc(80, top + 110, 26, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(48, top + 140, 64, 60);
+      ctx.fillStyle = '#000000'; ctx.font = '15px Arial'; ['Who I want to meet: everyone', 'Status: online', 'Testimonials (4)', 'Friends of friends: 2,341'].forEach((line, i) => ctx.fillText(line, 160, top + 80 + i * 28));
+      for (let i = 0; i < 6; i++) { ctx.fillStyle = ['#ffa8a8', '#a5d8ff', '#b2f2bb', '#ffec99', '#d0bfff', '#ffd8a8'][i]; ctx.fillRect(160 + i * 52, top + 210, 44, 44); }
+      ctx.fillStyle = '#c92a2a'; ctx.font = 'bold 13px Arial'; ctx.fillText('Server busy, please try again...', 160, top + 290);
+    },
+    myspace(ctx, w, h) {
+      ctx.fillStyle = '#1a0026'; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 120; i++) { ctx.fillStyle = ['#ff8cc6', '#ffffff', '#c0eb75'][i % 3]; ctx.fillRect((i * 71) % w, (i * 37) % h, 2, 2); }
+      ctx.fillStyle = '#ff8cc6'; ctx.font = 'bold 26px Comic Sans MS, cursive'; ctx.fillText('~xX my profile Xx~', 30, 40);
+      ctx.fillStyle = '#ffffff'; ctx.font = '14px Verdana'; ctx.fillText('Mood: creative   Online now!', 30, 64);
+      ctx.fillStyle = '#343a40'; ctx.fillRect(30, 80, 200, 40); ctx.fillStyle = '#c0eb75'; ctx.fillRect(40, 96, 120, 8); ctx.fillStyle = '#ffffff'; ctx.font = '12px Verdana'; ctx.fillText('now playing', 40, 116);
+      ctx.fillStyle = '#ff8cc6'; ctx.font = 'bold 18px Verdana'; ctx.fillText('My Top 8', 260, 100);
+      for (let i = 0; i < 8; i++) { ctx.fillStyle = ['#ffa8a8', '#a5d8ff', '#b2f2bb', '#ffec99', '#d0bfff', '#ffd8a8', '#99e9f2', '#eebefa'][i]; ctx.fillRect(260 + (i % 4) * 58, 116 + Math.floor(i / 4) * 64, 50, 50); ctx.fillStyle = '#ffffff'; ctx.font = '10px Verdana'; ctx.fillText(`#${i + 1}`, 262 + (i % 4) * 58, 178 + Math.floor(i / 4) * 64); }
+      ctx.fillStyle = '#ffffff'; ctx.font = '13px Verdana'; ['About me: I learned HTML', 'to make this page sparkle.', 'Thanks 4 the add!!'].forEach((line, i) => ctx.fillText(line, 30, 160 + i * 22));
+      ctx.fillStyle = '#ff8cc6'; ctx.fillText('<marquee>welcome</marquee>', 30, 330);
+    },
+    gmail(ctx, w, h) {
+      const top = newBrowser(ctx, w, h, 'mail.google.com');
+      ctx.fillStyle = '#c92a2a'; ctx.font = 'bold 30px Arial'; ctx.fillText('Gmail', 20, top + 40);
+      ctx.fillStyle = '#868e96'; ctx.font = '12px Arial'; ctx.fillText('BETA', 112, top + 26);
+      ctx.fillStyle = '#e7f5ff'; ctx.fillRect(160, top + 16, 330, 32); ctx.fillStyle = '#1864ab'; ctx.font = 'bold 14px Arial'; ctx.fillText('1 GB of storage: stop deleting!', 176, top + 37);
+      ['Inbox (3)', 'Starred', 'Sent Mail', 'Drafts', 'All Mail'].forEach((item, i) => { ctx.fillStyle = i ? '#1c7ed6' : '#000000'; ctx.font = i ? '14px Arial' : 'bold 14px Arial'; ctx.fillText(item, 20, top + 90 + i * 28); });
+      ['You have been invited to Gmail', 'Re: can I get an invite?', 'Conversation view is great'].forEach((line, i) => { ctx.fillStyle = i % 2 ? '#ffffff' : '#f1f3f5'; ctx.fillRect(130, top + 70 + i * 40, 370, 36); ctx.fillStyle = '#000000'; ctx.font = 'bold 13px Arial'; ctx.fillText(line, 140, top + 93 + i * 40); });
+      ctx.fillStyle = '#2b8a3e'; ctx.font = '13px Arial'; ctx.fillText('You are currently using 0 MB (0%) of your 1000 MB.', 130, top + 230);
+    },
+    tweet(ctx, w, h) {
+      ctx.fillStyle = '#e7f5ff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff'; roundRect(ctx, 40, 70, w - 80, 220, 18); ctx.fill();
+      ctx.strokeStyle = '#a5d8ff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#74c0fc'; ctx.beginPath(); ctx.arc(90, 120, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 18px Arial'; ctx.fillText('jack', 132, 114);
+      ctx.fillStyle = '#868e96'; ctx.font = '15px Arial'; ctx.fillText('@jack', 132, 136);
+      ctx.fillStyle = '#000000'; ctx.font = '28px Arial'; ctx.fillText('just setting up my twttr', 64, 200);
+      ctx.fillStyle = '#868e96'; ctx.font = '14px Arial'; ctx.fillText('9:50 PM - 21 Mar 2006', 64, 250);
+      ctx.fillStyle = '#1c7ed6'; ctx.font = 'bold 22px Arial'; ctx.fillText('twttr', 40, 40);
+    },
+    iphone(ctx, w, h) {
+      ctx.fillStyle = '#1b1b1f'; ctx.fillRect(0, 0, w, h);
+      const [sx, sy, sw, sh] = phoneOutline(ctx, 256, 192, 190, 360);
+      const sky = ctx.createLinearGradient(0, sy, 0, sy + sh); sky.addColorStop(0, '#1c3d6e'); sky.addColorStop(1, '#0b1a33');
+      ctx.fillStyle = sky; ctx.fillRect(sx, sy, sw, sh);
+      const colors = ['#51cf66', '#339af0', '#fcc419', '#ff6b6b', '#ffffff', '#845ef7', '#20c997', '#fd7e14', '#e64980', '#868e96', '#94d82d', '#15aabf'];
+      colors.forEach((color, i) => { ctx.fillStyle = color; roundRect(ctx, sx + 12 + (i % 4) * 40, sy + 14 + Math.floor(i / 4) * 52, 30, 30, 7); ctx.fill(); });
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.fillRect(sx, sy + sh - 48, sw, 48);
+      ctx.strokeStyle = '#868e96'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(256, 192 + 162, 12, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial'; ctx.fillText('slide to unlock', 40, 40);
+    },
+    charlie(ctx, w, h) {
+      ctx.fillStyle = '#f8f9fa'; ctx.fillRect(0, 0, w, h);
+      videoPlayer(ctx, 30, 30, 452, 260, 0.55);
+      ctx.fillStyle = '#d8c3a5'; ctx.fillRect(30, 30, 452, 246);
+      ctx.fillStyle = '#c3a789'; ctx.fillRect(30, 180, 452, 96);
+      // Two simple figures on a sofa (big brother and the baby), soft home-video colors
+      ctx.fillStyle = '#4c6ef5'; ctx.fillRect(140, 150, 90, 110); ctx.fillStyle = '#f1c27d'; ctx.beginPath(); ctx.arc(185, 120, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(290, 190, 70, 70); ctx.fillStyle = '#f1c27d'; ctx.beginPath(); ctx.arc(325, 168, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f1c27d'; ctx.fillRect(225, 170, 75, 12);
+      ctx.fillStyle = '#c92a2a'; ctx.font = 'bold 22px Comic Sans MS, cursive'; ctx.fillText('ouch!', 230, 150);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Arial'; ctx.fillText('Charlie bit my finger - again !', 30, 318);
+      ctx.fillStyle = '#868e96'; ctx.font = '13px Arial'; ctx.fillText('0:56  ·  a family home video', 30, 340);
+    },
+    chipmunk(ctx, w, h) {
+      ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+      const frames = [[16, 0.6], [180, 0.85], [344, 1.15]];
+      frames.forEach(([x, zoom]) => {
+        ctx.save(); ctx.beginPath(); ctx.rect(x, 60, 152, 220); ctx.clip();
+        ctx.fillStyle = '#6b8e23'; ctx.fillRect(x, 60, 152, 220);
+        ctx.translate(x + 76, 190); ctx.scale(zoom, zoom);
+        ctx.fillStyle = '#a0522d'; ctx.beginPath(); ctx.ellipse(0, 30, 50, 60, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, -40, 40, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f5deb3'; ctx.beginPath(); ctx.ellipse(0, -28, 22, 16, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(-15, -50, 6, 0, Math.PI * 2); ctx.arc(15, -50, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      });
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px Georgia'; ctx.fillText('dun  dun  DUNNN', 140, 40);
+      ctx.font = '14px Arial'; ctx.fillText('0:05   ·   the most dramatic head turn ever filmed', 40, 320);
+    },
+    rickroll(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#0000ee'; ctx.font = 'underline 18px Arial'; ctx.fillText('>> EXCLUSIVE: leaked game trailer (click)', 20, 32);
+      ctx.fillRect(20, 36, 370, 1);
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(380, 40); ctx.lineTo(400, 70); ctx.lineTo(392, 72); ctx.stroke();
+      videoPlayer(ctx, 30, 80, 452, 230, 0.12);
+      ctx.fillStyle = '#ff922b'; ctx.fillRect(30, 80, 452, 216);
+      ctx.fillStyle = '#5c3d2e'; ctx.fillRect(220, 140, 70, 130); ctx.fillStyle = '#f1c27d'; ctx.beginPath(); ctx.arc(255, 122, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e8590c'; ctx.beginPath(); ctx.arc(255, 104, 26, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 40px Georgia'; ctx.fillText('♪', 90, 170); ctx.fillText('♫', 380, 210);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Arial'; ctx.fillText('You just got rickrolled (1987 music video)', 30, 345);
+    },
+    github(ctx, w, h) {
+      const top = newBrowser(ctx, w, h, 'github.com/you/hello-world', '#0d1117');
+      ctx.fillStyle = '#c9d1d9'; ctx.font = 'bold 20px Arial'; ctx.fillText('you / hello-world', 20, top + 36);
+      ['Code', 'Issues 3', 'Pull requests 1', 'Network'].forEach((tab, i) => { ctx.fillStyle = i ? '#8b949e' : '#f78166'; ctx.font = '14px Arial'; ctx.fillText(tab, 20 + i * 100, top + 66); });
+      ctx.fillStyle = '#161b22'; ctx.fillRect(16, top + 80, w - 32, 150);
+      ctx.fillStyle = '#c9d1d9'; ctx.font = '14px Courier New'; ['README.md      Initial commit', 'index.js       Add hello world', '.gitignore     node_modules'].forEach((line, i) => ctx.fillText(line, 28, top + 110 + i * 30));
+      ctx.fillStyle = '#238636'; roundRect(ctx, 360, top + 20, 120, 30, 6); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Arial'; ctx.fillText('Fork  |  Star', 376, top + 40);
+      ctx.fillStyle = '#7ee787'; ctx.font = '15px Courier New'; ctx.fillText('$ git push origin main', 20, top + 280);
+      for (let i = 0; i < 40; i++) { ctx.fillStyle = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'][(i * 7) % 5]; ctx.fillRect(20 + i * 12, top + 300, 10, 10); }
+    },
+    stackoverflow(ctx, w, h) {
+      const top = newBrowser(ctx, w, h, 'stackoverflow.com/questions/...');
+      ctx.fillStyle = '#f48024'; ctx.fillRect(20, top + 14, 6, 26); ctx.fillStyle = '#222222'; ctx.font = 'bold 20px Arial'; ctx.fillText('stack overflow', 34, top + 34);
+      ctx.fillStyle = '#0a58ca'; ctx.font = 'bold 18px Arial'; ctx.fillText('How do I undo the most recent commit?', 20, top + 76);
+      ctx.fillStyle = '#495057'; ctx.font = 'bold 26px Arial'; ctx.fillText('▲', 30, top + 130); ctx.fillText('2187', 16, top + 162); ctx.fillText('▼', 30, top + 192);
+      ctx.fillStyle = '#2f9e44'; ctx.font = 'bold 40px Arial'; ctx.fillText('✓', 26, top + 240);
+      ctx.fillStyle = '#f1f3f5'; ctx.fillRect(100, top + 110, 390, 70); ctx.fillStyle = '#212529'; ctx.font = '15px Courier New'; ctx.fillText('git reset --soft HEAD~1', 112, top + 152);
+      ctx.fillStyle = '#868e96'; for (let i = 0; i < 4; i++) ctx.fillRect(100, top + 200 + i * 22, 300 - i * 40, 9);
+      ctx.fillStyle = '#868e96'; ctx.font = '12px Arial'; ctx.fillText('answered by a stranger who saved your day', 100, top + 300);
+    },
+    genesis(ctx, w, h) {
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#f59f00'; ctx.font = 'bold 22px Courier New'; ctx.fillText('BLOCK #0  (genesis)', 24, 40);
+      ctx.fillStyle = '#ced4da'; ctx.font = '15px Courier New';
+      for (let i = 0; i < 7; i++) {
+        let line = '';
+        for (let j = 0; j < 16; j++) line += ((i * 31 + j * 17) % 256).toString(16).padStart(2, '0') + ' ';
+        ctx.fillText(line.trim(), 24, 80 + i * 24);
+      }
+      ctx.fillStyle = '#fff3bf'; ctx.fillRect(24, 260, 464, 70);
+      ctx.fillStyle = '#212529'; ctx.font = 'bold 14px Georgia'; ['The Times 03/Jan/2009 Chancellor on brink', 'of second bailout for banks'].forEach((line, i) => ctx.fillText(line, 36, 288 + i * 22));
+      ctx.fillStyle = '#868e96'; ctx.font = '12px Arial'; ctx.fillText('history exhibit only - no tokens, no wallets', 24, 360);
+    },
+    instagram(ctx, w, h) {
+      ctx.fillStyle = '#f8f9fa'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(106, 14, 300, 356);
+      ctx.strokeStyle = '#dee2e6'; ctx.strokeRect(106, 14, 300, 356);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 13px Arial'; ctx.fillText('kevin', 120, 36);
+      const photo = ctx.createLinearGradient(0, 50, 0, 330); photo.addColorStop(0, '#f3d9a4'); photo.addColorStop(1, '#a87f4f');
+      ctx.fillStyle = photo; ctx.fillRect(116, 48, 280, 280);
+      ctx.fillStyle = '#7a4f2a'; ctx.fillRect(260, 100, 120, 110); ctx.fillStyle = '#c92a2a'; ctx.fillRect(250, 90, 140, 20); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Arial'; ctx.fillText('TACOS', 290, 104);
+      ctx.fillStyle = '#e2b670'; ctx.beginPath(); ctx.ellipse(190, 270, 54, 34, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(160, 222, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(152, 216, 3, 0, Math.PI * 2); ctx.fill();
+      const vignette = ctx.createRadialGradient(256, 188, 60, 256, 188, 200); vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(60,30,0,0.55)');
+      ctx.fillStyle = vignette; ctx.fillRect(116, 48, 280, 280);
+      ctx.fillStyle = '#000000'; ctx.font = '12px Arial'; ctx.fillText('test  ·  filter: vintage', 120, 352);
+    },
+    gangnam(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      videoPlayer(ctx, 30, 20, 452, 250, 0.7);
+      const sky = ctx.createLinearGradient(0, 20, 0, 256); sky.addColorStop(0, '#74c0fc'); sky.addColorStop(1, '#ffe066');
+      ctx.fillStyle = sky; ctx.fillRect(30, 20, 452, 236);
+      ctx.fillStyle = '#1c1c1c'; ctx.fillRect(228, 110, 56, 100); ctx.fillStyle = '#f1c27d'; ctx.beginPath(); ctx.arc(256, 92, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1c1c1c'; ctx.fillRect(200, 130, 30, 12); ctx.fillRect(282, 130, 30, 12); ctx.fillRect(232, 210, 16, 40); ctx.fillRect(264, 210, 16, 30);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 34px Arial'; ctx.fillText('1,000,000,000 views', 40, 316);
+      ctx.fillStyle = '#868e96'; ctx.font = '14px Arial'; ctx.fillText('first video to cross one billion  ·  December 2012', 40, 346);
+    },
+    icebucket(ctx, w, h) {
+      ctx.fillStyle = '#d0ebff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#8ce99a'; ctx.fillRect(0, 290, w, 94);
+      ctx.save(); ctx.translate(250, 90); ctx.rotate(2.4);
+      ctx.fillStyle = '#adb5bd'; ctx.beginPath(); ctx.moveTo(-40, -40); ctx.lineTo(40, -40); ctx.lineTo(30, 40); ctx.lineTo(-30, 40); ctx.fill(); ctx.restore();
+      ctx.fillStyle = 'rgba(77, 171, 247, 0.75)'; ctx.beginPath(); ctx.moveTo(220, 110); ctx.quadraticCurveTo(190, 200, 210, 260); ctx.lineTo(320, 260); ctx.quadraticCurveTo(320, 180, 280, 110); ctx.fill();
+      for (let i = 0; i < 8; i++) { ctx.fillStyle = '#e7f5ff'; ctx.fillRect(210 + (i * 37) % 100, 140 + (i * 23) % 100, 14, 14); }
+      ctx.fillStyle = '#f1c27d'; ctx.beginPath(); ctx.arc(265, 210, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#495057'; ctx.fillRect(235, 234, 60, 70);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 22px Arial'; ctx.fillText('I nominate... you!', 30, 40);
+      ctx.fillStyle = '#c92a2a'; ctx.beginPath(); ctx.arc(470, 36, 10, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#000000'; ctx.font = '13px Arial'; ctx.fillText('REC', 420, 41);
+    },
+    dress(ctx, w, h) {
+      ctx.fillStyle = '#f1f3f5'; ctx.fillRect(0, 0, w, h);
+      const drawDress = (offset, body, stripe) => {
+        ctx.save(); ctx.beginPath(); ctx.rect(offset, 0, w / 2, h); ctx.clip();
+        ctx.fillStyle = body; ctx.beginPath(); ctx.moveTo(206, 50); ctx.lineTo(306, 50); ctx.lineTo(296, 140); ctx.lineTo(356, 330); ctx.lineTo(156, 330); ctx.lineTo(216, 140); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = stripe; [80, 150, 210, 270].forEach((y) => ctx.fillRect(140, y, 232, 16));
+        ctx.restore();
+      };
+      drawDress(0, '#3b5bdb', '#1b1b1b');
+      drawDress(w / 2, '#f8f0e3', '#b8913a');
+      ctx.fillStyle = '#212529'; ctx.fillRect(255, 20, 2, 330);
+      ctx.font = 'bold 20px Arial'; ctx.fillText('blue & black?', 20, 370); ctx.fillText('white & gold?', 370, 370);
+    },
+    pokemongo(ctx, w, h) {
+      ctx.fillStyle = '#212529'; ctx.fillRect(0, 0, w, h);
+      const [sx, sy, sw, sh] = phoneOutline(ctx, 256, 192, 200, 370);
+      ctx.fillStyle = '#8ce99a'; ctx.fillRect(sx, sy, sw, sh);
+      ctx.strokeStyle = '#fff3bf'; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(sx, sy + 60); ctx.lineTo(sx + sw, sy + 140); ctx.moveTo(sx + 60, sy); ctx.lineTo(sx + 100, sy + sh); ctx.stroke();
+      [[sx + 40, sy + 40, '#4dabf7'], [sx + 140, sy + 80, '#be4bdb'], [sx + 120, sy + 200, '#4dabf7']].forEach(([x, y, color]) => { ctx.fillStyle = color; ctx.fillRect(x - 4, y, 8, 22); ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(sx + sw / 2, sy + sh - 50, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ff922b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx + sw / 2, sy + sh - 50, 32, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Arial'; ctx.fillText('go outside!', 20, 40); ctx.fillText('AR + GPS', 410, 40);
+    },
+    fortnite(ctx, w, h) {
+      ctx.fillStyle = '#1864ab'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#69db7c'; ctx.beginPath(); ctx.moveTo(90, 80); ctx.lineTo(380, 50); ctx.lineTo(450, 200); ctx.lineTo(400, 330); ctx.lineTo(120, 340); ctx.lineTo(60, 200); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#d8f5a2'; ctx.fillRect(140, 140, 50, 40); ctx.fillRect(300, 220, 60, 46); ctx.fillStyle = '#c0eb75'; ctx.fillRect(220, 90, 40, 30);
+      ctx.fillStyle = 'rgba(132, 94, 247, 0.35)'; ctx.fillRect(0, 0, w, h);
+      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(260, 200, 120, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(260, 200, 120, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.moveTo(20, 360); ctx.lineTo(492, 20); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px Arial'; ctx.fillText('THE STORM IS SHRINKING', 20, 32); ctx.fillText('100 players', 380, 370);
+    },
+    amongus(ctx, w, h) {
+      ctx.fillStyle = '#0b0b1e'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#c92a2a'; ctx.font = 'bold 34px Arial'; ctx.fillText('EMERGENCY MEETING', 70, 50);
+      const players = [['#e03131', 'Red'], ['#1971c2', 'Blue'], ['#2f9e44', 'Green'], ['#f08c00', 'Orange'], ['#ae3ec9', 'Purple'], ['#fcc419', 'Yellow']];
+      players.forEach(([color, name], i) => {
+        const x = 40 + (i % 2) * 230;
+        const y = 80 + Math.floor(i / 2) * 80;
+        ctx.fillStyle = '#e9ecef'; ctx.fillRect(x, y, 210, 64);
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x + 32, y + 32, 20, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#000000'; ctx.font = 'bold 18px Arial'; ctx.fillText(name, x + 64, y + 38);
+        if (i === 2) { ctx.fillStyle = '#c92a2a'; ctx.font = 'bold 14px Arial'; ctx.fillText('VOTED x3', x + 130, y + 38); }
+      });
+      ctx.fillStyle = '#ffffff'; ctx.font = '16px Arial'; ctx.fillText('"I saw Green near the reactor..."', 110, 350);
+    },
+    wordle(ctx, w, h) {
+      ctx.fillStyle = '#121213'; ctx.fillRect(0, 0, w, h);
+      const rows = [['gray', 'yellow', 'gray', 'gray', 'green'], ['green', 'gray', 'yellow', 'gray', 'green'], ['green', 'green', 'gray', 'green', 'green'], ['green', 'green', 'green', 'green', 'green']];
+      const letters = ['CRANE', 'SPICE', 'SHORE', 'SHAPE'];
+      const palette = { gray: '#3a3a3c', yellow: '#b59f3b', green: '#538d4e' };
+      for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 5; c++) {
+          const x = 136 + c * 50;
+          const y = 30 + r * 50;
+          if (rows[r]) { ctx.fillStyle = palette[rows[r][c]]; ctx.fillRect(x, y, 44, 44); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px Arial'; ctx.fillText(letters[r][c], x + 12, y + 32); } else { ctx.strokeStyle = '#3a3a3c'; ctx.lineWidth = 2; ctx.strokeRect(x, y, 44, 44); }
+        }
+      }
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial'; ctx.fillText('Daily word  4/6', 186, 350);
+    },
+    copilot(ctx, w, h) {
+      ctx.fillStyle = '#1e1e1e'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#252526'; ctx.fillRect(0, 0, w, 30); ctx.fillStyle = '#ffffff'; ctx.font = '13px Arial'; ctx.fillText('sort.js', 16, 20);
+      ctx.font = '16px Courier New';
+      const code = [['#569cd6', 'function '], ['#dcdcaa', 'sortByStars'], ['#d4d4d4', '(repos) {']];
+      let x = 20; code.forEach(([color, text]) => { ctx.fillStyle = color; ctx.fillText(text, x, 70); x += ctx.measureText(text).width; });
+      ctx.fillStyle = 'rgba(212, 212, 212, 0.45)';
+      ['  return [...repos]', '    .sort((a, b) => b.stars - a.stars);', '}'].forEach((line, i) => ctx.fillText(line, 20, 100 + i * 28));
+      ctx.fillStyle = '#d4d4d4'; ctx.fillRect(20, 84, 2, 20);
+      ctx.fillStyle = '#2d2d30'; roundRect(ctx, 260, 230, 230, 60, 8); ctx.fill();
+      ctx.fillStyle = '#c586c0'; ctx.font = 'bold 14px Arial'; ctx.fillText('AI suggestion', 276, 254); ctx.fillStyle = '#d4d4d4'; ctx.font = '13px Arial'; ctx.fillText('Tab to accept  ·  Esc to dismiss', 276, 276);
+    },
+    chatgpt(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#f1f3f5'; roundRect(ctx, 200, 30, 290, 54, 14); ctx.fill();
+      ctx.fillStyle = '#212529'; ctx.font = '15px Arial'; ['Explain the internet to me', 'like I am five'].forEach((line, i) => ctx.fillText(line, 216, 52 + i * 20));
+      ctx.fillStyle = '#10a37f'; ctx.beginPath(); ctx.arc(40, 120, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#212529'; ['Imagine millions of computers holding', 'hands and passing notes to each other.', 'Every note has an address, so it always', 'finds the right friend...'].forEach((line, i) => ctx.fillText(line, 66, 126 + i * 24));
+      ctx.strokeStyle = '#ced4da'; roundRect(ctx, 20, 310, 472, 50, 25); ctx.stroke();
+      ctx.fillStyle = '#868e96'; ctx.fillText('Message...', 44, 341);
+      ctx.fillStyle = '#212529'; roundRect(ctx, 446, 320, 32, 32, 16); ctx.fill();
+    },
+    aol(ctx, w, h) {
+      ctx.fillStyle = '#0b3d91'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#c0c0c0'; ctx.fillRect(60, 60, w - 120, h - 120);
+      ctx.fillStyle = '#000080'; ctx.fillRect(60, 60, w - 120, 24);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial'; ctx.fillText('Welcome!', 70, 77);
+      ctx.fillStyle = '#ffd43b'; ctx.fillRect(110, 130, 120, 80); ctx.strokeStyle = '#8a6d00'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(110, 130); ctx.lineTo(170, 175); ctx.lineTo(230, 130); ctx.stroke();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 26px Arial'; ctx.fillText("You've got mail!", 250, 180);
+      ctx.font = '14px Arial'; ctx.fillText('3 new messages', 260, 210);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.fillText('ONLINE SERVICE · 1989', 120, 40);
+    },
+    modem(ctx, w, h) {
+      ctx.fillStyle = '#1b1b1f'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#d9d2c3'; ctx.fillRect(90, 200, 330, 70); ctx.fillStyle = '#b8b1a3'; ctx.fillRect(90, 260, 330, 10);
+      ['HS', 'AA', 'CD', 'OH', 'RD', 'SD', 'TR', 'MR'].forEach((led, i) => { ctx.fillStyle = i % 3 ? '#e03131' : '#51cf66'; ctx.beginPath(); ctx.arc(130 + i * 36, 225, 6, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#333'; ctx.font = '10px Arial'; ctx.fillText(led, 122 + i * 36, 248); });
+      ctx.strokeStyle = '#74c0fc'; ctx.lineWidth = 3; ctx.beginPath();
+      for (let x = 20; x < w - 20; x += 4) ctx.lineTo(x, 110 + Math.sin(x * 0.21) * 30 * Math.sin(x * 0.013) + ((x * 7) % 13) - 6);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px Courier New'; ctx.fillText('EEEE-KRRRR-BONG', 120, 50);
+      ctx.font = '16px Courier New'; ctx.fillStyle = '#adb5bd'; ctx.fillText('CONNECT 28800 · do not pick up the phone', 60, 330);
+    },
+    netscape(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Netscape Navigator', 'http://home.netscape.com/');
+      const sky = ctx.createLinearGradient(0, top, 0, top + 200); sky.addColorStop(0, '#081a4a'); sky.addColorStop(1, '#2b6cb0');
+      ctx.fillStyle = sky; ctx.fillRect(330, top + 14, 150, 150);
+      ctx.fillStyle = '#0b1f3a'; ctx.fillRect(330, top + 124, 150, 40);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 96px Times New Roman'; ctx.fillText('N', 365, top + 140);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(470, top + 24); ctx.lineTo(420, top + 70); ctx.stroke();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 24px Times New Roman'; ctx.fillText('Welcome to Netscape', 20, top + 40);
+      ctx.font = '15px Times New Roman'; ['What\'s New!', 'What\'s Cool!', 'Net Search', 'Net Directory'].forEach((link, i) => { ctx.fillStyle = '#0000ee'; ctx.fillText(link, 30, top + 80 + i * 30); });
+      ctx.fillStyle = '#555555'; ctx.fillText('Document: Done', 20, h - 14);
+    },
+    icq(ctx, w, h) {
+      ctx.fillStyle = '#f1f3f5'; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; ctx.fillStyle = i === 0 ? '#e03131' : '#40c057'; ctx.beginPath(); ctx.ellipse(130 + Math.cos(a) * 46, 170 + Math.sin(a) * 46, 30, 18, a, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#ffd43b'; ctx.beginPath(); ctx.arc(130, 170, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 44px Arial'; ctx.fillText('Uh-oh!', 250, 150);
+      ctx.font = '18px Courier New'; ctx.fillText('UIN: 123456789', 250, 200);
+      ctx.fillStyle = '#2f9e44'; ctx.fillText('Online (4)', 250, 240); ctx.fillStyle = '#c92a2a'; ctx.fillText('Away (11)', 250, 270);
+    },
+    y2k(ctx, w, h) {
+      ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ff6b6b'; ctx.font = 'bold 70px Courier New'; ctx.fillText('23:59:59', 90, 130);
+      ctx.fillStyle = '#ffd43b'; ctx.font = 'bold 40px Courier New'; ctx.fillText('31-12-99', 150, 190);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px Arial'; ctx.fillText('next: 01-01-00  =  1900 ?', 90, 260);
+      ctx.fillStyle = '#51cf66'; ctx.font = '18px Courier New'; ctx.fillText('PATCHED. NOTHING HAPPENED. YOU\'RE WELCOME.', 30, 330);
+    },
+    flash(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      const sky = ctx.createLinearGradient(0, 30, 0, 280); sky.addColorStop(0, '#ffa94d'); sky.addColorStop(1, '#ffe066');
+      ctx.fillStyle = sky; ctx.fillRect(30, 30, 452, 250);
+      ctx.fillStyle = '#5c940d'; ctx.fillRect(30, 230, 452, 50);
+      ctx.fillStyle = '#212529'; ctx.beginPath(); ctx.arc(140, 210, 20, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(132, 200, 16, 30);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(130, 120, 252, 24); ctx.fillStyle = '#e03131'; ctx.fillRect(132, 122, 248 * 0.99, 20);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Arial'; ctx.fillText('LOADING... 99%', 200, 110);
+      ctx.fillStyle = '#343a40'; ctx.fillRect(370, 290, 112, 30); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial'; ctx.fillText('SKIP INTRO >>', 378, 310);
+      ctx.fillStyle = '#495057'; ctx.font = '13px Arial'; ctx.fillText('Plugin required · right-click: About Flash Player', 30, 350);
+    },
+    orkut(ctx, w, h) {
+      const top = newBrowser(ctx, w, h, 'www.orkut.com/Profile', '#f8f0f8');
+      ctx.fillStyle = '#d6336c'; ctx.font = 'bold 34px Verdana'; ctx.fillText('orkut', 20, top + 44);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(20, top + 60, 140, 170); ctx.fillStyle = '#adb5bd'; ctx.beginPath(); ctx.arc(90, top + 120, 30, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(58, top + 152, 64, 60);
+      ctx.fillStyle = '#000000'; ctx.font = '15px Verdana'; ['scraps (128)', 'fans: 42', 'cool: ★★★', 'communities (300)'].forEach((line, i) => ctx.fillText(line, 180, top + 90 + i * 30));
+      ctx.fillStyle = '#d6336c'; ctx.font = 'bold 14px Verdana'; ctx.fillText('"I hate waking up early"', 180, top + 230);
+    },
+    chrome(ctx, w, h) {
+      ctx.fillStyle = '#dee2e6'; ctx.fillRect(0, 0, w, h);
+      ['New Tab', 'Docs', 'Maps'].forEach((tab, i) => { ctx.fillStyle = i ? '#ced4da' : '#ffffff'; ctx.beginPath(); ctx.moveTo(10 + i * 130, 40); ctx.lineTo(24 + i * 130, 10); ctx.lineTo(126 + i * 130, 10); ctx.lineTo(140 + i * 130, 40); ctx.fill(); ctx.fillStyle = '#212529'; ctx.font = '13px Arial'; ctx.fillText(tab, 40 + i * 130, 30); });
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 40, w, h - 40);
+      ctx.strokeStyle = '#adb5bd'; ctx.strokeRect(20, 52, w - 40, 28); ctx.fillStyle = '#868e96'; ctx.font = '14px Arial'; ctx.fillText('Search or type a URL', 32, 71);
+      for (let i = 0; i < 8; i++) { ctx.fillStyle = ['#ffe3e3', '#e7f5ff', '#ebfbee', '#fff9db'][i % 4]; ctx.fillRect(40 + (i % 4) * 112, 110 + Math.floor(i / 4) * 110, 100, 90); }
+      ctx.fillStyle = '#212529'; ctx.font = 'bold 14px Arial'; ctx.fillText('Most visited', 40, 102);
+    },
+    minecraft(ctx, w, h) {
+      ctx.fillStyle = '#8ec5ff'; ctx.fillRect(0, 0, w, h);
+      const s = 32;
+      for (let x = 0; x < w; x += s) {
+        const top = 200 + Math.round(Math.sin(x * 0.02) * 2) * s;
+        for (let y = top; y < h; y += s) { ctx.fillStyle = y === top ? '#5c9e31' : y < top + s * 3 ? '#8b5a2b' : '#7a7a7a'; ctx.fillRect(x, y, s - 1, s - 1); }
+      }
+      ctx.fillStyle = '#6b4423'; ctx.fillRect(320, 104, 32, 64); ctx.fillStyle = '#2f9e44'; ctx.fillRect(288, 40, 96, 64);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Courier New'; ctx.fillText('Minecraft Alpha', 14, 30);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(w - 60, 14, 16, 16);
+    },
+    nodejs(ctx, w, h) {
+      ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#3c873a'; ctx.beginPath();
+      for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; ctx.lineTo(420 + Math.cos(a) * 50, 90 + Math.sin(a) * 50); }
+      ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px Arial'; ctx.fillText('JS', 403, 100);
+      ctx.font = '18px Courier New';
+      [['#7ee787', '$ node server.js'], ['#c9d1d9', 'Server running at'], ['#79c0ff', 'http://127.0.0.1:8000/'], ['#c9d1d9', ''], ['#7ee787', '$ npm install left-pad'], ['#c9d1d9', 'added 1 package']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 24, 60 + i * 32); });
+      ctx.fillStyle = '#8b949e'; ctx.font = '14px Arial'; ctx.fillText('event loop · non-blocking I/O · 2009', 24, 350);
+    },
+    slack(ctx, w, h) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#3f0e40'; ctx.fillRect(0, 0, 150, h);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Arial'; ctx.fillText('acme-team', 14, 30);
+      ['# general', '# random', '# deploys', '# coffee'].forEach((ch, i) => { ctx.fillStyle = i === 0 ? '#1164a3' : '#3f0e40'; ctx.fillRect(0, 50 + i * 30, 150, 28); ctx.fillStyle = '#ffffff'; ctx.font = '14px Arial'; ctx.fillText(ch, 16, 69 + i * 30); });
+      [['Ana', 'shipped it'], ['Bo', 'which "it"?'], ['Ana', ':tada:'], ['Cy', 'reverting...']].forEach(([who, msg], i) => { ctx.fillStyle = '#212529'; ctx.font = 'bold 14px Arial'; ctx.fillText(who, 170, 50 + i * 60); ctx.font = '14px Arial'; ctx.fillText(msg, 170, 70 + i * 60); });
+      ctx.fillStyle = '#868e96'; ctx.font = 'italic 13px Arial'; ctx.fillText('Your manager is typing...', 170, h - 20);
+    },
+    react(ctx, w, h) {
+      ctx.fillStyle = '#20232a'; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#61dafb'; ctx.lineWidth = 6;
+      [0, Math.PI / 3, -Math.PI / 3].forEach((a) => { ctx.beginPath(); ctx.ellipse(140, 190, 110, 40, a, 0, Math.PI * 2); ctx.stroke(); });
+      ctx.fillStyle = '#61dafb'; ctx.beginPath(); ctx.arc(140, 190, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '16px Courier New';
+      [['#c678dd', 'function Hello() {'], ['#abb2bf', '  return ('], ['#e06c75', '    <h1>Hi</h1>'], ['#abb2bf', '  );'], ['#c678dd', '}']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 290, 130 + i * 28); });
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.fillText('React · 2013', 300, 60);
+    },
+    here(ctx, w, h) {
+      const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, '#1b1036'); sky.addColorStop(1, '#3b5bdb');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 6; j++) {
+          const x = 60 + i * 44 - j * 10;
+          const y = 360 - j * 22 - ((i * 7 + j * 3) % 5) * 24;
+          ctx.fillStyle = ['#845ef7', '#5c7cfa', '#22b8cf', '#f06595', '#fab005'][(i + j) % 5];
+          ctx.fillRect(x, y, 36, 360 - y);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; for (let k = y + 6; k < 360; k += 12) ctx.fillRect(x + 6, k, 24, 4);
+        }
+      }
+      ctx.fillStyle = '#ffd43b'; ctx.beginPath(); ctx.moveTo(256, 150); ctx.arc(256, 110, 30, Math.PI * 0.8, Math.PI * 2.2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#1b1036'; ctx.beginPath(); ctx.arc(256, 110, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 34px Arial'; ctx.fillText('YOU ARE HERE', 140, 50);
+    }
+  };
+
+  function artifactTexture(kind) {
+    return canvasTexture(`artifact|${kind}`, 512, 384, (ctx, w, h) => {
+      if (ARTIFACT_DRAWINGS[kind]) ARTIFACT_DRAWINGS[kind](ctx, w, h);
+      else if (['firstsite', 'irc'].includes(kind)) ctx.drawImage(historyTexture(kind).image, 0, 0, w, h);
+      else ctx.drawImage(timelineTexture(kind).image, 0, 0, w, h);
+    });
+  }
+
+  // Museum label: big year, title and a hint to inspect
+  function plaqueTexture(year, title, era) {
+    return canvasTexture(`plaque|${year}|${title}`, 512, 256, (ctx, w, h) => {
+      ctx.fillStyle = '#f8f4ea'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = ERAS[era].sign; ctx.fillRect(0, 0, 18, h);
+      ctx.fillStyle = '#1d1b26'; ctx.font = 'bold 84px Georgia, serif'; ctx.fillText(String(year === 2026 ? 'Today' : year), 44, 92);
+      ctx.font = 'bold 34px Georgia, serif';
+      const words = title.split(' ');
+      let line = '';
+      let y = 150;
+      words.forEach((word) => {
+        if (ctx.measureText(`${line} ${word}`).width > w - 70 && line) { ctx.fillText(line, 44, y); line = word; y += 40; } else line = line ? `${line} ${word}` : word;
+      });
+      ctx.fillText(line, 44, y);
+      ctx.fillStyle = '#868e96'; ctx.font = 'italic 22px Georgia, serif'; ctx.fillText(`${ERAS[era].name}  ·  press E to inspect`, 44, h - 16);
+    });
+  }
+
+  function eraSignTexture(era) {
+    return canvasTexture(`eraSign|${era}`, 1024, 192, (ctx, w, h) => {
+      const info = ERAS[era];
+      ctx.fillStyle = info.sign; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = info.accent; ctx.lineWidth = 6; ctx.strokeRect(12, 12, w - 24, h - 24);
+      ctx.fillStyle = info.accent; ctx.textAlign = 'center';
+      ctx.font = 'bold 80px Georgia, serif'; ctx.fillText(info.name.toUpperCase(), w / 2, 104);
+      ctx.fillStyle = '#ffffff'; ctx.font = '40px Georgia, serif'; ctx.fillText(info.years, w / 2, 160);
+    });
+  }
+
+  // Shared geometries / materials of the exhibits
+  const hallShared = {};
+  function hallParts() {
+    if (hallShared.picture) return hallShared;
+    hallShared.picture = new THREE.PlaneGeometry(2.76, 2.07);
+    hallShared.plaque = new THREE.PlaneGeometry(0.84, 0.42);
+    hallShared.beam = new THREE.MeshBasicMaterial({ color: '#fff1c9', transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    hallShared.dark = material('#1b1b1b', { metalness: 0.6, roughness: 0.4 });
+    hallShared.brass = material('#c9a227', { metalness: 0.8, roughness: 0.3 });
+    hallShared.plinth = material('#f1f3f5', { roughness: 0.5 });
+    hallShared.vitrine = material('#dff3ff', { transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.1 });
+    hallShared.lamp = glow('#fff3c4', 2);
+    return hallShared;
+  }
+
+  // Small 3D models shown on plinths in front of a few frames
+  function plinthModel(kind) {
+    const model = new THREE.Group();
+    if (kind === 'coffeepot') {
+      model.add(cylinder(0.16, 0.13, 0.3, material('#dbe4ff', { transparent: true, opacity: 0.55, roughness: 0.05 }), 0, 0.15, 0, 16));
+      model.add(cylinder(0.13, 0.12, 0.14, material('#3b1f0e'), 0, 0.08, 0, 16));
+      model.add(cylinder(0.17, 0.17, 0.05, material('#212529'), 0, 0.32, 0, 16));
+      model.add(box(0.04, 0.2, 0.06, material('#212529'), 0.19, 0.17, 0));
+    } else if (kind === 'laser') {
+      const body = cylinder(0.025, 0.025, 0.32, material('#343a40', { metalness: 0.7 }), 0, 0.06, 0, 10);
+      body.rotation.z = Math.PI / 2;
+      model.add(body);
+      model.add(box(0.03, 0.03, 0.03, glow('#ff6b6b', 0.4), 0.17, 0.06, 0));
+      model.add(box(0.06, 0.012, 0.04, material('#adb5bd'), -0.05, 0.088, 0));
+    } else if (kind === 'phone') {
+      const phone = box(0.16, 0.3, 0.02, material('#111111', { metalness: 0.5, roughness: 0.2 }), 0, 0.18, 0);
+      phone.rotation.x = -0.25;
+      model.add(phone);
+      const screen = mesh(new THREE.PlaneGeometry(0.14, 0.24), new THREE.MeshBasicMaterial({ map: artifactTexture('iphone') }), 0, 0.18, 0.012);
+      screen.rotation.x = -0.25;
+      model.add(screen);
+    }
+    return model;
+  }
+
+  // One exhibit against a wall: frame + museum light + lectern with the plaque.
+  // Static parts go to `decor` (merged later), unique parts to `group`.
+  function placeExhibit(group, decor, beams, artifact, x, z, rotationY, h) {
+    const [year, kind, title, info, era, model] = artifact;
+    const parts = hallParts();
+    const floor = 0.3;
+    const place = (object, lx, ly, lz) => {
+      const holder = new THREE.Group();
+      holder.position.set(x, 0, z);
+      holder.rotation.y = rotationY;
+      object.position.set(lx, ly, lz);
+      holder.add(object);
+      return holder;
+    };
+    const frameMaterial = material(ERAS[era].frame, { metalness: era === 'dotcom' ? 0.7 : 0.2, roughness: 0.4 });
+    decor.add(place(box(3.0, 2.3, 0.1, frameMaterial, 0, 0, 0), 0, floor + 2.35, 0.05));
+    decor.add(place(box(0.28, 0.24, 0.42, parts.dark, 0, 0, 0), 0, h - 0.45, 1.7));
+    decor.add(place(box(0.06, 0.3, 0.06, parts.dark, 0, 0, 0), 0, h - 0.2, 1.7));
+    decor.add(place(box(0.1, 0.95, 0.1, parts.dark, 0, 0, 0), 0, floor + 0.47, 1.05));
+    const top = box(0.95, 0.04, 0.52, parts.dark, 0, 0, 0);
+    top.rotation.x = 0.6;
+    decor.add(place(top, 0, floor + 0.98, 1.05));
+    // Fake museum light: a soft additive cone from the ceiling spot to the frame
+    const apex = new THREE.Vector3(0, h - 0.55, 1.7);
+    const target = new THREE.Vector3(0, floor + 2.1, 0);
+    const length = apex.distanceTo(target) + 0.4;
+    const cone = mesh(new THREE.ConeGeometry(1.5, length, 20, 1, true), parts.beam);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), target.clone().sub(apex).normalize());
+    beams.add(place(cone, (apex.x + target.x) / 2, (apex.y + target.y) / 2 - 0.2, (apex.z + target.z) / 2));
+    const unique = new THREE.Group();
+    unique.position.set(x, 0, z);
+    unique.rotation.y = rotationY;
+    unique.add(mesh(hallShared.picture, new THREE.MeshBasicMaterial({ map: artifactTexture(kind) }), 0, floor + 2.35, 0.115));
+    const plaque = mesh(hallShared.plaque, new THREE.MeshBasicMaterial({ map: plaqueTexture(year, title, era) }), 0, floor + 1.0, 1.06);
+    plaque.rotation.x = -0.97;
+    plaque.position.y += 0.03;
+    unique.add(plaque);
+    if (model) {
+      decor.add(place(box(0.8, 1.05, 0.8, parts.plinth, 0, 0, 0), 1.25, floor + 0.52, 0.9));
+      const glass = box(0.7, 0.6, 0.7, parts.vitrine, 1.25, floor + 1.35, 0.9);
+      glass.castShadow = false;
+      unique.add(glass);
+      const object = plinthModel(model);
+      object.position.set(1.25, floor + 1.05, 0.9);
+      unique.add(object);
+    }
+    // The E anchor sits at the lectern, at reach from the aisle
+    const anchor = new THREE.Object3D();
+    anchor.position.set(0, floor + 1, 1.3);
+    anchor.userData = { label: `${year === 2026 ? 'Today' : year} · ${title}`, info };
+    unique.add(PropKit.kit.interactive(anchor, 'inspect', title));
+    group.add(unique);
+  }
+
+  // Era arch spanning an aisle between two walls (z1 < z2), sign readable from both sides
+  function eraArch(group, decor, x, z1, z2, h, era) {
+    const width = z2 - z1;
+    const stone = material(ERAS[era].sign, { roughness: 0.6 });
+    [z1 + 0.3, z2 - 0.3].forEach((z) => decor.add(box(0.6, h - 0.3, 0.6, stone, x, 0.3 + (h - 0.3) / 2, z)));
+    decor.add(box(0.6, 0.6, width, stone, x, h - 0.6, (z1 + z2) / 2));
+    const sign = new THREE.MeshBasicMaterial({ map: eraSignTexture(era) });
+    [-1, 1].forEach((side) => {
+      const plane = mesh(new THREE.PlaneGeometry(Math.min(width - 1.6, 6), Math.min(width - 1.6, 6) * 0.1875), sign, x + side * 0.31, h - 1.35, (z1 + z2) / 2);
+      plane.rotation.y = side * Math.PI / 2;
+      group.add(plane);
+    });
+    const line = box(0.12, 0.02, width - 0.8, glow(ERAS[era].accent, 1.2), x, 0.31, (z1 + z2) / 2);
+    line.raycast = () => {};
+    group.add(line);
+  }
+
+  // Merge static parts by material; light cones never cast shadows or block
+  function finishHall(group, decor, beams) {
+    group.add(PropKit.kit.mergeByMaterial(decor));
+    const mergedBeams = PropKit.kit.mergeByMaterial(beams);
+    mergedBeams.traverse((node) => { if (node.isMesh) { node.castShadow = false; node.receiveShadow = false; node.raycast = () => {}; node.renderOrder = 2; } });
+    group.add(mergedBeams);
+  }
+
+  function hallSurfaces(w, d) {
+    return {
+      wall: new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.stuccoTexture('#efe6d6'), Math.round(w / 4), 2), roughness: 0.85, side: THREE.DoubleSide }),
+      floor: new THREE.MeshStandardMaterial({ map: PropKit.kit.repeated(PropKit.kit.plankTexture('#4a2f1b'), Math.round(w / 3), Math.round(d / 3)), roughness: 0.45, metalness: 0.05, side: THREE.DoubleSide }),
+      ceiling: material('#1d1712', { roughness: 0.9, side: THREE.DoubleSide })
+    };
+  }
+
+  // Cheap decorative visitors (no AI): instanced legs, bodies and heads.
+  // spots: [x, z, floorY, rotationY]. Shared by plaza.js and gigplaza.js.
+  const VISITOR_COLORS = ['#1971c2', '#e8590c', '#2f9e44', '#ae3ec9', '#c92a2a', '#f08c00', '#0ca678', '#495057', '#d6336c'];
+  const SKIN = ['#f1c27d', '#c68642', '#8d5524', '#e0ac69', '#ffdbac'];
+  function visitorFigures(group, spots) {
+    const count = spots.length;
+    if (!count) return;
+    const legs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 0.85, 0.2), new THREE.MeshStandardMaterial({ color: '#2b2f3a', roughness: 0.8 }), count);
+    const bodies = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.25, 0.68, 10), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.7 }), count);
+    const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 }), count);
+    const matrix = new THREE.Matrix4();
+    const rotation = new THREE.Quaternion();
+    const one = new THREE.Vector3(1, 1, 1);
+    const color = new THREE.Color();
+    spots.forEach(([x, z, y, angle], i) => {
+      rotation.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle || 0);
+      const base = (y || 0) + 0.3;
+      legs.setMatrixAt(i, matrix.compose(new THREE.Vector3(x, base + 0.43, z), rotation, one));
+      bodies.setMatrixAt(i, matrix.compose(new THREE.Vector3(x, base + 1.2, z), rotation, one));
+      heads.setMatrixAt(i, matrix.compose(new THREE.Vector3(x, base + 1.68, z), rotation, one));
+      bodies.setColorAt(i, color.set(VISITOR_COLORS[i % VISITOR_COLORS.length]));
+      heads.setColorAt(i, color.set(SKIN[(i * 3) % SKIN.length]));
+    });
+    [legs, bodies, heads].forEach((part) => { part.raycast = () => {}; part.castShadow = false; group.add(part); });
+  }
+  window.MuseumVisitors = visitorFigures;
+
+  // Floor timeline on an arc: a ring strip whose texture runs along the angle
+  function timelineArc(group, key, entries, thetaStart, thetaLength, radius) {
+    const width = 1.4;
+    const length = thetaLength * radius;
+    const texture = canvasTexture(`timelineArc|${key}`, 1024, 64, (ctx, w, h) => {
+      ctx.fillStyle = '#16120e'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#c9a227'; ctx.fillRect(0, h / 2 - 1, w, 2); ctx.fillRect(0, 2, w, 2); ctx.fillRect(0, h - 4, w, 2);
+      // Pixels are stretched along the strip: squeeze text to compensate
+      const squeeze = (width / h) / (length / w);
+      entries.forEach(({ angle, text, color, font }) => {
+        const px = ((angle - thetaStart) / thetaLength) * w;
+        ctx.save(); ctx.translate(px, h / 2); ctx.scale(squeeze, 1);
+        ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillStyle = '#16120e'; ctx.fillRect(-textWidth / 2 - 6, -18, textWidth + 12, 36);
+        ctx.fillStyle = color; ctx.fillText(text, 0, 2); ctx.restore();
+      });
+    });
+    const segments = 64;
+    // RingGeometry angle phi = theta - PI/2 once laid flat (rotation.x = -PI/2)
+    const geometry = new THREE.RingGeometry(radius - width / 2, radius + width / 2, segments, 1, thetaStart - Math.PI / 2, thetaLength);
+    const uv = geometry.attributes.uv;
+    for (let j = 0; j <= 1; j++) for (let i = 0; i <= segments; i++) uv.setXY(j * (segments + 1) + i, i / segments, j);
+    uv.needsUpdate = true;
+    const strip = mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }), 0, 0.32, 0);
+    strip.rotation.x = -Math.PI / 2;
+    strip.castShadow = false;
+    strip.raycast = () => {};
+    group.add(strip);
+  }
+
+  // Themed side alcoves off the ring (local frame: x across, z outward,
+  // statics go to `still` (merged), interactive parts to `live`)
+  function buildAlcove(still, live, door, start, length, height, wallMaterial) {
+    const end = start + length + 0.4;
+    still.add(box(door.width + 0.6, height, 0.3, wallMaterial, 0, height / 2, end - 0.15));
+    const screen = (kind, w, h, x, y, z, rotationY = Math.PI) => {
+      const plane = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: artifactTexture(kind) }), x, y, z);
+      plane.rotation.y = rotationY;
+      live.add(plane);
+    };
+    const back = end - 0.3;
+    const info = (text, title) => {
+      const anchor = new THREE.Object3D();
+      anchor.position.set(0, 1.2, start + 1.2);
+      anchor.userData = { label: title, info: text };
+      live.add(PropKit.kit.interactive(anchor, 'inspect', title));
+    };
+    if (door.alcove === 'dialup') {
+      still.add(box(2.6, 0.08, 1.0, material('#8a5a33'), 0, 1.05, back - 0.6));
+      [-1.2, 1.2].forEach((x) => still.add(box(0.08, 0.75, 0.9, material('#5d4037'), x, 0.67, back - 0.6)));
+      still.add(box(0.9, 0.75, 0.75, material('#d9d2c3'), 0, 1.47, back - 0.6));
+      screen('aol', 0.7, 0.52, 0, 1.5, back - 0.98);
+      still.add(box(0.5, 0.12, 0.3, material('#d9d2c3'), 0.9, 1.15, back - 0.8));
+      still.add(box(0.45, 0.9, 0.5, material('#d9d2c3'), -1.0, 1.55, back - 0.6));
+      screen('modem', 2.4, 1.8, 0, 3.0, back - 0.02);
+      const chair = new THREE.Group();
+      chair.add(box(0.55, 0.08, 0.55, material('#343a40'), 0, 0.75, 0));
+      chair.add(box(0.55, 0.6, 0.06, material('#343a40'), 0, 1.08, -0.25));
+      chair.position.set(0, 0, back - 1.7);
+      live.add(PropKit.kit.interactive(chair, 'sit', 'Computer chair'));
+      info('A beige PC, a CRT and a modem that sang before every session. Bonus points if someone picked up the phone mid-download.', 'Dial-up Corner');
+    } else if (door.alcove === 'flash') {
+      ['#e64980', '#4dabf7'].forEach((color, i) => {
+        const cabinet = new THREE.Group();
+        cabinet.add(box(0.9, 1.9, 0.8, material(color, { roughness: 0.5 }), 0, 0.95, 0));
+        const plane = mesh(new THREE.PlaneGeometry(0.7, 0.52), new THREE.MeshBasicMaterial({ map: artifactTexture('flash') }), 0, 1.45, 0.41);
+        cabinet.add(plane);
+        cabinet.add(box(0.9, 0.25, 0.82, glow(color, 1.4), 0, 2.0, 0));
+        cabinet.position.set(i ? 1.4 : -1.4, 0.3, back - 0.6);
+        cabinet.rotation.y = Math.PI;
+        live.add(PropKit.kit.interactive(cabinet, 'arcade', 'Flash Games Arcade'));
+      });
+      screen('flash', 2.4, 1.8, 0, 3.0, back - 0.02);
+      info('Browser games that loaded between classes. Press E at a cabinet to play.', 'Flash Games Arcade');
+    } else if (door.alcove === 'browsers') {
+      [['netscape', -2], ['mosaic', 0], ['chrome', 2]].forEach(([kind, x]) => {
+        still.add(box(1.9, 1.5, 0.1, material('#212529'), x, 2.2, back - 0.05));
+        screen(kind, 1.8, 1.35, x, 2.2, back - 0.11);
+        still.add(box(0.8, 1.0, 0.8, material('#f1f3f5'), x, 0.8, back - 1.2));
+      });
+      info('Netscape, Internet Explorer, Firefox, Chrome: every few years a new browser promised the web would finally render the same everywhere.', 'Browser Wars');
+    } else if (door.alcove === 'chat') {
+      ['#ff922b', '#845ef7'].forEach((color, i) => {
+        const bag = sphere(0.55, material(color, { roughness: 1 }), 0, 0.55, 0, 12);
+        bag.scale.y = 0.65;
+        const seat = new THREE.Group();
+        seat.add(bag);
+        seat.position.set(i ? 1.3 : -1.3, 0.3, back - 1.8);
+        live.add(PropKit.kit.interactive(seat, 'sit', 'Beanbag'));
+      });
+      screen('icq', 1.8, 1.35, -1.2, 2.2, back - 0.02);
+      screen('msn', 1.8, 1.35, 1.2, 2.2, back - 0.02);
+      info('Buddy lists, away messages and the sound of someone coming online. Chat rooms were the first social networks.', 'Chat Room Nostalgia');
+    }
+    const title = { dialup: 'Dial-up Corner', flash: 'Flash Games Arcade', browsers: 'Browser Wars', chat: 'Chat Room Nostalgia' }[door.alcove];
+    if (title) {
+      const sign = textSprite(title, { width: 4, background: 'rgba(36, 22, 74, 0.92)' });
+      sign.position.set(0, height - 0.6, end - 1.2);
+      live.add(sign);
+    }
+    still.add(box(door.width - 0.4, 0.06, 0.4, glow('#ffd8a8', 1.2), 0, height - 0.05, end - 1.5));
+  }
+
   Object.assign(builders, {
-    // Long, wide museum corridor: red carpet, lit frames with the early internet & software
-    historyCorridor(group, { w, h, d, label }) {
-      const length = w;
-      const width = d;
-      const wall = material('#f1e6d2', { roughness: 0.8 });
-      const wood = material('#5d3a1a', { roughness: 0.6 });
-      group.add(box(length, 0.3, width, material('#3a2416'), 0, 0.15, 0));
-      group.add(box(length, 0.05, width * 0.55, material('#b3001b', { roughness: 1 }), 0, 0.32, 0));
-      [-1, 1].forEach((side) => group.add(box(length, 0.06, 0.18, material('#d4a017', { metalness: 0.8, roughness: 0.3 }), 0, 0.34, side * width * 0.28)));
+    // ONE ring corridor around the Underground Lounge (same center), entered
+    // from the lounge through a portal (data.portal, degrees; 90 = +x). The 43
+    // artifacts run clockwise from 1969 next to the portal all the way around
+    // to "You are here" on the other side of it. Outer doors (data.doors) get
+    // short vestibules: the Minimal Art Gallery link and the Gig Plaza tunnel.
+    // Fully enclosed: floor, ceiling, both walls; plus a dark rock shell around
+    // the whole underground so no gap can ever show the city or the sky.
+    historyRing(group, { w, h, label, data }) {
+      const outerR = w / 2;
+      const innerR = (data && data.inner) || 26.25;
+      const midR = (innerR + outerR) / 2;
+      const deg = Math.PI / 180;
+      const portal = ((data && data.portal) || 90) * deg;
+      const portalWidth = 6;
+      const doors = ((data && data.doors) || []).map((door) => ({ ...door, theta: door.angle * deg }));
+      const surfaces = hallSurfaces(outerR * 2, outerR * 2);
+      const decor = new THREE.Group();
+      const beams = new THREE.Group();
+      const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
+      // Floor and ceiling rings
+      const floor = mesh(new THREE.RingGeometry(innerR - 0.3, outerR + 0.2, 128, 1), surfaces.floor, 0, 0.3, 0);
+      floor.rotation.x = -Math.PI / 2;
+      group.add(floor);
+      const ceiling = mesh(new THREE.RingGeometry(innerR - 0.3, outerR + 0.2, 128, 1), surfaces.ceiling, 0, h, 0);
+      ceiling.rotation.x = -Math.PI / 2;
+      group.add(ceiling);
+      const lightRing = mesh(new THREE.RingGeometry(midR - 0.25, midR + 0.25, 128, 1), glow('#fff3c4', 1.1, { side: THREE.DoubleSide }), 0, h - 0.03, 0);
+      lightRing.rotation.x = -Math.PI / 2;
+      lightRing.raycast = () => {};
+      group.add(lightRing);
+      // Curved walls with gaps; lintels above every gap
+      const curvedWall = (radius, gaps, doorHeight) => {
+        const sorted = gaps.slice().sort((a, b) => a.start - b.start);
+        let cursor = sorted.length ? sorted[sorted.length - 1].start + sorted[sorted.length - 1].length - Math.PI * 2 : 0;
+        const pieces = [];
+        sorted.forEach((gap) => { pieces.push([cursor, gap.start - cursor]); cursor = gap.start + gap.length; });
+        if (!sorted.length) pieces.push([0, Math.PI * 2]);
+        pieces.forEach(([start, length]) => { if (length > 0.001) group.add(mesh(new THREE.CylinderGeometry(radius, radius, h, Math.max(8, Math.round(length * 40)), 1, true, start, length), surfaces.wall, 0, h / 2, 0)); });
+        sorted.forEach((gap) => {
+          const top = gap.height || doorHeight;
+          group.add(mesh(new THREE.CylinderGeometry(radius, radius, h - top, 8, 1, true, gap.start, gap.length), surfaces.wall, 0, top + (h - top) / 2, 0));
+        });
+      };
+      const portalHalf = Math.asin(portalWidth / 2 / innerR);
+      curvedWall(innerR, [{ start: portal - portalHalf, length: portalHalf * 2, height: 5.4 }], 5.4);
+      curvedWall(outerR, doors.map((door) => {
+        const half = Math.asin(door.width / 2 / outerR);
+        return { start: door.theta - half, length: half * 2, height: door.height };
+      }), 4.6);
+      // Skirting and picture rail along both walls
+      [innerR + 0.05, outerR - 0.05].forEach((radius) => {
+        decor.add(mesh(new THREE.CylinderGeometry(radius, radius, 0.25, 128, 1, true), hallParts().dark, 0, 0.42, 0));
+        decor.add(mesh(new THREE.CylinderGeometry(radius, radius, 0.06, 128, 1, true), hallParts().brass, 0, h - 1.4, 0));
+      });
+      // Portal frame (both faces) with title signs
+      const portalTitle = labelTexture(`${label || 'Hall of Internet History'} · 1969 to today`, { bg: '#3a2416', fg: '#ffe8a3', width: 1024, height: 160, font: 'bold 56px Georgia, serif' });
       [-1, 1].forEach((side) => {
-        group.add(box(length, h, 0.4, wall, 0, h / 2, side * (width / 2)));
-        group.add(box(length, 0.5, 0.5, wood, 0, 0.25, side * (width / 2 - 0.3)));
+        const [x, z] = toXZ(portal + side * portalHalf, innerR);
+        decor.add(box(0.7, 5.6, 0.7, material('#3a2416'), x, 2.8, z));
       });
-      // End wall with a doorway into the art gallery
-      const door = 4.4;
-      [-1, 1].forEach((side) => group.add(box(0.4, h, (width - door) / 2, wall, length / 2, h / 2, side * (width + door) / 4)));
-      group.add(box(0.4, h - 4.6, door, wall, length / 2, 4.6 + (h - 4.6) / 2, 0));
-      group.add(box(length, 0.3, width, material('#2b1d14'), 0, h + 0.15, 0));
-      // Ceiling light strip
-      group.add(box(length * 0.95, 0.08, 0.6, glow('#fff3c4', 1.2), 0, h - 0.05, 0));
-      const perSide = Math.ceil(HISTORY.length / 2);
-      const spacing = (length - 8) / perSide;
-      HISTORY.forEach(([kind, title, info], index) => {
-        const side = index % 2 ? 1 : -1;
-        const x = -length / 2 + 6 + Math.floor(index / 2) * spacing;
-        const z = side * (width / 2 - 0.25);
-        const frame = new THREE.Group();
-        frame.add(box(4.6, 3.6, 0.2, material('#d4a017', { metalness: 0.7, roughness: 0.3 }), 0, 0, 0));
-        frame.add(box(4.2, 3.2, 0.05, new THREE.MeshBasicMaterial({ map: historyTexture(kind) }), 0, 0, 0.12));
-        frame.add(facedBox(3.4, 0.7, 0.05, material('#2b1d14'), new THREE.MeshBasicMaterial({ map: labelTexture(title, { bg: '#2b1d14', fg: '#ffe8a3', width: 512, height: 100, font: 'bold 34px Georgia, serif' }) }), 0, -2.4, 0.1));
-        // Picture light above each frame
-        frame.add(box(2.4, 0.12, 0.4, material('#1b1b1b', { metalness: 0.6 }), 0, 2.2, 0.35));
-        frame.add(box(2.2, 0.04, 0.3, glow('#fff3c4', 2), 0, 2.13, 0.4));
-        frame.position.set(x, h * 0.48, z);
-        frame.rotation.y = side > 0 ? Math.PI : 0;
-        frame.userData = { label: title, info };
-        group.add(PropKit.kit.interactive(frame, 'inspect', title));
-        // Velvet rope stanchions in front of every frame
-        [-1.6, 1.6].forEach((dx) => group.add(cylinder(0.08, 0.12, 1, material('#d4a017', { metalness: 0.8 }), x + dx, 0.8, z - side * 1.4, 8)));
-        const rope = cylinder(0.05, 0.05, 3.2, material('#8b0000'), x, 1.15, z - side * 1.4, 6);
-        rope.rotation.z = Math.PI / 2;
-        group.add(rope);
+      [[innerR + 0.08, portal], [innerR - 0.3, portal + Math.PI]].forEach(([radius, facing]) => {
+        const [x, z] = toXZ(portal, radius);
+        const sign = mesh(new THREE.PlaneGeometry(6.4, 1.0), new THREE.MeshBasicMaterial({ map: portalTitle }), x, 5.95, z);
+        sign.rotation.y = facing;
+        group.add(sign);
       });
-      const title = textSprite(label || 'Hall of Internet History', { width: 10, background: 'rgba(179, 0, 27, 0.9)' });
-      title.position.set(-length / 2 + 3, h - 1, 0);
-      group.add(title);
+      // Vestibules behind the outer doors, ending where the next block starts
+      doors.forEach((door) => {
+        const holder = new THREE.Group();
+        holder.rotation.y = door.theta;
+        const length = door.length || 4;
+        const doorHeight = door.height || 4.6;
+        const start = outerR - 0.4;
+        holder.add(box(door.width + 0.6, 0.3, length + 0.4, surfaces.floor, 0, 0.15, start + (length + 0.4) / 2));
+        holder.add(box(door.width + 0.6, 0.3, length + 0.4, surfaces.ceiling, 0, doorHeight + 0.15, start + (length + 0.4) / 2));
+        [-1, 1].forEach((side) => holder.add(box(0.3, doorHeight, length + 0.4, surfaces.wall, side * (door.width / 2 + 0.15), doorHeight / 2, start + (length + 0.4) / 2)));
+        holder.add(box(door.width, 0.06, 0.4, glow('#fff3c4', 1), 0, doorHeight - 0.05, start + length / 2));
+        decor.add(holder);
+        const sign = new THREE.Group();
+        sign.rotation.y = door.theta;
+        const plane = mesh(new THREE.PlaneGeometry(4.6, 0.8), new THREE.MeshBasicMaterial({ map: labelTexture(door.label || 'Exit', { bg: '#111111', fg: '#ff9f1c', width: 512, height: 90, font: 'bold 40px Arial' }) }), 0, doorHeight + 0.6, outerR - 0.12);
+        plane.rotation.y = Math.PI;
+        sign.add(plane);
+        group.add(sign);
+        if (door.alcove) buildAlcove(holder, sign, door, start, length, doorHeight, surfaces.wall);
+      });
+      // Exhibits: clockwise from the portal, alternating outer / inner wall
+      const items = ARTIFACTS;
+      const clear = 0.22;
+      const gap = 2.8 / midR;
+      const eraChanges = items.filter((item, i) => i > 0 && item[4] !== items[i - 1][4]).length;
+      const step = (Math.PI * 2 - clear * 2 - gap * eraChanges) / (items.length - 1);
+      const doorClear = (theta, radius, width) => doors.some((door) => Math.abs(Math.atan2(Math.sin(theta - door.theta), Math.cos(theta - door.theta))) * radius < door.width / 2 + 1.8 + (width || 0));
+      let theta = portal + clear;
+      const yearEntries = [];
+      items.forEach((artifact, i) => {
+        if (i > 0) {
+          if (artifact[4] !== items[i - 1][4]) {
+            const archTheta = theta + (step + gap) / 2;
+            const live = new THREE.Group();
+            const still = new THREE.Group();
+            [live, still].forEach((holder) => { holder.rotation.y = archTheta; });
+            eraArch(live, still, 0, innerR + 0.25, outerR - 0.25, h, artifact[4]);
+            group.add(live);
+            decor.add(still);
+            yearEntries.push({ angle: archTheta, text: ERAS[artifact[4]].name.toUpperCase(), color: ERAS[artifact[4]].accent, font: 'bold 22px Arial' });
+            theta += gap;
+          }
+          theta += step;
+        }
+        let onOuter = i % 2 === 0;
+        if (onOuter && doorClear(theta, outerR)) onOuter = false;
+        const radius = onOuter ? outerR - 0.02 : innerR + 0.05;
+        const [x, z] = toXZ(theta, radius);
+        placeExhibit(group, decor, beams, artifact, x, z, onOuter ? theta + Math.PI : theta, h);
+        yearEntries.push({ angle: theta, text: artifact[0] === 2026 ? 'TODAY' : String(artifact[0]), color: '#ffe8a3', font: 'bold 34px Georgia, serif' });
+      });
+      // First arch right after the portal; start / end markers
+      {
+        const live = new THREE.Group();
+        const still = new THREE.Group();
+        [live, still].forEach((holder) => { holder.rotation.y = portal + clear * 0.55; });
+        eraArch(live, still, 0, innerR + 0.25, outerR - 0.25, h, 'early');
+        group.add(live);
+        decor.add(still);
+      }
+      yearEntries.push({ angle: portal + 0.06, text: 'START  >>', color: '#8ce99a', font: 'bold 26px Arial' });
+      yearEntries.push({ angle: portal + Math.PI * 2 - 0.06, text: '<< END', color: '#ff8fab', font: 'bold 26px Arial' });
+      for (let k = 0; k < 4; k++) {
+        const start = portal + k * Math.PI / 2;
+        const end = start + Math.PI / 2;
+        timelineArc(group, `ring${k}`, yearEntries.filter((entry) => entry.angle >= start - 0.02 && entry.angle < end + 0.02), start, Math.PI / 2, midR);
+      }
+      // No decorative visitor figures in the underground (only real players)
+      // Dark rock shell around the whole underground (decorative, never blocks):
+      // whatever the camera sees through a gap is rock, never the city or sky
+      const shellCenter = new THREE.Vector3(...((data && data.shellCenter) || [62, 12, -22]));
+      const shell = new THREE.Mesh(new THREE.BoxGeometry(192, 25, 192), new THREE.MeshBasicMaterial({ color: '#0d0a08', side: THREE.BackSide }));
+      shell.position.copy(shellCenter);
+      shell.raycast = () => {};
+      shell.castShadow = false;
+      shell.receiveShadow = false;
+      shell.frustumCulled = false;
+      group.add(shell);
+      finishHall(group, decor, beams);
+    },
+
+    // Promenade from the ring to the Minimal Art Gallery (along +x, open at
+    // both ends: the ring vestibule on the west, the gallery door on the east)
+    galleryLink(group, { w, h, d, label }) {
+      const surfaces = hallSurfaces(w, d);
+      const decor = new THREE.Group();
+      decor.add(box(w, 0.3, d, surfaces.floor, 0, 0.15, 0));
+      decor.add(box(w, 0.3, d, surfaces.ceiling, 0, h + 0.15, 0));
+      [-1, 1].forEach((side) => decor.add(box(w, h, 0.3, surfaces.wall, 0, h / 2, side * (d / 2 - 0.15))));
+      const strip = box(w - 1, 0.06, 0.5, glow('#fff3c4', 1), 0, h - 0.03, 0);
+      strip.raycast = () => {};
+      group.add(strip);
+      const runner = mesh(new THREE.PlaneGeometry(w, 1.6), material('#2b2b2b', { roughness: 0.9 }), 0, 0.31, 0);
+      runner.rotation.x = -Math.PI / 2;
+      runner.castShadow = false;
+      group.add(runner);
+      // Generative posters (drawn in code) on both walls
+      for (let i = 0; i < 8; i++) {
+        const side = i % 2 ? 1 : -1;
+        const x = -w / 2 + 5 + Math.floor(i / 2) * ((w - 10) / 3);
+        const poster = canvasTexture(`linkPoster|${i}`, 256, 320, (ctx, cw, ch) => {
+          const hue = (i * 47) % 360;
+          ctx.fillStyle = `hsl(${hue}, 30%, 92%)`; ctx.fillRect(0, 0, cw, ch);
+          for (let k = 0; k < 12; k++) {
+            ctx.fillStyle = `hsla(${(hue + k * 25) % 360}, 70%, ${40 + (k % 3) * 12}%, 0.8)`;
+            if (i % 3 === 0) { ctx.beginPath(); ctx.arc(cw / 2, ch / 2 - 20, 110 - k * 9, 0, Math.PI * 2); ctx.fill(); }
+            else if (i % 3 === 1) ctx.fillRect(20 + k * 18, 40 + (k % 4) * 30, 14, 180);
+            else { ctx.beginPath(); ctx.moveTo(0, 60 + k * 18); ctx.bezierCurveTo(80, k * 22, 170, 120 + k * 10, cw, 50 + k * 16); ctx.lineWidth = 6; ctx.strokeStyle = ctx.fillStyle; ctx.stroke(); }
+          }
+          ctx.fillStyle = '#222222'; ctx.font = 'bold 18px Arial'; ctx.fillText(`STUDY No.${i + 1}`, 20, ch - 20);
+        });
+        decor.add(box(2.2, 2.7, 0.08, material('#111111'), x, 2.3, side * (d / 2 - 0.34)));
+        const art = mesh(new THREE.PlaneGeometry(2, 2.5), new THREE.MeshBasicMaterial({ map: poster }), x, 2.3, side * (d / 2 - 0.39));
+        art.rotation.y = side > 0 ? Math.PI : 0;
+        group.add(art);
+      }
+      // Benches and plants
+      [-12, 4, 18].forEach((x) => {
+        const bench = new THREE.Group();
+        bench.add(box(2.4, 0.1, 0.6, material('#6b4423'), 0, 0.75, 0));
+        [-1, 1].forEach((s) => bench.add(box(0.1, 0.45, 0.5, hallParts().dark, s * 1.05, 0.52, 0)));
+        bench.position.set(x, 0, 1.6);
+        group.add(PropKit.kit.interactive(bench, 'sit', 'Bench'));
+      });
+      [-20, -4, 11].forEach((x) => {
+        decor.add(cylinder(0.4, 0.32, 0.7, material('#d9cbb3'), x, 0.65, -2, 12));
+        decor.add(sphere(0.7, material('#2f9e44', { flatShading: true }), x, 1.5, -2, 8));
+      });
+      const sign = textSprite(label || 'Minimal Art Gallery  >>', { width: 7, background: 'rgba(40, 40, 40, 0.9)' });
+      sign.position.set(-w / 2 + 4, h - 0.9, 0);
+      group.add(sign);
+      group.add(PropKit.kit.mergeByMaterial(decor));
     }
   });
 
@@ -746,7 +1837,8 @@
     [/software_wall/, 'softwareWall'],
     [/ball_mouse/, 'ballMouse'],
     [/museum_entrance/, 'museumHall'],
-    [/history_corridor/, 'historyCorridor'],
+    [/history_ring/, 'historyRing'],
+    [/gallery_link/, 'galleryLink'],
     [/minimal_gallery/, 'minimalGallery'],
     [/timeline_hall/, 'timelineHall']
   ];

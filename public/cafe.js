@@ -17,7 +17,7 @@ const Cafe = (() => {
     overlay.id = 'cafe-overlay';
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `<div class="modal-box panel cafe-box">
-        <header><b>☕ Underground Cafe · Menu</b><span id="cafe-wallet"></span><button type="button" id="cafe-close" aria-label="Close">&times;</button></header>
+        <header><b>Underground Cafe · Menu</b><span id="cafe-wallet"></span><button type="button" id="cafe-close" aria-label="Close">&times;</button></header>
         <p class="cafe-intro">Every dish is a package of code or tools: it is served on the counter and opens in Codify. Paid with Multiverse Coins (in-game only).</p>
         <div id="cafe-sections"></div>
       </div>`;
@@ -35,7 +35,7 @@ const Cafe = (() => {
       section.items.forEach((item) => {
         const card = document.createElement('article');
         card.className = 'cafe-item';
-        card.innerHTML = `<div><b>${item.name}</b><p>${item.description}</p><small>📦 ${item.package}</small></div>`;
+        card.innerHTML = `<div><b>${item.name}</b><p>${item.description}</p><small>${item.package}</small></div>`;
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = `${item.price} MVC`;
@@ -50,7 +50,7 @@ const Cafe = (() => {
   function open() {
     if (!menu) return;
     hooks.releaseKeys();
-    overlay.querySelector('#cafe-wallet').textContent = `🪙 ${hooks.wallet()} MVC`;
+    overlay.querySelector('#cafe-wallet').textContent = `${hooks.wallet()} MVC`;
     render();
     overlay.style.display = 'flex';
   }
@@ -109,7 +109,7 @@ const Cafe = (() => {
     dish.traverse((node) => { node.raycast = () => {}; });
     hooks.scene.add(dish);
     served.push({ dish, until: performance.now() + 60000 });
-    hooks.system(`🍽️ Served: ${item.name}. ${item.package}`);
+    hooks.system(`Served: ${item.name}. ${item.package}`);
     if (item.buff) hooks.buff(item.buff, item.buffSeconds || 30);
     hooks.emote('coffee');
     Codify.loadTemplate(item.name, item.language, item.template);
@@ -126,7 +126,7 @@ const Cafe = (() => {
     document.body.appendChild(link);
     link.click();
     setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
-    hooks.system(`📦 ${link.download} downloaded to your computer. It is also in Codify → My packages.`);
+    hooks.system(`${link.download} downloaded to your computer. It is also in Codify → My packages.`);
   }
 
   function itemById(id) {
@@ -142,7 +142,7 @@ const Cafe = (() => {
     const list = document.getElementById('codify-packages');
     if (!list) return;
     const items = ids.map(itemById).filter(Boolean);
-    list.innerHTML = items.length ? '<h4>📦 My packages</h4>' : '';
+    list.innerHTML = items.length ? '<h4>My packages</h4>' : '';
     items.forEach((item) => {
       const row = document.createElement('div');
       row.className = 'codify-package';

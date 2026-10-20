@@ -3,6 +3,14 @@ const app = express();
 const fs = require('fs');
 const crypto = require('crypto');
 const TechFeeds = require('./feeds');
+// Optional .env file (KEY=VALUE lines) for the Web3 settings, without extra dependencies
+try {
+  require('fs').readFileSync(require('path').join(__dirname, '.env'), 'utf8').split(/\r?\n/).forEach((line) => {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (match && !(match[1] in process.env)) process.env[match[1]] = match[2].replace(/^(['"])(.*)\1$/, '$2');
+  });
+} catch (error) { /* no .env file */ }
+const Web3 = require('./web3/server'); // optional MVC token on a testnet (see web3/server.js)
 const path = require('path'); // Core module to handle absolute system directory paths smoothly
 const http = require('http').createServer(app);
 const io = require('socket.io')(http, {
@@ -19,6 +27,14 @@ app.use(express.json({ limit: '10kb' }));
 // the client loads exactly the files that exist, whatever their format
 // (.png, .jpg, .jpeg, .webp, .svg), instead of guessing and causing 404s
 const OWNER_ASSET_FOLDERS = ['ads', 'ads/brands', 'store', 'logos'];
+// Public Web3 settings for the browser (enabled only when configured)
+app.get('/api/web3/config', (req, res) => {
+  const config = Web3.publicConfig();
+  if (config.enabled) config.landPrice = LAND_PRICE;
+  res.set('Cache-Control', 'no-cache');
+  res.json(config);
+});
+
 app.get('/api/owner-assets', (req, res) => {
   const listing = {};
   OWNER_ASSET_FOLDERS.forEach((folder) => {
@@ -40,7 +56,6 @@ app.get('/api/owner-assets', (req, res) => {
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const MAX_INVENTORY = 20;
 let accounts = { users: {}, sessions: {} };
 try {
   accounts = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
@@ -54,7 +69,39 @@ accounts.lands = accounts.lands || {}; // parcel "x,z" -> { owner, boughtAt }
 // Multiverse Coins (MVC) are earned by playing and spent on land parcels.
 const STARTING_COINS = 100;
 const LAND_PRICE = 250;
-const MAX_PARCEL = 40; // Genesis City spans parcels -40..40 (16 m each)
+// The Underground Tech Hub: the hall under The Glass Cube district (worlds.json)
+const glassCube = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'worlds.json'), 'utf8')).find((world) => world.key === 'glasscube');
+function inTechHub(position) {
+  if (!glassCube || !position) return false;
+  const [cx, cz] = glassCube.region.center;
+  return Math.abs(position.x - cx) < 20 && Math.abs(position.z - cz) < 17 && position.y < -6 && position.y > -14;
+}
+const pendingParcels = new Set(); // parcels being paid on-chain right now
+const claimsInProgress = new Set(); // usernames with a mint in flight (memory only)
+const MAX_PARCEL = 60; // Genesis City spans parcels -60..59 (16 m each, up to 960 m)
+// Around the central districts the land is a grid of parcels split by roads
+// (one parcel wide, every 8 parcels): road parcels cannot be bought
+// Same rules as the client (public/city.js): roads from maps/land.json and
+// community scenes picked by the same parcel hash cannot be bought
+const CORE_PARCELS = 25; // the center commons spans parcels -25..24
+const landLayout = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'land.json'), 'utf8'));
+function parcelHash(px, pz) {
+  let h = Math.imul((px * 374761393 + pz * 668265263) | 0, 1274126177);
+  h ^= h >>> 13;
+  return ((h >>> 0) % 1000) / 1000;
+}
+const isRoadParcel = (px, pz) => landLayout.roadsX.includes(px) || landLayout.roadsZ.includes(pz);
+const isSceneParcel = (px, pz) => parcelHash(px, pz) < landLayout.sceneChance;
+// Seas (open water is not for sale; island parcels are)
+function inSea(px, pz) {
+  const x = px * 16 + 8;
+  const z = -(pz * 16 + 8);
+  const blob = (cx, cz, r, seed) => {
+    const angle = Math.atan2(z - cz, x - cx);
+    return Math.hypot(x - cx, z - cz) < r * (1 + 0.16 * Math.sin(3 * angle + seed) + 0.08 * Math.sin(5 * angle + seed * 2));
+  };
+  return (landLayout.seas || []).some((sea, i) => blob(sea.x, sea.z, sea.r, i + 1) && !(sea.islands || []).some((island, k) => blob(island.x, island.z, island.r, i * 7 + k + 3)));
+}
 function walletOf(account) {
   if (typeof account.coins !== 'number') account.coins = STARTING_COINS;
   return account.coins;
@@ -70,6 +117,10 @@ function saveAccounts() {
     });
   }, 300);
 }
+
+Web3.init();
+Web3.loadUsedTransactions(accounts.web3UsedTransactions);
+
 
 function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
@@ -100,6 +151,22 @@ function rateLimited(ip) {
 }
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,16}$/;
+const DEVICE_KEY_PATTERN = /^[a-f0-9]{64}$/;
+
+// Remembered devices: the browser keeps a random device key and the server
+// keeps only its SHA-256, so a returning player reconnects without a password
+// even after the session token expired or the server lost its sessions.
+function deviceHash(deviceKey) {
+  return crypto.createHash('sha256').update(deviceKey).digest('hex');
+}
+function rememberDevice(user, deviceKey) {
+  if (typeof deviceKey !== 'string' || !DEVICE_KEY_PATTERN.test(deviceKey)) return;
+  const hash = deviceHash(deviceKey);
+  user.devices = (user.devices || []).filter((known) => known !== hash);
+  user.devices.push(hash);
+  if (user.devices.length > 10) user.devices.shift();
+  saveAccounts();
+}
 
 app.post('/api/signup', (req, res) => {
   if (rateLimited(req.ip)) return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
@@ -110,6 +177,7 @@ app.post('/api/signup', (req, res) => {
   if (accounts.users[key]) return res.status(409).json({ error: 'That username is taken. Log in instead?' });
   const salt = crypto.randomBytes(16).toString('hex');
   accounts.users[key] = { username, salt, hash: hashPassword(password, salt), createdAt: Date.now(), inventory: [] };
+  rememberDevice(accounts.users[key], req.body.deviceKey);
   res.json({ token: createSession(key), username });
 });
 
@@ -121,12 +189,43 @@ app.post('/api/login', (req, res) => {
   if (!user || !crypto.timingSafeEqual(candidate, Buffer.from(user.hash, 'hex'))) {
     return res.status(401).json({ error: 'Wrong username or password.' });
   }
+  rememberDevice(user, req.body.deviceKey);
   res.json({ token: createSession(username.toLowerCase()), username: user.username });
+});
+
+// Reconnect a remembered device. If the account no longer exists (a server
+// with a fresh database, e.g. after a redeploy on a host without a persistent
+// disk), it is recreated for this device so the player is never stuck.
+app.post('/api/resume', (req, res) => {
+  const { username, deviceKey } = req.body || {};
+  if (!USERNAME_PATTERN.test(username || '') || typeof deviceKey !== 'string' || !DEVICE_KEY_PATTERN.test(deviceKey)) return res.status(400).json({ error: 'Invalid device.' });
+  const key = username.toLowerCase();
+  const user = accounts.users[key];
+  if (user) {
+    if (!(user.devices || []).includes(deviceHash(deviceKey))) return res.status(401).json({ error: 'Please log in on this device.' });
+    return res.json({ token: createSession(key), username: user.username });
+  }
+  if (rateLimited(req.ip)) return res.status(429).json({ error: 'Too many attempts. Try again in a few minutes.' });
+  const salt = crypto.randomBytes(16).toString('hex');
+  accounts.users[key] = { username, salt, hash: hashPassword(crypto.randomBytes(24).toString('hex'), salt), createdAt: Date.now(), inventory: [], restored: true };
+  rememberDevice(accounts.users[key], deviceKey);
+  res.json({ token: createSession(key), username, restored: true });
+});
+
+// Attach this browser's device key to an already signed-in account
+app.post('/api/device', (req, res) => {
+  const user = userFromToken(req.get('x-session-token'));
+  if (!user) return res.status(401).json({ error: 'Session expired.' });
+  rememberDevice(user, (req.body || {}).deviceKey);
+  res.json({ ok: true });
 });
 
 app.get('/api/session', (req, res) => {
   const user = userFromToken(req.get('x-session-token'));
   if (!user) return res.status(401).json({ error: 'Session expired.' });
+  // Sliding session: every visit keeps you signed in for another 30 days
+  const session = accounts.sessions[req.get('x-session-token')];
+  if (session && session.expiresAt - Date.now() < SESSION_TTL_MS - 24 * 60 * 60 * 1000) { session.expiresAt = Date.now() + SESSION_TTL_MS; saveAccounts(); }
   res.json({ username: user.username });
 });
 
@@ -134,6 +233,81 @@ app.post('/api/logout', (req, res) => {
   delete accounts.sessions[req.get('x-session-token')];
   saveAccounts();
   res.json({ ok: true });
+});
+
+// ----------------------------------------------------------------------------
+// Genius Bar AI (The Orchard Nexus, public/orchard.js): answers questions about
+// 3D optimization, spatial audio and SDK scripting. With ANTHROPIC_API_KEY set
+// it asks Claude (the key never leaves the server); without it, it answers
+// offline with a curated tip picked by keyword.
+// ----------------------------------------------------------------------------
+const GENIUS_MAX_QUESTION = 500;
+const GENIUS_SYSTEM_PROMPT = 'You are the Genius Bar AI in GitHub Multiverse, a developer metaverse. Answer concisely about 3D optimization, spatial audio and metaverse SDK scripting.';
+const GENIUS_TIPS = [
+  { keywords: ['gltf', 'glb', 'model', 'export', 'blender', 'file size'], answer: 'glTF optimization: export .glb (binary), apply transforms, remove unused nodes, materials and animations, merge meshes that share a material, and run gltf-transform (dedup, prune, weld, quantize) before shipping. Keep each scene file small so it streams fast.' },
+  { keywords: ['draco', 'compress', 'meshopt', 'geometry size'], answer: 'Draco (or meshoptimizer) compresses glTF geometry 5-10x. Use gltf-transform draco (or meshopt) and load it with DRACOLoader/MeshoptDecoder in three.js. Decoding costs a little CPU on load, so keep it for heavy meshes, not tiny props.' },
+  { keywords: ['texture', 'atlas', 'ktx2', 'basis', 'mipmap', 'png', 'jpg'], answer: 'Texture atlases pack many small textures into one image so many meshes can share one material (fewer draw calls). Use power-of-two sizes (512-2048), KTX2/Basis Universal for GPU-compressed textures, and keep mipmaps on to avoid shimmering.' },
+  { keywords: ['lod', 'level of detail', 'distance', 'far away', 'polygon', 'poly'], answer: 'Levels of detail (LODs): ship 2-3 versions of heavy models (100%, ~40%, ~10% triangles) and switch by camera distance (THREE.LOD in three.js). Past a certain distance, replace the model with an impostor billboard or hide it completely.' },
+  { keywords: ['instanc', 'draw call', 'repeated', 'many objects', 'trees', 'grass'], answer: 'Instancing: anything repeated more than ~30 times (trees, chairs, lamps) should be one THREE.InstancedMesh with a matrix per copy. That turns hundreds of draw calls into one. Update instanceMatrix only when copies move and set needsUpdate = true.' },
+  { keywords: ['spatial audio', 'rolloff', 'panner', 'hrtf', 'positional', 'distance model'], answer: 'Spatial audio rolloff: use a PannerNode (THREE.PositionalAudio) with panningModel "HRTF", distanceModel "inverse", refDistance about 1-2 m, rolloffFactor about 1 and a maxDistance where the sound should fade out. Linear rolloff sounds unnatural; exponential suits small loud sources.' },
+  { keywords: ['audio', 'sound', 'music', 'reverb', 'occlusion', 'listener'], answer: 'Spatial audio basics: attach the AudioListener to the camera, give every sound source a position, add a ConvolverNode reverb per room type, and lower the volume with a low-pass filter when a wall blocks the line of sight (cheap occlusion). Stream long music, preload short effects.' },
+  { keywords: ['sdk7', 'decentraland', 'component', 'system', 'ecs', 'entity'], answer: 'Decentraland SDK7 is ECS: entities are ids, components hold data (Transform, MeshRenderer, custom components via engine.defineComponent) and systems are functions run every frame (engine.addSystem((dt) => {...})). Query entities with engine.getEntitiesWith(Component) and keep systems small and data-driven.' },
+  { keywords: ['collider', 'collision', 'physics', 'raycast', 'walk'], answer: 'Colliders: never collide against the render mesh of a detailed model. Use simple invisible boxes (MeshCollider box/plane in SDK7, or a low-poly proxy) on the collision layer, and disable collisions on decorative and transparent objects so raycasts stay cheap.' },
+  { keywords: ['pointer', 'click', 'interact', 'input', 'button', 'event'], answer: 'SDK interactions: in SDK7 use pointerEventsSystem.onPointerDown({ entity, opts: { button: InputAction.IA_PRIMARY, hoverText: "Open" } }, callback). Keep the hover text short, give feedback (sound, animation) immediately and validate anything important on the server.' },
+  { keywords: ['performance', 'fps', 'slow', 'lag', 'optimi', 'frame'], answer: 'Performance checklist: count draw calls (renderer.info), merge static meshes by material, instance repeated props, limit real-time lights and shadow casters, cap pixel ratio at 1.5-2, and run per-frame logic only for objects near the player.' },
+  { keywords: ['light', 'shadow', 'bake', 'emissive', 'lightmap'], answer: 'Lighting: bake static lighting into lightmaps or vertex colors, fake lamps with emissive materials and additive light cones, and keep one directional light with a tight shadow camera. Point and spot lights are expensive in forward renderers.' }
+];
+const geniusRequests = new Map();
+
+function geniusRateLimited(ip) {
+  const now = Date.now();
+  const entry = geniusRequests.get(ip) || { count: 0, resetAt: now + 60 * 1000 };
+  if (entry.resetAt < now) { entry.count = 0; entry.resetAt = now + 60 * 1000; }
+  entry.count++;
+  geniusRequests.set(ip, entry);
+  return entry.count > 10;
+}
+
+function geniusOfflineAnswer(question) {
+  const text = question.toLowerCase();
+  let best = null;
+  let bestScore = 0;
+  GENIUS_TIPS.forEach((tip) => {
+    const score = tip.keywords.filter((keyword) => text.includes(keyword)).length;
+    if (score > bestScore) { best = tip; bestScore = score; }
+  });
+  if (best) return best.answer;
+  return 'I can help with 3D optimization (glTF, Draco, texture atlases, LODs, instancing), spatial audio (rolloff, HRTF, occlusion) and SDK scripting (SDK7 components and systems, colliders, pointer events). Try asking about one of those.';
+}
+
+app.post('/api/genius', async (req, res) => {
+  if (geniusRateLimited(req.ip)) return res.status(429).json({ error: 'The Genius Bar is busy. Try again in a minute.' });
+  const raw = req.body && typeof req.body.question === 'string' ? req.body.question.trim() : '';
+  if (!raw) return res.status(400).json({ error: 'Ask a question first.' });
+  const question = raw.slice(0, GENIUS_MAX_QUESTION);
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.json({ answer: geniusOfflineAnswer(question), offline: true });
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 600,
+        system: GENIUS_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: question }]
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!response.ok) throw new Error(`Anthropic API status ${response.status}`);
+    const data = await response.json();
+    const answer = (data.content || []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim();
+    if (!answer || data.stop_reason === 'refusal') return res.json({ answer: geniusOfflineAnswer(question), offline: true });
+    res.json({ answer });
+  } catch (error) {
+    console.error('[GENIUS] AI request failed:', error.message);
+    res.json({ answer: geniusOfflineAnswer(question), offline: true });
+  }
 });
 
 const MAX_CHAT_LENGTH = 200;
@@ -166,7 +340,13 @@ function worldStatePayload(extra = {}) {
 }
 
 // Debug Dungeon monsters are read from the map file so the server owns their health
-const dungeonMap = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'map_debug_dungeon.json'), 'utf8'));
+// District maps live in public/maps/districts.json (a separate file wins if it exists)
+function readMap(file) {
+  const separate = path.join(PUBLIC_DIR, 'maps', file);
+  if (fs.existsSync(separate)) return JSON.parse(fs.readFileSync(separate, 'utf8'));
+  return JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'districts.json'), 'utf8')).maps[file];
+}
+const dungeonMap = readMap('map_debug_dungeon.json');
 const monsters = {};
 dungeonMap.blocks.filter((block) => block.id && block.hp).forEach((block) => {
   monsters[block.id] = { name: block.label, maxHp: block.hp, hp: block.hp, alive: true };
@@ -210,13 +390,80 @@ function spawnSupplyDrop() {
   const id = `drop${++supplyDropCounter}`;
   lootSpawns[id] = { id, kind: 'drop', x: spot.x + (Math.random() - 0.5) * 6, z: spot.z + (Math.random() - 0.5) * 6, area: spot.area, openUntil: 0, landsAt: Date.now() + SUPPLY_DROP_FALL_MS };
   io.emit('loot_spawned', publicLoot().find((loot) => loot.id === id));
-  io.emit('system_message', `📦 A SUPPLY DROP is falling over ${spot.area}! First dev to reach it gets Rare-to-Legendary loot.`);
+  io.emit('system_message', `A SUPPLY DROP is falling over ${spot.area}! First dev to reach it gets Rare-to-Legendary loot.`);
   // Unopened drops disappear after five minutes
   setTimeout(() => {
     if (lootSpawns[id] && !lootSpawns[id].openUntil) { delete lootSpawns[id]; io.emit('loot_removed', id); }
   }, 5 * 60 * 1000);
 }
 setInterval(spawnSupplyDrop, SUPPLY_DROP_EVERY_MS);
+
+// ----------------------------------------------------------------------------
+// Community events (public/maps/events.json): the board lists them, stages
+// stream them, and a background validator rewards presence. Every 15 s the
+// server checks where each developer is (the position the game reports); a
+// player who stays inside the stage radius of a LIVE event for N continuous
+// minutes gets the reward once per event (stored in the account).
+// ----------------------------------------------------------------------------
+const EVENTS_FILE = path.join(PUBLIC_DIR, 'maps', 'events.json');
+let eventsCache = { mtime: -1, data: { attendance: { radius: 28, minutes: 5, reward: 100 }, events: [] } };
+function loadEvents() {
+  try {
+    const mtime = fs.statSync(EVENTS_FILE).mtimeMs;
+    if (mtime !== eventsCache.mtime) {
+      const data = JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8'));
+      const events = (Array.isArray(data.events) ? data.events : []).filter((event) => event && typeof event.id === 'string'
+        && !Number.isNaN(Date.parse(event.dataHoraInicio)) && !Number.isNaN(Date.parse(event.dataHoraFim))
+        && event.coordenadasDestino && Number.isFinite(event.coordenadasDestino.x) && Number.isFinite(event.coordenadasDestino.y));
+      eventsCache = { mtime, data: { attendance: { radius: 28, minutes: 5, reward: 100, ...(data.attendance || {}) }, events } };
+    }
+  } catch (error) {
+    console.error('[EVENTS] Could not read events.json:', error.message);
+  }
+  return eventsCache.data;
+}
+
+app.get('/api/events', (req, res) => {
+  const { attendance, events } = loadEvents();
+  res.set('Cache-Control', 'no-cache');
+  // serverTime lets every browser correct its own clock for the countdowns
+  res.json({ serverTime: Date.now(), attendance, events });
+});
+
+const attendanceTimers = new Map(); // "username|eventId" -> { since, lastSeen }
+setInterval(() => {
+  const { attendance, events } = loadEvents();
+  const now = Date.now();
+  const live = events.filter((event) => Date.parse(event.dataHoraInicio) <= now && now < Date.parse(event.dataHoraFim));
+  if (!live.length) return;
+  for (const [socketId, dev] of Object.entries(activeDevelopers)) {
+    const socket = io.sockets.sockets.get(socketId);
+    const account = socket && accounts.users[socket.data.userKey];
+    if (!account) continue;
+    account.eventRewards = account.eventRewards || {};
+    for (const event of live) {
+      if (account.eventRewards[event.id]) continue;
+      const key = `${account.username}|${event.id}`;
+      const target = event.coordenadasDestino;
+      const inside = Math.hypot(dev.position.x - target.x, dev.position.z - target.y) < attendance.radius && dev.position.y > -20;
+      if (!inside) { attendanceTimers.delete(key); continue; }
+      const entry = attendanceTimers.get(key);
+      if (!entry || now - entry.lastSeen > 40000) {
+        attendanceTimers.set(key, { since: now, lastSeen: now });
+        socket.emit('event_presence', { eventId: event.id, title: event.titulo, minutes: attendance.minutes });
+        continue;
+      }
+      entry.lastSeen = now;
+      if (now - entry.since < attendance.minutes * 60000) continue;
+      attendanceTimers.delete(key);
+      account.eventRewards[event.id] = now;
+      account.coins = walletOf(account) + attendance.reward;
+      saveAccounts();
+      socket.emit('wallet', { coins: account.coins, earned: attendance.reward, reason: `attendance at ${event.titulo}` });
+      socket.emit('event_reward', { eventId: event.id, title: event.titulo, reward: attendance.reward });
+    }
+  }
+}, 15000);
 
 // Underground Cafe menu (prices are read here so the client cannot change them)
 const cafeMenu = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'maps', 'cafe_menu.json'), 'utf8'));
@@ -316,7 +563,6 @@ io.on('connection', (socket) => {
   socket.emit('game_state', publicGameState());
   socket.emit('loot_spawns', publicLoot());
   socket.emit('tech_feeds', TechFeeds.snapshot());
-  socket.emit('inventory', account.inventory);
   socket.to(room).emit('new_developer_joined', activeDevelopers[socket.id]);
 
   const developer = () => activeDevelopers[socket.id];
@@ -495,16 +741,14 @@ io.on('connection', (socket) => {
     const dev = developer();
     if (!dev) return;
     const now = Date.now();
-    if (now - (account.lastTowerReward || 0) < 30 * 60 * 1000) { socket.emit('system_message', '🏆 You already claimed the Gravity Flip reward. Come back in 30 minutes!'); return; }
-    if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', 'Your inventory is full. Use or /drop something first.'); return; }
+    if (now - (account.lastTowerReward || 0) < 30 * 60 * 1000) { socket.emit('system_message', 'You already claimed the Gravity Flip reward. Come back in 30 minutes!'); return; }
     account.lastTowerReward = now;
-    account.inventory.push({ id: 'hoodie', foundAt: now });
     account.coins = walletOf(account) + 50;
     socket.emit('wallet', { coins: account.coins, earned: 50, reason: 'Gravity Flip reward' });
     saveAccounts();
-    socket.emit('inventory', account.inventory);
-    socket.emit('loot_result', { item: 'hoodie', from: 'drop' });
-    io.to(room).emit('system_message', `🏆 ${dev.devTag} conquered the Gravity Flip tower and earned an Epic Senior Dev Hoodie!`);
+    const prize = lootTable.items.filter((item) => item.rarity === 'epic' || item.rarity === 'legendary');
+    socket.emit('loot_result', { item: prize[Math.floor(Math.random() * prize.length)].id, from: 'drop' });
+    io.to(room).emit('system_message', `${dev.devTag} conquered the Gravity Flip tower and earned a rare code file!`);
   });
 
   // Vehicles from the Hypercar Showroom, shown to everyone in the lobby
@@ -512,7 +756,7 @@ io.on('connection', (socket) => {
   socket.on('daily_bonus', () => {
     const now = Date.now();
     const wait = 20 * 60 * 60 * 1000 - (now - (account.lastDaily || 0));
-    if (wait > 0) { socket.emit('system_message', `🎁 Daily bonus already claimed. Come back in ${Math.ceil(wait / 3600000)} h.`); return; }
+    if (wait > 0) { socket.emit('system_message', `Daily bonus already claimed. Come back in ${Math.ceil(wait / 3600000)} h.`); return; }
     account.lastDaily = now;
     account.coins = walletOf(account) + 50;
     saveAccounts();
@@ -527,7 +771,7 @@ io.on('connection', (socket) => {
     const now = Date.now();
     if (now - (dev.lastOrderAt || 0) < 1500) return;
     dev.lastOrderAt = now;
-    if (walletOf(account) < item.price) { socket.emit('system_message', `🍽️ ${item.name} costs ${item.price} MVC and you have ${account.coins}. Earn coins with commits, chests and supply drops.`); return; }
+    if (walletOf(account) < item.price) { socket.emit('system_message', `${item.name} costs ${item.price} MVC and you have ${account.coins}. Earn coins with commits, chests and supply drops.`); return; }
     account.coins -= item.price;
     saveAccounts();
     socket.emit('wallet', { coins: account.coins, spent: item.price, reason: item.name });
@@ -535,7 +779,7 @@ io.on('connection', (socket) => {
     saveAccounts();
     socket.emit('cafe_served', { id: item.id });
     socket.emit('packages', account.packages);
-    socket.to(room).emit('system_message', `🍽️ ${dev.devTag} ordered a ${item.name} at the Underground Cafe.`);
+    socket.to(room).emit('system_message', `${dev.devTag} ordered a ${item.name} at the Underground Cafe.`);
   });
 
   // Hotels: sleep in a bed at night; when at least half of the online devs are
@@ -545,18 +789,18 @@ io.on('connection', (socket) => {
     if (!dev) return;
     const ticks = currentTicks();
     const night = ticks > 12500 && ticks < 23500;
-    if (sleeping && !night) { socket.emit('system_message', '🛏️ You can only sleep at night. Your spawn point was set to this bed.'); return; }
+    if (sleeping && !night) { socket.emit('system_message', 'You can only sleep at night. Your spawn point was set to this bed.'); return; }
     dev.sleeping = !!sleeping;
     if (!sleeping) return;
     const online = Object.values(activeDevelopers);
     const asleep = online.filter((other) => other.sleeping).length;
     const needed = Math.max(1, Math.ceil(online.length / 2));
-    if (asleep < needed) { io.emit('system_message', `🛏️ ${dev.devTag} is sleeping (${asleep}/${needed} devs needed to skip the night).`); return; }
+    if (asleep < needed) { io.emit('system_message', `${dev.devTag} is sleeping (${asleep}/${needed} devs needed to skip the night).`); return; }
     worldState.ticks = 0;
     worldState.changedAt = Date.now();
     online.forEach((other) => { other.sleeping = false; });
     io.emit('world_state', worldStatePayload({ by: dev.devTag, kind: 'time' }));
-    io.emit('system_message', '🌅 Enough devs slept through the night. Good morning, Genesis City!');
+    io.emit('system_message', 'Enough devs slept through the night. Good morning, Genesis City!');
     io.emit('wake_up');
   });
 
@@ -591,20 +835,107 @@ io.on('connection', (socket) => {
   // Economy: wallet, land parcels and transfers between devs
   socket.emit('wallet', { coins: walletOf(account) });
   socket.emit('lands', accounts.lands);
+  // Why a parcel cannot be bought right now (null when it can)
+  function landProblem(parcel) {
+    if (typeof parcel !== 'string' || !/^-?\d{1,3},-?\d{1,3}$/.test(parcel)) return 'Invalid parcel.';
+    const [px, pz] = parcel.split(',').map(Number);
+    if (px < -MAX_PARCEL || px >= MAX_PARCEL || pz < -MAX_PARCEL || pz >= MAX_PARCEL) return 'That parcel is outside Genesis City.';
+    const inCore = px >= -CORE_PARCELS && px < CORE_PARCELS && pz >= -CORE_PARCELS && pz < CORE_PARCELS;
+    if (inSea(px, pz)) return 'That parcel is open sea. Islands can be bought, the water cannot.';
+    if (isRoadParcel(px, pz)) return 'That parcel is a road. Pick a green parcel next to it.';
+    if (!inCore && isSceneParcel(px, pz)) return 'That parcel already has a community scene.';
+    if (accounts.lands[parcel]) return `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`;
+    if (pendingParcels.has(parcel)) return `Someone is buying parcel ${parcel} right now.`;
+    return null;
+  }
+
+  function grantParcel(parcel, how) {
+    accounts.lands[parcel] = { owner: account.username, boughtAt: Date.now(), ...how };
+    saveAccounts();
+    io.emit('lands', accounts.lands);
+    io.emit('system_message', `${developer().devTag} bought parcel ${parcel} in Genesis City!`);
+  }
+
   socket.on('buy_land', ({ parcel } = {}) => {
     const dev = developer();
-    if (!dev || typeof parcel !== 'string' || !/^-?\d{1,3},-?\d{1,3}$/.test(parcel)) return;
-    const [px, pz] = parcel.split(',').map(Number);
-    if (Math.abs(px) > MAX_PARCEL || Math.abs(pz) > MAX_PARCEL) { socket.emit('system_message', 'That parcel is outside Genesis City.'); return; }
-    if (accounts.lands[parcel]) { socket.emit('system_message', `Parcel ${parcel} already belongs to ${accounts.lands[parcel].owner}.`); return; }
+    if (!dev) return;
+    const problem = landProblem(parcel);
+    if (problem) { socket.emit('system_message', problem); return; }
     if (walletOf(account) < LAND_PRICE) { socket.emit('system_message', `You need ${LAND_PRICE} MVC to buy a parcel (you have ${account.coins}). Earn coins with commits, chests and supply drops.`); return; }
     account.coins -= LAND_PRICE;
-    accounts.lands[parcel] = { owner: account.username, boughtAt: Date.now() };
-    saveAccounts();
     socket.emit('wallet', { coins: account.coins, spent: LAND_PRICE, reason: `parcel ${parcel}` });
-    io.emit('lands', accounts.lands);
-    io.emit('system_message', `🏡 ${dev.devTag} bought parcel ${parcel} in Genesis City!`);
+    grantParcel(parcel, { paidWith: 'in-game' });
   });
+
+  // --------------------------------------------------------------------------
+  // Web3 (testnet MVC token): link wallet, claim coins, buy land on-chain
+  // --------------------------------------------------------------------------
+  socket.emit('web3_account', { wallet: account.wallet || null });
+  socket.on('web3_account_request', () => socket.emit('web3_account', { wallet: account.wallet || null }));
+
+  socket.on('web3_link_request', () => {
+    if (!Web3.enabled) { socket.emit('web3_error', { action: 'link', message: 'The MVC token is not configured on this server.' }); return; }
+    socket.emit('web3_link_message', { message: Web3.bindingMessage(account.username) });
+  });
+
+  socket.on('web3_link', async ({ address, message, signature } = {}) => {
+    if (!Web3.enabled || typeof message !== 'string' || typeof signature !== 'string' || message.length > 500) return;
+    try {
+      account.wallet = await Web3.verifyBinding(account.username, String(address), message, signature);
+      saveAccounts();
+      socket.emit('web3_account', { wallet: account.wallet });
+    } catch (error) {
+      socket.emit('web3_error', { action: 'link', message: error.message });
+    }
+  });
+
+  // Claim: turns in-game MVC into real testnet MVC in the linked wallet
+  socket.on('web3_claim', async ({ amount } = {}) => {
+    if (!Web3.enabled) { socket.emit('web3_error', { action: 'claim', message: 'The MVC token is not configured on this server.' }); return; }
+    if (!account.wallet) { socket.emit('web3_error', { action: 'claim', message: 'Link your wallet first.' }); return; }
+    if (claimsInProgress.has(account.username)) { socket.emit('web3_error', { action: 'claim', message: 'A claim is already in progress.' }); return; }
+    const value = Math.floor(Number(amount));
+    if (!(value >= 1)) { socket.emit('web3_error', { action: 'claim', message: 'Choose how many MVC to claim.' }); return; }
+    if (value > Web3.maxClaim) { socket.emit('web3_error', { action: 'claim', message: `You can claim at most ${Web3.maxClaim} MVC at a time.` }); return; }
+    if (walletOf(account) < value) { socket.emit('web3_error', { action: 'claim', message: `You only have ${account.coins} MVC in the game.` }); return; }
+    // Reserve the coins first so they cannot be spent twice while the mint is pending
+    claimsInProgress.add(account.username);
+    account.coins -= value;
+    saveAccounts();
+    socket.emit('wallet', { coins: account.coins, spent: value, reason: 'claim to wallet (pending)' });
+    try {
+      const transactionHash = await Web3.mint(account.wallet, value);
+      socket.emit('web3_claimed', { amount: value, transactionHash });
+    } catch (error) {
+      account.coins += value; // refund: nothing was minted
+      saveAccounts();
+      socket.emit('wallet', { coins: account.coins, earned: value, reason: 'claim refunded' });
+      socket.emit('web3_error', { action: 'claim', message: `The claim failed and your ${value} MVC were returned to the game. (${error.message})` });
+    } finally {
+      claimsInProgress.delete(account.username);
+    }
+  });
+
+  // Land paid on-chain: the client sends the MVC transfer, the server checks it
+  socket.on('buy_land_onchain', async ({ parcel, transactionHash } = {}) => {
+    const dev = developer();
+    if (!dev || !Web3.enabled) return;
+    if (!account.wallet) { socket.emit('web3_error', { action: 'land', parcel, message: 'Link your wallet first.' }); return; }
+    const problem = landProblem(parcel);
+    if (problem) { socket.emit('web3_error', { action: 'land', parcel, message: `${problem} If you already paid, contact the game admin with your transaction hash.` }); return; }
+    pendingParcels.add(parcel);
+    try {
+      await Web3.verifyPayment(String(transactionHash), account.wallet, LAND_PRICE);
+      accounts.web3UsedTransactions = Web3.usedTransactions();
+      grantParcel(parcel, { paidWith: 'mvc-token', transactionHash });
+      socket.emit('web3_land_bought', { parcel, transactionHash });
+    } catch (error) {
+      socket.emit('web3_error', { action: 'land', parcel, message: error.message });
+    } finally {
+      pendingParcels.delete(parcel);
+    }
+  });
+
   socket.on('pay', ({ to, amount } = {}) => {
     const dev = developer();
     const value = Math.floor(Number(amount));
@@ -642,17 +973,18 @@ io.on('connection', (socket) => {
     if (!dev || !(lines >= 3) || now - (dev.lastCommitAt || 0) < 5000) return;
     dev.lastCommitAt = now;
     account.commits = (account.commits || 0) + 1;
-    account.coins = walletOf(account) + 3;
-    socket.emit('wallet', { coins: account.coins, earned: 3, reason: 'commit' });
+    // Commits typed in the Underground Tech Hub (below The Glass Cube) give +5
+    const bonus = inTechHub(dev.position) ? 5 : 3;
+    account.coins = walletOf(account) + bonus;
+    socket.emit('wallet', { coins: account.coins, earned: bonus, reason: bonus === 5 ? 'commit in the Tech Hub' : 'commit' });
     saveAccounts();
-    io.to(room).emit('system_message', `✔ ${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
+    io.to(room).emit('system_message', `${dev.devTag} pushed commit #${account.commits} from a laptop (${Math.min(999, Math.floor(lines))} lines).`);
     io.emit('commit_leaderboard', commitLeaderboard());
   });
 
   // Sent by the client once its loot catalog is loaded
   socket.on('loot_sync', () => {
     socket.emit('loot_spawns', publicLoot());
-    socket.emit('inventory', account.inventory);
   });
 
   // Loot: open a chest or supply drop next to your cursor
@@ -663,15 +995,13 @@ io.on('connection', (socket) => {
     if (loot.openUntil > Date.now()) { socket.emit('system_message', 'Someone already looted this one.'); return; }
     if (loot.landsAt && loot.landsAt > Date.now()) { socket.emit('system_message', 'The supply drop is still falling!'); return; }
     if (Math.hypot(dev.position.x - loot.x, dev.position.z - loot.z) > LOOT_REACH) { socket.emit('system_message', 'Get closer to open it.'); return; }
-    if (account.inventory.length >= MAX_INVENTORY) { socket.emit('system_message', `Your inventory is full (${MAX_INVENTORY}). Use or /drop something first.`); return; }
 
+    // The loot is a real code file: the client downloads it right away
     const item = rollItem(loot.kind);
-    account.inventory.push({ id: item.id, foundAt: Date.now() });
     const bonus = loot.kind === 'drop' ? 25 : 5;
     account.coins = walletOf(account) + bonus;
     socket.emit('wallet', { coins: account.coins, earned: bonus, reason: loot.kind === 'drop' ? 'supply drop' : 'chest' });
     saveAccounts();
-    socket.emit('inventory', account.inventory);
     socket.emit('loot_result', { item: item.id, from: loot.kind });
     if (loot.kind === 'drop') {
       delete lootSpawns[id];
@@ -682,33 +1012,8 @@ io.on('connection', (socket) => {
       setTimeout(() => io.emit('loot_state', { id, open: false }), CHEST_RESPAWN_MS);
     }
     if (item.rarity === 'legendary' || item.rarity === 'epic') {
-      io.emit('system_message', `✨ ${dev.devTag} found a ${lootTable.rarities[item.rarity].name.toUpperCase()} ${item.name}!`);
+      io.emit('system_message', `${dev.devTag} found a ${lootTable.rarities[item.rarity].name.toUpperCase()} ${item.name}!`);
     }
-  });
-
-  socket.on('item_use', ({ index } = {}) => {
-    const dev = developer();
-    const entry = account.inventory[index];
-    const item = entry && lootTable.items.find((candidate) => candidate.id === entry.id);
-    if (!dev || !item) return;
-    if (item.kind === 'consumable') {
-      account.inventory.splice(index, 1);
-      saveAccounts();
-      if (item.effect === 'lens') dev.lensUntil = Date.now() + item.seconds * 1000;
-    }
-    if (item.kind === 'wearable') {
-      dev.wearable = dev.wearable === item.wearable ? null : item.wearable;
-      io.to(room).emit('peer_updated', { id: socket.id, devTag: dev.devTag, wearable: dev.wearable });
-    }
-    socket.emit('inventory', account.inventory);
-    socket.emit('item_effect', { item: item.id });
-  });
-
-  socket.on('item_drop', ({ index } = {}) => {
-    if (!developer() || !account.inventory[index]) return;
-    account.inventory.splice(index, 1);
-    saveAccounts();
-    socket.emit('inventory', account.inventory);
   });
 
   // Clean-up memory garbage collection sequence triggers when a laptop connection drops down

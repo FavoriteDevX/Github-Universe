@@ -9,5 +9,25 @@
    "url": "https://githubuniverse.com/",
    "stream": ""
   }
- ]
+ ],
+ "roadsterReel": {
+  "_how_to": "Clips of the flying Tesla Roadster played back to back on the Tech Square reel screen. 'start' and 'end' are seconds into each official video; set them to the moments the Roadster is on screen (end 0 = until the video ends). Add or remove clips freely.",
+  "clips": [
+   {
+    "video": "https://youtu.be/7p5LxFdc-Qg",
+    "start": 0,
+    "end": 0
+   },
+   {
+    "video": "https://www.youtube.com/watch?v=r5vsHHPVhJg",
+    "start": 0,
+    "end": 0
+   },
+   {
+    "video": "https://www.youtube.com/watch?v=Zg9Q56t7bdo",
+    "start": 0,
+    "end": 0
+   }
+  ]
+ }
 }

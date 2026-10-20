@@ -6,7 +6,7 @@
 // Also: emotes (/e wave, dance, cheer, clap, sit), parkour coins and timer.
 const Interactions = (() => {
   const REACH = 3.2;
-  const EMOTES = { wave: '👋', dance: '💃', cheer: '🎉', clap: '👏', sit: '🪑', think: '🤔', ship: '🚀', coffee: '☕' };
+  const EMOTES = { wave: '*waves*', dance: '*dances*', cheer: '*cheers*', clap: '*claps*', sit: '*sits*', think: '*thinks*', ship: '*ships it*', coffee: '*coffee break*' };
   const FISH = [
     ['Null Pointer Pike', 'common'], ['Merge Conflict Carp', 'common'], ['Off-by-One Trout', 'common'],
     ['Async Anchovy', 'uncommon'], ['Regex Ray', 'uncommon'], ['Segfault Shark', 'rare'],
@@ -76,7 +76,6 @@ function fixBug(bug) {
     land: 'Press E to buy this parcel (250 MVC)',
     bed: 'Press E to sleep (skips the night, sets your spawn point)',
     cafe_menu: 'Press E to see the menu and order',
-    roast: 'Press E to Fry your Code 🔥',
     sit: 'Press E to sit',
     coffee: 'Press E for a coffee (run faster)',
     arcade: 'Press E to play',
@@ -103,7 +102,7 @@ function fixBug(bug) {
       case 'sit': sitOn(object); break;
       case 'coffee':
         hooks.buff('speed', 15);
-        hooks.system(`☕ You grabbed a coffee at the ${label}. Running faster for 15s!`);
+        hooks.system(`You grabbed a coffee at the ${label}. Running faster for 15s!`);
         hooks.emote('coffee');
         break;
       case 'arcade': openArcade(label); break;
@@ -112,14 +111,20 @@ function fixBug(bug) {
       case 'jump': hooks.jumpTo(label); break;
       case 'metro': hooks.openMetro(); break;
       case 'reward': hooks.claimReward(); break;
-      case 'glass': hooks.system(`🪟 Smart glass: ${object.userData.cycle()}`); break;
+      case 'glass': hooks.system(`Smart glass: ${object.userData.cycle()}`); break;
       case 'vehicle': Vehicles.mount(object.userData.vehicleKey); break;
       case 'jukebox': hooks.system(object.userData.onInteract()); break;
+      // Generic action for district builders: userData.onInteract(hooks) may
+      // return a chat message; userData.prompt overrides the "Press E" text
+      case 'action': {
+        const message = object.userData.onInteract(hooks, object);
+        if (message) hooks.system(message);
+        break;
+      }
       case 'codeblock': Codify.interact(object); break;
       case 'land': hooks.buyLand(object.userData.parcel); break;
       case 'bed': hooks.sleep(object); break;
       case 'cafe_menu': Cafe.open(); break;
-      case 'roast': Codify.startRoast(object); break;
       case 'link': {
         const url = object.userData.url;
         if (url && /^https:\/\//.test(url)) { window.open(url, '_blank', 'noopener'); hooks.system(`↗ Opened ${label} in a new tab.`); }
@@ -128,7 +133,7 @@ function fixBug(bug) {
       case 'warp': {
         const destination = object.parent.localToWorld(object.userData.destination.clone());
         hooks.setAvatarPosition(destination);
-        hooks.system(`🛗 ${label}`);
+        hooks.system(`${label}`);
         break;
       }
       default: break;
@@ -140,7 +145,7 @@ function fixBug(bug) {
     seated = { position: worldPosition.clone() };
     hooks.setAvatarPosition(new THREE.Vector3(worldPosition.x, worldPosition.y + 0.4, worldPosition.z));
     hooks.emote('sit');
-    hooks.system('🪑 You sat down. Move (W A S D) to stand up.');
+    hooks.system('You sat down. Move (W A S D) to stand up.');
   }
 
   // Simulated work: type any keys and real-looking code appears (hacker typer)
@@ -180,7 +185,7 @@ function fixBug(bug) {
     }
     hooks.commit(workSession.lines);
     workSession.lines = 0;
-    ui.workCode.textContent += '\n$ git commit -m "feat: ship it" && git push\n✔ pushed to origin/main\n\n';
+    ui.workCode.textContent += '\n$ git commit -m "feat: ship it" && git push\npushed to origin/main\n\n';
     updateWorkStats();
   }
 
@@ -194,15 +199,15 @@ function fixBug(bug) {
     if (fishing && fishing.biteAt && performance.now() > fishing.biteAt) {
       const roll = Math.random();
       const fish = roll > 0.97 ? FISH[7] : roll > 0.9 ? FISH[6] : roll > 0.78 ? FISH[5] : roll > 0.55 ? FISH[3 + Math.floor(Math.random() * 2)] : FISH[Math.floor(Math.random() * 3)];
-      hooks.system(`🎣 You caught a ${fish[0]} (${fish[1]})!`);
-      hooks.broadcast(`🎣 caught a ${fish[0]} (${fish[1]}) at the Cozy Pond`);
+      hooks.system(`You caught a ${fish[0]} (${fish[1]})!`);
+      hooks.broadcast(`caught a ${fish[0]} (${fish[1]}) at the Cozy Pond`);
       fishing = null;
       hooks.emote('cheer');
       return;
     }
-    if (fishing) { hooks.system('🎣 Patience... wait for the bite (!) before reeling in.'); return; }
+    if (fishing) { hooks.system('Patience... wait for the bite (!) before reeling in.'); return; }
     fishing = { biteAt: performance.now() + 3000 + Math.random() * 5000 };
-    hooks.system('🎣 You cast your line. Wait for the bite, then press E!');
+    hooks.system('You cast your line. Wait for the bite, then press E!');
   }
 
   // Arcade: a tiny "Pac-Git snake" game in an overlay (arrow keys, eat the commits)
@@ -216,8 +221,8 @@ function fixBug(bug) {
       if (!game) return;
       const head = [(game.snake[0][0] + game.direction[0] + size) % size, (game.snake[0][1] + game.direction[1] + size) % size];
       if (game.snake.some(([x, y]) => x === head[0] && y === head[1])) {
-        hooks.system(`🕹️ Game over on ${label}: ${game.score} commits eaten.`);
-        if (game.score >= 5) hooks.broadcast(`🕹️ scored ${game.score} on ${label}`);
+        hooks.system(`Game over on ${label}: ${game.score} commits eaten.`);
+        if (game.score >= 5) hooks.broadcast(`scored ${game.score} on ${label}`);
         game.snake = [[10, 10]];
         game.score = 0;
       } else {
@@ -272,6 +277,20 @@ function fixBug(bug) {
     return false;
   }
 
+  // The firepit the avatar stands next to (Fry your Code uses F), or null
+  const firepitProbe = new THREE.Vector3();
+  function nearFirepit(avatar) {
+    let best = null;
+    let bestDistance = 9;
+    (window.firepits || []).forEach((pit) => {
+      if (!pit.parent) return;
+      pit.getWorldPosition(firepitProbe);
+      const distance = Math.hypot(firepitProbe.x - avatar.x, firepitProbe.z - avatar.z);
+      if (distance < bestDistance && Math.abs(firepitProbe.y - avatar.y) < 3) { best = pit; bestDistance = distance; }
+    });
+    return best;
+  }
+
   // --------------------------------------------------------------------------
   // Per frame: prompts, fishing bites, seated state, parkour coins and timer
   // --------------------------------------------------------------------------
@@ -280,11 +299,15 @@ function fixBug(bug) {
     nearest = workSession || arcadeGame ? null : findNearest(avatar);
     const biting = fishing && performance.now() > fishing.biteAt;
     if (biting) {
-      ui.prompt.textContent = '❗ A fish is biting! Press E to reel in!';
+      ui.prompt.textContent = 'A fish is biting! Press E to reel in!';
       ui.prompt.style.display = 'block';
       if (!nearest) fishing = null;
     } else if (nearest) {
-      ui.prompt.textContent = PROMPTS[nearest.userData.interactable.type] || 'Press E';
+      const text = nearest.userData.prompt || PROMPTS[nearest.userData.interactable.type] || 'Press E';
+      ui.prompt.textContent = nearFirepit(avatar) ? `${text} · F to Fry your Code` : text;
+      ui.prompt.style.display = 'block';
+    } else if (nearFirepit(avatar)) {
+      ui.prompt.textContent = 'Press F to Fry your Code';
       ui.prompt.style.display = 'block';
     } else {
       ui.prompt.style.display = 'none';
@@ -296,7 +319,7 @@ function fixBug(bug) {
         portal.group.getWorldPosition(worldPosition);
         if (Math.hypot(worldPosition.x - avatar.x, worldPosition.z - avatar.z) < 1.6 && avatar.y < worldPosition.y + 4) {
           portalCooldown = performance.now() + 4000;
-          hooks.system('🌀 Through the portal...');
+          hooks.system('Through the portal...');
           hooks.jumpTo(portal.target);
         }
       });
@@ -314,11 +337,11 @@ function fixBug(bug) {
       if (pad.userData.parkourPad === 'start' && !parkour.running) {
         parkour = { running: true, start: performance.now(), coins: new Set() };
         (window.parkourCoins || []).forEach((coin) => { coin.visible = true; });
-        hooks.system('⏱️ Parkour started! Collect the coins and reach the FINISH flag.');
+        hooks.system('Parkour started! Collect the coins and reach the FINISH flag.');
       } else if (pad.userData.parkourPad === 'finish' && parkour.running) {
         const seconds = ((performance.now() - parkour.start) / 1000).toFixed(1);
         parkour.running = false;
-        hooks.broadcast(`🏁 finished Parkour Park in ${seconds}s with ${parkour.coins.size}/${(window.parkourCoins || []).length} coins`);
+        hooks.broadcast(`finished Parkour Park in ${seconds}s with ${parkour.coins.size}/${(window.parkourCoins || []).length} coins`);
         hooks.emote('cheer');
       }
     });
@@ -328,11 +351,11 @@ function fixBug(bug) {
       if (worldPosition.distanceTo(avatar) < 1.8 || Math.hypot(worldPosition.x - avatar.x, worldPosition.z - avatar.z) < 1.2 && Math.abs(worldPosition.y - avatar.y - 1) < 1.6) {
         coin.visible = false;
         parkour.coins.add(coin.userData.collectible.id);
-        hooks.system(`🪙 Coin ${parkour.coins.size}/${window.parkourCoins.length}`);
+        hooks.system(`Coin ${parkour.coins.size}/${window.parkourCoins.length}`);
       }
     });
     ui.timer.style.display = parkour.running ? 'block' : 'none';
-    if (parkour.running) ui.timer.textContent = `⏱️ ${((performance.now() - parkour.start) / 1000).toFixed(1)}s · 🪙 ${parkour.coins.size}/${(window.parkourCoins || []).length}`;
+    if (parkour.running) ui.timer.textContent = `${((performance.now() - parkour.start) / 1000).toFixed(1)}s · ${parkour.coins.size}/${(window.parkourCoins || []).length}`;
   }
 
   function init(options) {
@@ -342,5 +365,5 @@ function fixBug(bug) {
     ui.arcadeClose.addEventListener('click', closeArcade);
   }
 
-  return { init, update, handleKey, EMOTES, isBusy: () => !!(workSession || arcadeGame), isSeated: () => !!seated };
+  return { init, update, handleKey, nearFirepit, EMOTES, isBusy: () => !!(workSession || arcadeGame), isSeated: () => !!seated };
 })();

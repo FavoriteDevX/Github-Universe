@@ -172,12 +172,19 @@
   "key": "beach",
   "file": "map_beach.json",
   "name": "Tropical Beach",
-  "description": "Palm trees, chairs and umbrellas",
-  "cell": [
-   -2,
-   -1
-  ],
-  "color": "#ffeaa7"
+  "description": "Palm trees, chairs and umbrellas On the shore of the West Sea, at the edge of Genesis City.",
+  "color": "#ffeaa7",
+  "region": {
+   "center": [
+    -512,
+    -90
+   ],
+   "size": [
+    84,
+    84
+   ]
+  },
+  "scale": 1.5
  },
  {
   "key": "zen",
@@ -275,21 +282,6 @@
   "color": "#4dabf7"
  },
  {
-  "key": "festival",
-  "file": "map_festival.json",
-  "name": "Soundwave Festival",
-  "description": "A big music event amplifying Spotify: LED gate, main stage, lasers, sound waves and a dancing crowd",
-  "cell": [
-   -1,
-   3
-  ],
-  "span": [
-   2,
-   2
-  ],
-  "color": "#1db954"
- },
- {
   "key": "hotel",
   "file": "map_hotel.json",
   "name": "Multiverse Hotel",
@@ -303,6 +295,180 @@
    2
   ],
   "color": "#ff8fd8"
+ },
+ {
+  "key": "arena",
+  "file": "map_fight_arena.json",
+  "name": "The Pit Arena",
+  "description": "Half-sunken fight club stadium: concrete ring, red light line, spotlight truss and stands",
+  "region": {
+   "center": [
+    -440,
+    200
+   ],
+   "size": [
+    72,
+    72
+   ]
+  },
+  "color": "#e03131"
+ },
+ {
+  "key": "candles",
+  "file": "map_candlestick_maze.json",
+  "name": "The Candlestick Maze",
+  "description": "Holographic glass walls rise and fall with the live price of MANA, ETH and Bitcoin; the floor glows green or red",
+  "region": {
+   "center": [
+    540,
+    200
+   ],
+   "size": [
+    96,
+    96
+   ]
+  },
+  "color": "#2f9e44"
+ },
+ {
+  "key": "terminal",
+  "file": "map_terminal_apex.json",
+  "name": "The Terminal Apex",
+  "description": "The >_ Root: a building shaped like the terminal icon, code rain walls, Commit Pod elevators, Bug Bounty Dungeons and a Jobs Board",
+  "region": {
+   "center": [
+    200,
+    -650
+   ],
+   "size": [
+    96,
+    96
+   ]
+  },
+  "color": "#4c6ef5"
+ },
+ {
+  "key": "metablock",
+  "file": "map_metablock_estates.json",
+  "name": "MetaBlock Estates",
+  "description": "Hypermodern suburb: demo mansions to test drive, a customization garage, residential scripts and a brokers hub",
+  "region": {
+   "center": [
+    -250,
+    700
+   ],
+   "size": [
+    220,
+    160
+   ]
+  },
+  "color": "#20c997"
+ },
+ {
+  "key": "orchard",
+  "file": "map_orchard_nexus.json",
+  "name": "The Orchard Nexus",
+  "description": "A floating glass cube on beams of light over a circular park: Vision Pro quest, smart home demos and the Genius Bar AI",
+  "region": {
+   "center": [
+    230,
+    610
+   ],
+   "size": [
+    160,
+    140
+   ]
+  },
+  "color": "#adb5bd"
+ },
+ {
+  "key": "azure",
+  "file": "map_azure_cloud.json",
+  "name": "The Azure Cloud Core",
+  "description": "A giant glowing data cloud floating over Azure Island: upload beam entrance, Data Stream core, voxel sandbox on top and the Cloud Storage Lounge",
+  "region": {
+   "center": [
+    -760,
+    -250
+   ],
+   "size": [
+    64,
+    64
+   ]
+  },
+  "color": "#1c7ed6"
+ },
+ {
+  "key": "mobmaze",
+  "file": "map_mob_maze.json",
+  "name": "The Mob Maze",
+  "description": "A blocky voxel dungeon maze: stone brick halls, checkered floors, glowing pressure plates, lanterns and traps",
+  "region": {
+   "center": [
+    -560,
+    -560
+   ],
+   "size": [
+    80,
+    80
+   ]
+  },
+  "color": "#7048e8"
+ },
+ {
+  "key": "glasscube",
+  "file": "map_glass_cube.json",
+  "name": "The Glass Cube",
+  "description": "A Fifth Avenue-style glass cube on a granite plaza. A spiral staircase goes down to the Underground Tech Hub, where commits give +5 MVC",
+  "region": {
+   "center": [
+    370,
+    20
+   ],
+   "size": [
+    56,
+    56
+   ]
+  },
+  "color": "#dee2e6"
+ },
+ {
+  "key": "lodge",
+  "file": "map_the_hotel_lodge.json",
+  "name": "The Hotel",
+  "description": "A two-floor log chalet alone in a clearing of a dense pine forest, with a backyard bunker and the ventilation-duct maze",
+  "region": {
+   "center": [
+    -300,
+    -620
+   ],
+   "size": [
+    130,
+    130
+   ]
+  },
+  "color": "#5a3a24"
+ },
+ {
+  "key": "devlife",
+  "file": "map_devlife_museum.json",
+  "name": "Developers Daily Life",
+  "description": "A two-floor museum of everyday engineering chaos: Too Many Tabs, Mission Control, the Blue Screen of Death, node_modules, merge conflicts, Vim and a giant rubber duck",
+  "region": {
+   "center": [
+    -232,
+    -136
+   ],
+   "size": [
+    86,
+    72
+   ]
+  },
+  "color": "#0b7285",
+  "spawn": [
+   0,
+   26
+  ]
  },
  {
   "key": "museum",
@@ -559,5 +725,41 @@
    0,
    150
   ]
+ },
+ {
+  "key": "cryptovalley",
+  "file": "map_crypto_valley.json",
+  "name": "Crypto Valley",
+  "description": "Next to Silicon Valley: a crypto-futurist district of HQs, NFT art galleries and financial towers with live market LED screens, floating buildings and a central networking plaza",
+  "world": true,
+  "region": {
+   "center": [
+    14000,
+    520
+   ],
+   "size": [
+    320,
+    240
+   ]
+  },
+  "color": "#f59f00"
+ },
+ {
+  "key": "jpegworld",
+  "file": "map_jpeg_world.json",
+  "name": ".jpeg World",
+  "description": "A world built from real photographs: photo-textured blocks, plain white signs. Enter through the world border at the north edge of Genesis City",
+  "world": true,
+  "region": {
+   "center": [
+    16500,
+    0
+   ],
+   "size": [
+    160,
+    160
+   ]
+  },
+  "color": "#ffffff"
  }
 ]

@@ -33,150 +33,152 @@
  },
  "items": [
   {
-   "id": "espresso",
-   "name": "Espresso Shot",
-   "icon": "☕",
+   "id": "gitignore",
+   "name": "Node.js .gitignore",
    "rarity": "common",
-   "kind": "consumable",
-   "effect": "speed",
-   "seconds": 20,
-   "description": "Run 60% faster for 20 seconds."
+   "filename": "Node.gitignore",
+   "description": "Ignores node_modules, builds, logs and .env files.",
+   "content": "# Node.js .gitignore (based on github/gitignore Node.gitignore)\nnode_modules/\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\npnpm-debug.log*\n.npm\n.eslintcache\ncoverage/\ndist/\nbuild/\n.env\n.env.local\n.env.*.local\n.DS_Store\nThumbs.db\n.vscode/*\n!.vscode/settings.json\n!.vscode/extensions.json\n.idea/\n*.log\n",
+   "saveAs": ".gitignore"
   },
   {
-   "id": "cap",
-   "name": "Hackathon Cap",
-   "icon": "🧢",
+   "id": "editorconfig",
+   "name": ".editorconfig",
    "rarity": "common",
-   "kind": "wearable",
-   "wearable": "cap",
-   "description": "Wear the cap from your first hackathon."
+   "filename": "editorconfig",
+   "description": "Same indentation and line endings in every editor.",
+   "content": "# EditorConfig: https://editorconfig.org\nroot = true\n\n[*]\ncharset = utf-8\nend_of_line = lf\nindent_style = space\nindent_size = 2\ninsert_final_newline = true\ntrim_trailing_whitespace = true\n\n[*.md]\ntrim_trailing_whitespace = false\n\n[*.py]\nindent_size = 4\n\n[Makefile]\nindent_style = tab\n",
+   "saveAs": ".editorconfig"
   },
   {
-   "id": "ci_badge",
-   "name": "Green CI Badge",
-   "icon": "✅",
+   "id": "gitattributes",
+   "name": ".gitattributes",
    "rarity": "common",
-   "kind": "consumable",
-   "effect": "confetti",
-   "description": "All checks passed! Celebrate with confetti."
+   "filename": "gitattributes",
+   "description": "Normalizes line endings and marks binary files.",
+   "content": "# Normalize line endings for every text file\n* text=auto eol=lf\n\n# Windows scripts keep CRLF\n*.bat text eol=crlf\n*.cmd text eol=crlf\n*.ps1 text eol=crlf\n\n# Binary files: never diff or merge as text\n*.png binary\n*.jpg binary\n*.jpeg binary\n*.gif binary\n*.ico binary\n*.pdf binary\n*.zip binary\n*.woff binary\n*.woff2 binary\n\n# Lockfiles: collapsed in GitHub diffs\npackage-lock.json linguist-generated=true\nyarn.lock linguist-generated=true\n",
+   "saveAs": ".gitattributes"
   },
   {
-   "id": "sticky",
-   "name": "Sticky Note of Wisdom",
-   "icon": "🗒️",
+   "id": "prettierrc",
+   "name": "Prettier config",
    "rarity": "common",
-   "kind": "consumable",
-   "effect": "tip",
-   "description": "Read a dev tip someone left behind."
+   "filename": "prettierrc.json",
+   "description": "A sensible Prettier setup for JavaScript projects.",
+   "content": "{\n  \"$schema\": \"https://json.schemastore.org/prettierrc\",\n  \"printWidth\": 100,\n  \"tabWidth\": 2,\n  \"semi\": true,\n  \"singleQuote\": true,\n  \"trailingComma\": \"all\",\n  \"bracketSpacing\": true,\n  \"arrowParens\": \"always\",\n  \"endOfLine\": \"lf\"\n}\n",
+   "saveAs": ".prettierrc.json"
   },
   {
-   "id": "energy_drink",
-   "name": "Energy Drink",
-   "icon": "⚡",
+   "id": "makefile",
+   "name": "Self-documenting Makefile",
    "rarity": "uncommon",
-   "kind": "consumable",
-   "effect": "jump",
-   "seconds": 20,
-   "description": "Jump 60% higher for 20 seconds."
+   "filename": "Makefile",
+   "description": "\"make help\" lists every task of a Node.js project.",
+   "content": "# Makefile for a Node.js project. Run \"make\" or \"make help\" to list targets.\n.DEFAULT_GOAL := help\n.PHONY: help install dev test lint format build clean\n\nhelp: ## List the available targets\n\t@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = \":.*?## \"}; {printf \"  %-10s %s\\n\", $$1, $$2}'\n\ninstall: ## Install dependencies exactly as in package-lock.json\n\tnpm ci\n\ndev: ## Start the development server\n\tnpm run dev\n\ntest: ## Run the test suite\n\tnpm test\n\nlint: ## Check code style\n\tnpx eslint .\n\nformat: ## Format every file with Prettier\n\tnpx prettier --write .\n\nbuild: ## Production build\n\tnpm run build\n\nclean: ## Remove build output and dependencies\n\trm -rf dist build coverage node_modules\n"
   },
   {
-   "id": "mug",
-   "name": "Mug of Infinite Coffee",
-   "icon": "🍵",
+   "id": "pre_commit",
+   "name": "pre-commit hook",
    "rarity": "uncommon",
-   "kind": "wearable",
-   "wearable": "mug",
-   "description": "It never runs out. Neither will you."
+   "filename": "pre-commit",
+   "description": "Runs Prettier and ESLint on staged files before each commit.",
+   "content": "#!/bin/sh\n# Git pre-commit hook: lints and formats only the staged JavaScript/TypeScript files.\n# Install: copy to .git/hooks/pre-commit and run \"chmod +x .git/hooks/pre-commit\"\n# Skip once (emergencies only): git commit --no-verify\n\nSTAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(js|jsx|ts|tsx|mjs|cjs)$')\n[ -z \"$STAGED\" ] && exit 0\n\necho \"pre-commit: checking $(echo \"$STAGED\" | wc -l | tr -d ' ') staged file(s)\"\n\n# shellcheck disable=SC2086\nnpx --no-install prettier --check $STAGED || {\n  echo \"pre-commit: run \\\"npx prettier --write\\\" on the files above, then stage them again.\"\n  exit 1\n}\n\n# shellcheck disable=SC2086\nnpx --no-install eslint --max-warnings=0 $STAGED || {\n  echo \"pre-commit: fix the lint errors above before committing.\"\n  exit 1\n}\n\nexit 0\n"
   },
   {
-   "id": "so_answer",
-   "name": "Accepted Stack Overflow Answer",
-   "icon": "💡",
+   "id": "dependabot",
+   "name": "Dependabot config",
    "rarity": "uncommon",
-   "kind": "consumable",
-   "effect": "tip",
-   "description": "The answer you were looking for since 2011."
+   "filename": "dependabot.yml",
+   "description": "Weekly dependency and GitHub Actions updates.",
+   "content": "# Dependabot: weekly dependency updates. Save as .github/dependabot.yml\nversion: 2\nupdates:\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n      day: \"monday\"\n    open-pull-requests-limit: 10\n    groups:\n      dev-dependencies:\n        dependency-type: \"development\"\n        update-types: [\"minor\", \"patch\"]\n    commit-message:\n      prefix: \"deps\"\n\n  - package-ecosystem: \"github-actions\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    commit-message:\n      prefix: \"ci\"\n"
   },
   {
-   "id": "duck",
-   "name": "Rubber Duck Debugger",
-   "icon": "🦆",
+   "id": "compose",
+   "name": "Docker Compose dev stack",
+   "rarity": "uncommon",
+   "filename": "docker-compose.yml",
+   "description": "App + PostgreSQL + Redis with health checks.",
+   "content": "# Local development stack: app + PostgreSQL + Redis. Run: docker compose up\nservices:\n  app:\n    build: .\n    ports:\n      - \"3000:3000\"\n    environment:\n      DATABASE_URL: postgres://app:app@db:5432/app\n      REDIS_URL: redis://cache:6379\n    depends_on:\n      db:\n        condition: service_healthy\n      cache:\n        condition: service_started\n\n  db:\n    image: postgres:16-alpine\n    environment:\n      POSTGRES_USER: app\n      POSTGRES_PASSWORD: app\n      POSTGRES_DB: app\n    ports:\n      - \"5432:5432\"\n    volumes:\n      - db-data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U app -d app\"]\n      interval: 5s\n      timeout: 3s\n      retries: 10\n\n  cache:\n    image: redis:7-alpine\n    ports:\n      - \"6379:6379\"\n\nvolumes:\n  db-data:\n"
+  },
+  {
+   "id": "nginx",
+   "name": "Nginx reverse proxy",
    "rarity": "rare",
-   "kind": "pet",
-   "description": "A loyal duck follows you around and listens to your bugs."
+   "filename": "nginx.conf",
+   "description": "Proxy to a Node.js app with WebSocket support and gzip.",
+   "content": "# Nginx reverse proxy for a Node.js app on port 3000, with WebSocket support.\n# Save as /etc/nginx/sites-available/app, link it into sites-enabled,\n# then run: sudo nginx -t && sudo systemctl reload nginx\nserver {\n    listen 80;\n    server_name example.com;\n\n    client_max_body_size 10m;\n\n    gzip on;\n    gzip_types text/plain text/css application/json application/javascript image/svg+xml;\n\n    location / {\n        proxy_pass http://127.0.0.1:3000;\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n        # WebSockets (Socket.io)\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection \"upgrade\";\n        proxy_read_timeout 60s;\n    }\n}\n"
   },
   {
-   "id": "headphones",
-   "name": "Noise-Cancelling Headphones",
-   "icon": "🎧",
+   "id": "systemd",
+   "name": "systemd service",
    "rarity": "rare",
-   "kind": "wearable",
-   "wearable": "headphones",
-   "description": "Deep focus mode: on."
+   "filename": "app.service",
+   "description": "Keeps a Node.js app running and restarts it on failure.",
+   "content": "# systemd unit that keeps a Node.js app running and restarts it on failure.\n# Save as /etc/systemd/system/app.service, then run:\n#   sudo systemctl daemon-reload && sudo systemctl enable --now app\n#   journalctl -u app -f    (to follow the logs)\n[Unit]\nDescription=Node.js app\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=www-data\nWorkingDirectory=/srv/app\nEnvironment=NODE_ENV=production\nEnvironment=PORT=3000\nExecStart=/usr/bin/node server.js\nRestart=on-failure\nRestartSec=5\nNoNewPrivileges=true\nProtectSystem=full\nPrivateTmp=true\n\n[Install]\nWantedBy=multi-user.target\n"
   },
   {
-   "id": "hammer",
-   "name": "Git Commit Hammer",
-   "icon": "🔨",
+   "id": "pr_template",
+   "name": "Pull request template",
    "rarity": "rare",
-   "kind": "tool",
-   "description": "Squash bugs in the Debug Dungeon with a click."
+   "filename": "pull_request_template.md",
+   "description": "A clear PR template with a review checklist.",
+   "content": "<!-- Save as .github/pull_request_template.md -->\n## What does this change?\n\n<!-- A short summary of the change and why it is needed. -->\n\nCloses #\n\n## How was it tested?\n\n- [ ] Unit tests\n- [ ] Manual test (describe the steps below)\n\n## Screenshots (if the UI changed)\n\n## Checklist\n\n- [ ] The code follows the project style (lint passes)\n- [ ] Tests were added or updated\n- [ ] Documentation was updated if needed\n- [ ] No secrets, keys or personal data in the diff\n"
   },
   {
-   "id": "teleport_token",
-   "name": "Teleport Token",
-   "icon": "🌀",
+   "id": "pg_backup",
+   "name": "PostgreSQL backup script",
    "rarity": "rare",
-   "kind": "consumable",
-   "effect": "teleport",
-   "description": "Warp to a random place in the multiverse."
+   "filename": "pg-backup.sh",
+   "description": "Compressed dumps with rotation, ready for cron.",
+   "content": "#!/usr/bin/env bash\n# PostgreSQL backup with rotation: keeps the last 7 compressed dumps.\n# Usage: DATABASE_URL=postgres://user:pass@host:5432/db ./pg-backup.sh [backup_dir]\n# Cron (every day at 03:00): 0 3 * * * DATABASE_URL=... /path/pg-backup.sh /var/backups/pg\nset -euo pipefail\n\nBACKUP_DIR=\"${1:-./backups}\"\nKEEP=7\n: \"${DATABASE_URL:?Set DATABASE_URL first}\"\n\nmkdir -p \"$BACKUP_DIR\"\nFILE=\"$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz\"\n\necho \"Dumping database to $FILE\"\npg_dump --no-owner --no-privileges \"$DATABASE_URL\" | gzip -9 > \"$FILE\"\n\n# Delete everything older than the newest $KEEP backups\nls -1t \"$BACKUP_DIR\"/db-*.sql.gz | tail -n +\"$((KEEP + 1))\" | xargs -r rm --\n\necho \"Done. Backups kept:\"\nls -lh \"$BACKUP_DIR\"/db-*.sql.gz\n"
   },
   {
-   "id": "hoodie",
-   "name": "Senior Dev Hoodie",
-   "icon": "🧥",
+   "id": "release",
+   "name": "Release workflow",
    "rarity": "epic",
-   "kind": "wearable",
-   "wearable": "hoodie",
-   "description": "Ten years of production incidents, woven into fabric."
+   "filename": "release.yml",
+   "description": "Push a v*.*.* tag: tests run and a GitHub Release is published.",
+   "content": "# GitHub Actions: when you push a tag like v1.2.3, run the tests and publish\n# a GitHub Release with automatically generated notes.\n# Save as .github/workflows/release.yml, then: git tag v1.0.0 && git push --tags\nname: Release\n\non:\n  push:\n    tags: [\"v*.*.*\"]\n\npermissions:\n  contents: write\n\njobs:\n  release:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: npm\n      - run: npm ci\n      - run: npm test\n      - name: Create the GitHub Release\n        env:\n          GH_TOKEN: ${{ github.token }}\n        run: gh release create \"$GITHUB_REF_NAME\" --generate-notes --verify-tag\n"
   },
   {
-   "id": "lens",
-   "name": "Debugger Lens",
-   "icon": "🔍",
+   "id": "fetch_retry",
+   "name": "fetch with retry",
    "rarity": "epic",
-   "kind": "consumable",
-   "effect": "lens",
-   "seconds": 60,
-   "description": "Deal double damage to bugs for 60 seconds."
+   "filename": "fetch-retry.mjs",
+   "description": "Timeouts, exponential backoff, jitter and Retry-After.",
+   "content": "// fetch with timeout and retries (exponential backoff + jitter).\n// Works in browsers and Node.js 18+. Retries network errors, 429 and 5xx.\n//\n//   import { fetchWithRetry } from './fetch-retry.mjs';\n//   const response = await fetchWithRetry('https://api.github.com/zen');\n//   console.log(await response.text());\n\nconst sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\n\nexport async function fetchWithRetry(url, options = {}, { retries = 3, baseDelay = 500, timeout = 10000 } = {}) {\n  for (let attempt = 0; ; attempt++) {\n    const controller = new AbortController();\n    const timer = setTimeout(() => controller.abort(), timeout);\n    try {\n      const response = await fetch(url, { ...options, signal: controller.signal });\n      const retryable = response.status === 429 || response.status >= 500;\n      if (!retryable || attempt >= retries) return response;\n      // Respect Retry-After (in seconds) when the server sends it\n      const retryAfter = Number(response.headers.get('retry-after'));\n      await sleep(retryAfter > 0 ? retryAfter * 1000 : backoff(attempt, baseDelay));\n    } catch (error) {\n      if (attempt >= retries) throw error;\n      await sleep(backoff(attempt, baseDelay));\n    } finally {\n      clearTimeout(timer);\n    }\n  }\n}\n\nfunction backoff(attempt, baseDelay) {\n  const exponential = baseDelay * 2 ** attempt;\n  return exponential / 2 + Math.random() * (exponential / 2);\n}\n"
   },
   {
-   "id": "revert",
-   "name": "git revert Scroll",
-   "icon": "⏪",
+   "id": "rate_limit",
+   "name": "Rate limiter middleware",
    "rarity": "epic",
-   "kind": "consumable",
-   "effect": "revert",
-   "description": "Return to where you were before your last teleport."
+   "filename": "rate-limit.js",
+   "description": "Token-bucket Express middleware with no dependencies.",
+   "content": "// Token-bucket rate limiter as Express middleware (no dependencies).\n// Each client (by IP) can make `capacity` requests in a burst, refilled at\n// `refillPerSecond`. Over the limit it answers 429 with a Retry-After header.\n//\n//   const express = require('express');\n//   const rateLimit = require('./rate-limit');\n//   const app = express();\n//   app.use('/api', rateLimit({ capacity: 20, refillPerSecond: 5 }));\n\nfunction rateLimit({ capacity = 20, refillPerSecond = 5, keyOf = (req) => req.ip } = {}) {\n  const buckets = new Map();\n\n  // Forget idle clients so memory does not grow forever\n  setInterval(() => {\n    const now = Date.now();\n    for (const [key, bucket] of buckets) {\n      if (now - bucket.updatedAt > 10 * 60 * 1000) buckets.delete(key);\n    }\n  }, 60 * 1000).unref();\n\n  return function rateLimitMiddleware(req, res, next) {\n    const key = keyOf(req);\n    const now = Date.now();\n    const bucket = buckets.get(key) || { tokens: capacity, updatedAt: now };\n    bucket.tokens = Math.min(capacity, bucket.tokens + ((now - bucket.updatedAt) / 1000) * refillPerSecond);\n    bucket.updatedAt = now;\n    buckets.set(key, bucket);\n\n    res.set('X-RateLimit-Limit', String(capacity));\n    res.set('X-RateLimit-Remaining', String(Math.max(0, Math.floor(bucket.tokens - 1))));\n    if (bucket.tokens < 1) {\n      res.set('Retry-After', String(Math.ceil((1 - bucket.tokens) / refillPerSecond)));\n      return res.status(429).json({ error: 'Too many requests' });\n    }\n    bucket.tokens -= 1;\n    return next();\n  };\n}\n\nmodule.exports = rateLimit;\n"
   },
   {
-   "id": "jetpack",
-   "name": "Jetpack.js",
-   "icon": "🚀",
+   "id": "pages",
+   "name": "GitHub Pages deploy",
    "rarity": "legendary",
-   "kind": "consumable",
-   "effect": "jetpack",
-   "seconds": 30,
-   "description": "Hold Space to fly for 30 seconds."
+   "filename": "pages.yml",
+   "description": "The official Actions flow to build and deploy to GitHub Pages.",
+   "content": "# GitHub Actions: build the site and deploy it to GitHub Pages on every push to main.\n# Save as .github/workflows/pages.yml and set Settings > Pages > Source to \"GitHub Actions\".\nname: Deploy to GitHub Pages\n\non:\n  push:\n    branches: [main]\n  workflow_dispatch:\n\npermissions:\n  contents: read\n  pages: write\n  id-token: write\n\nconcurrency:\n  group: pages\n  cancel-in-progress: false\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n          cache: npm\n      - run: npm ci\n      - run: npm run build\n      - uses: actions/configure-pages@v5\n      - uses: actions/upload-pages-artifact@v3\n        with:\n          path: dist\n\n  deploy:\n    needs: build\n    runs-on: ubuntu-latest\n    environment:\n      name: github-pages\n      url: ${{ steps.deployment.outputs.page_url }}\n    steps:\n      - id: deployment\n        uses: actions/deploy-pages@v4\n"
   },
   {
-   "id": "crown",
-   "name": "10x Engineer Crown",
-   "icon": "👑",
+   "id": "devcontainer",
+   "name": "Dev Container",
    "rarity": "legendary",
-   "kind": "wearable",
-   "wearable": "crown",
-   "description": "A golden crown for legendary shippers."
+   "filename": "devcontainer.json",
+   "description": "Codespaces / VS Code container with Node 20, gh and Docker.",
+   "content": "// Dev Container: open the repo in GitHub Codespaces or VS Code (Dev Containers\n// extension) with Node.js 20, the GitHub CLI and Docker ready to use.\n// Save as .devcontainer/devcontainer.json\n{\n  \"name\": \"Node.js\",\n  \"image\": \"mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm\",\n  \"features\": {\n    \"ghcr.io/devcontainers/features/github-cli:1\": {},\n    \"ghcr.io/devcontainers/features/docker-outside-of-docker:1\": {}\n  },\n  \"forwardPorts\": [3000],\n  \"postCreateCommand\": \"npm ci\",\n  \"customizations\": {\n    \"vscode\": {\n      \"extensions\": [\"dbaeumer.vscode-eslint\", \"esbenp.prettier-vscode\", \"github.vscode-github-actions\"],\n      \"settings\": {\n        \"editor.formatOnSave\": true,\n        \"editor.defaultFormatter\": \"esbenp.prettier-vscode\"\n      }\n    }\n  }\n}\n"
+  },
+  {
+   "id": "bisect",
+   "name": "Automatic git bisect",
+   "rarity": "legendary",
+   "filename": "find-bad-commit.sh",
+   "description": "Finds the commit that broke your tests by itself.",
+   "content": "#!/usr/bin/env bash\n# Finds the commit that broke your tests with git bisect, automatically.\n# Usage: ./find-bad-commit.sh <last-good-commit-or-tag> [test command]\n# Example: ./find-bad-commit.sh v1.4.0 \"npm test\"\nset -euo pipefail\n\nGOOD=\"${1:?Pass the last known good commit or tag}\"\nTEST_CMD=\"${2:-npm test}\"\n\nif ! git diff --quiet || ! git diff --cached --quiet; then\n  echo \"Commit or stash your changes first.\" >&2\n  exit 1\nfi\n\ngit bisect start HEAD \"$GOOD\"\n# Exit code 0 = good, 1-124 = bad, 125 = skip (e.g. the commit does not build)\ngit bisect run sh -c \"$TEST_CMD\"\necho\necho \"First bad commit:\"\ngit bisect log | grep -m1 \"first bad commit\" || true\ngit bisect reset\n"
   }
  ],
  "spawns": [

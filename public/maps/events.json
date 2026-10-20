@@ -1,0 +1,61 @@
+{
+ "_how_to": "Community events shown on the Community Events Board (Genesis Plaza). Times are ISO 8601 with a time zone (Z = UTC); every player sees them in their own local time. coordenadasDestino is the world position of the event stage: x = east/west, y = north/south on the top-view map (the world z axis). urlTransmissao: YouTube (watch, live or youtu.be link, or a channel live link), Twitch (channel or video link). X Spaces and Discord links cannot be embedded: the stage shows an 'Open stream' button instead.",
+ "attendance": { "radius": 28, "minutes": 5, "reward": 100 },
+ "events": [
+  {
+   "id": "multiverse-launch-party",
+   "titulo": "Multiverse Launch Party",
+   "organizador": "GitHub Multiverse",
+   "descricao": "Opening week of the new districts: music on the main stage, tours of the Candlestick Maze and the Mob Maze.",
+   "tipo": "Festa",
+   "urlTransmissao": "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+   "dataHoraInicio": "2026-10-16T12:00:00Z",
+   "dataHoraFim": "2026-10-23T23:00:00Z",
+   "coordenadasDestino": { "x": 470, "y": 30 }
+  },
+  {
+   "id": "github-universe-2026-day-1",
+   "titulo": "GitHub Universe 2026 · Day 1 keynote",
+   "organizador": "GitHub",
+   "descricao": "Watch the opening keynote live together. Stream from the official GitHub YouTube channel.",
+   "tipo": "Palestra",
+   "urlTransmissao": "https://www.youtube.com/channel/UC7c3Kb6jYCRj4JOHHZTxKsQ/live",
+   "dataHoraInicio": "2026-10-28T16:00:00Z",
+   "dataHoraFim": "2026-10-28T19:00:00Z",
+   "coordenadasDestino": { "x": -430, "y": -150 }
+  },
+  {
+   "id": "github-universe-2026-day-2",
+   "titulo": "GitHub Universe 2026 · Day 2",
+   "organizador": "GitHub",
+   "descricao": "Second day of Universe: product sessions and community talks.",
+   "tipo": "Palestra",
+   "urlTransmissao": "https://www.youtube.com/channel/UC7c3Kb6jYCRj4JOHHZTxKsQ/live",
+   "dataHoraInicio": "2026-10-29T16:00:00Z",
+   "dataHoraFim": "2026-10-29T23:00:00Z",
+   "coordenadasDestino": { "x": -430, "y": -150 }
+  },
+  {
+   "id": "multiverse-hackathon-1",
+   "titulo": "Multiverse Hackathon #1",
+   "organizador": "Multiverse Builders",
+   "descricao": "48 hours to build a district, a mini game or a tool for the Multiverse. Kickoff on the main stage.",
+   "tipo": "Hackathon",
+   "urlTransmissao": "https://www.twitch.tv/github",
+   "dataHoraInicio": "2026-11-07T15:00:00Z",
+   "dataHoraFim": "2026-11-09T15:00:00Z",
+   "coordenadasDestino": { "x": 470, "y": 30 }
+  },
+  {
+   "id": "community-meetup-november",
+   "titulo": "Community Meetup · November",
+   "organizador": "Multiverse Community",
+   "descricao": "Monthly meetup: show what you built, meet other devs, plan the next events.",
+   "tipo": "Community Meetup",
+   "urlTransmissao": "https://discord.com/invite/github",
+   "dataHoraInicio": "2026-11-20T22:00:00Z",
+   "dataHoraFim": "2026-11-20T23:30:00Z",
+   "coordenadasDestino": { "x": -430, "y": -150 }
+  }
+ ]
+}

@@ -1,36 +1,22 @@
 // ============================================================================
-// LOOT: FORTNITE-STYLE CHESTS, SUPPLY DROPS, HOTBAR AND DEV ITEMS
+// LOOT: FORTNITE-STYLE CHESTS AND SUPPLY DROPS WITH REAL CODE FILES
 // ============================================================================
 // Chests sit on street corners all over Genesis City and Silicon Valley and
 // respawn two minutes after being opened. Every three minutes a supply drop
-// falls from the sky with Rare-to-Legendary loot. Instead of weapons, the
-// items are things devs understand: coffee, rubber ducks, hoodies, jetpacks...
+// falls from the sky with Rare-to-Legendary loot. Every item is a real,
+// working file (a .gitignore, a Makefile, a GitHub Actions workflow, an Nginx
+// config...) listed in maps/loot.json, and it is downloaded to your computer
+// the moment you open the chest. There is no in-game inventory.
 const LootSystem = (() => {
   const OPEN_DISTANCE = 4.5;
-  const DEV_TIPS = [
-    'Name things for the reader, not the writer.',
-    'If it is not tested, it is broken. You just do not know it yet.',
-    'Read the error message. Then read it again.',
-    'Small commits, clear messages, happy reviewers.',
-    'Delete code bravely: the best line is the one you never wrote.',
-    'Measure before you optimize.',
-    'Explain the bug to a rubber duck before you ask a human.',
-    'Automate the thing you have done three times.'
-  ];
-
   let catalog = null;
   let hooks = null;
   const loots = {};
-  let inventory = [];
   const buffs = { speed: 0, jump: 0, jetpack: 0, lens: 0 };
-  let duckPet = null;
   let nearestLoot = null;
   const ui = {
-    hotbar: document.getElementById('hotbar'),
     prompt: document.getElementById('loot-prompt'),
     toast: document.getElementById('loot-toast'),
-    inventoryPanel: document.getElementById('inventory-panel'),
-    inventoryList: document.getElementById('inventory-list'),
     buffs: document.getElementById('buff-bar')
   };
 
@@ -78,18 +64,6 @@ const LootSystem = (() => {
     return drop;
   }
 
-  function buildDuck() {
-    const { material, sphere, box } = PropKit.kit;
-    const duck = new THREE.Group();
-    duck.add(sphere(0.4, material('#ffd43b'), 0, 0.4, 0, 12));
-    duck.add(sphere(0.25, material('#ffd43b'), 0, 0.85, 0.2, 12));
-    duck.add(box(0.2, 0.08, 0.2, material('#ff922b'), 0, 0.82, 0.48));
-    duck.add(sphere(0.05, material('#111111'), 0.1, 0.92, 0.4, 6));
-    duck.add(sphere(0.05, material('#111111'), -0.1, 0.92, 0.4, 6));
-    duck.traverse((node) => { node.raycast = () => {}; });
-    return duck;
-  }
-
   // --------------------------------------------------------------------------
   // Loot state
   // --------------------------------------------------------------------------
@@ -126,63 +100,31 @@ const LootSystem = (() => {
     return catalog.items.find((item) => item.id === id);
   }
 
-  function rarityColor(item) {
-    return catalog.rarities[item.rarity].color;
+  // --------------------------------------------------------------------------
+  // Opening loot: the item is a real code file, downloaded to your computer
+  // --------------------------------------------------------------------------
+  function download(item) {
+    const blob = new Blob([item.content], { type: 'application/octet-stream' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = item.filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
   }
 
-  // --------------------------------------------------------------------------
-  // HUD: hotbar, inventory panel, prompts, toasts and buffs
-  // --------------------------------------------------------------------------
-  function renderInventory() {
-    ui.hotbar.innerHTML = '';
-    for (let slot = 0; slot < 5; slot++) {
-      const entry = inventory[slot];
-      const item = entry && itemDefinition(entry.id);
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'hotbar-slot';
-      cell.innerHTML = '<kbd></kbd><span class="icon"></span>';
-      cell.querySelector('kbd').textContent = slot + 1;
-      if (item) {
-        cell.querySelector('.icon').textContent = item.icon;
-        cell.style.borderColor = rarityColor(item);
-        cell.style.background = `linear-gradient(180deg, ${rarityColor(item)}55, rgba(17, 15, 26, 0.85))`;
-        cell.title = `${item.name} (${catalog.rarities[item.rarity].name}) — ${item.description}`;
-        cell.addEventListener('click', () => useSlot(slot));
-      }
-      ui.hotbar.appendChild(cell);
-    }
-
-    ui.inventoryList.innerHTML = '';
-    if (!inventory.length) ui.inventoryList.innerHTML = '<li class="empty">Empty. Open chests (E) and supply drops to find dev loot!</li>';
-    inventory.forEach((entry, index) => {
-      const item = itemDefinition(entry.id);
-      if (!item) return;
-      const row = document.createElement('li');
-      row.style.borderLeftColor = rarityColor(item);
-      const label = document.createElement('div');
-      label.innerHTML = '<b></b><small></small>';
-      label.querySelector('b').textContent = `${index + 1}. ${item.icon} ${item.name}`;
-      label.querySelector('small').textContent = `${catalog.rarities[item.rarity].name} · ${item.description}`;
-      const useButton = document.createElement('button');
-      useButton.type = 'button';
-      useButton.textContent = item.kind === 'wearable' || item.kind === 'pet' || item.kind === 'tool' ? 'Equip' : 'Use';
-      useButton.addEventListener('click', () => useSlot(index));
-      const dropButton = document.createElement('button');
-      dropButton.type = 'button';
-      dropButton.className = 'secondary';
-      dropButton.textContent = 'Drop';
-      dropButton.addEventListener('click', () => dropSlot(index));
-      row.append(label, useButton, dropButton);
-      ui.inventoryList.appendChild(row);
-    });
+  function received(item, from) {
+    if (!item) return;
+    download(item);
+    showToast(item, from);
+    hooks.system(`Downloaded ${item.filename}: ${item.name} (${catalog.rarities[item.rarity].name}). ${item.description}${item.saveAs ? ` Rename it to ${item.saveAs} in your project (browsers do not save files starting with a dot).` : ''}`);
   }
 
   function showToast(item, from) {
     const rarity = catalog.rarities[item.rarity];
-    ui.toast.innerHTML = '<span class="icon"></span><div><small></small><b></b></div>';
-    ui.toast.querySelector('.icon').textContent = item.icon;
-    ui.toast.querySelector('small').textContent = `${rarity.name.toUpperCase()} · from a ${from === 'drop' ? 'supply drop' : 'chest'}`;
+    ui.toast.innerHTML = '<span class="file"></span><div><small></small><b></b></div>';
+    ui.toast.querySelector('.file').textContent = item.filename;
+    ui.toast.querySelector('small').textContent = `${rarity.name.toUpperCase()} · from a ${from === 'drop' ? 'supply drop' : 'chest'} · downloaded`;
     ui.toast.querySelector('b').textContent = item.name;
     ui.toast.style.borderColor = rarity.color;
     ui.toast.style.boxShadow = `0 0 30px ${rarity.color}aa`;
@@ -194,63 +136,23 @@ const LootSystem = (() => {
   function renderBuffs() {
     const now = performance.now();
     const active = Object.entries(buffs).filter(([, until]) => until > now);
-    ui.buffs.textContent = active.map(([name, until]) => `${{ speed: '☕', jump: '⚡', jetpack: '🚀', lens: '🔍' }[name]} ${Math.ceil((until - now) / 1000)}s`).join('   ');
+    ui.buffs.textContent = active.map(([name, until]) => `${{ speed: 'Speed', jump: 'Jump', jetpack: 'Jetpack', lens: 'Lens' }[name]} ${Math.ceil((until - now) / 1000)}s`).join('   ');
   }
 
-  // --------------------------------------------------------------------------
-  // Item effects
-  // --------------------------------------------------------------------------
-  function applyEffect(item) {
-    const now = performance.now();
-    switch (item.effect || item.kind) {
-      case 'speed': buffs.speed = now + item.seconds * 1000; hooks.system('☕ Espresso kicked in: you run faster!'); break;
-      case 'jump': buffs.jump = now + item.seconds * 1000; hooks.system('⚡ Energy Drink: you jump higher!'); break;
-      case 'jetpack': buffs.jetpack = now + item.seconds * 1000; hooks.system('🚀 Jetpack.js loaded: hold Space to fly!'); break;
-      case 'lens': buffs.lens = now + item.seconds * 1000; hooks.system('🔍 Debugger Lens: double damage against bugs for 60s.'); break;
-      case 'tip': hooks.system(`${item.icon} ${DEV_TIPS[Math.floor(Math.random() * DEV_TIPS.length)]}`); break;
-      case 'confetti': hooks.confetti(); hooks.system('✅ All checks passed!'); break;
-      case 'teleport': hooks.teleportRandom(); break;
-      case 'revert': hooks.revertTeleport(); break;
-      case 'pet':
-        if (duckPet) { hooks.scene.remove(duckPet); duckPet = null; hooks.system('🦆 Your duck waddles home.'); }
-        else { duckPet = buildDuck(); duckPet.position.copy(hooks.avatarPosition()); hooks.scene.add(duckPet); hooks.system('🦆 Quack! Your Rubber Duck Debugger is following you.'); }
-        break;
-      case 'tool': hooks.equipHammer(); break;
-      case 'wearable': hooks.toggleWearable(item.wearable); break;
-      default: break;
-    }
+  function rollLocal(kind) {
+    const weightKey = kind === 'drop' ? 'dropWeight' : 'chestWeight';
+    const rarities = Object.entries(catalog.rarities).filter(([, rarity]) => rarity[weightKey] > 0);
+    let roll = Math.random() * rarities.reduce((sum, [, rarity]) => sum + rarity[weightKey], 0);
+    const [rarityKey] = rarities.find(([, rarity]) => (roll -= rarity[weightKey]) < 0) || rarities[0];
+    const options = catalog.items.filter((item) => item.rarity === rarityKey);
+    return options[Math.floor(Math.random() * options.length)];
   }
 
-  // --------------------------------------------------------------------------
-  // Actions (server-authoritative, or simulated locally in solo mode)
-  // --------------------------------------------------------------------------
-  const local = {
-    open(loot) {
-      if (inventory.length >= 20) { hooks.system('Your inventory is full (20). Use or /drop something first.'); return; }
-      const weightKey = loot.kind === 'drop' ? 'dropWeight' : 'chestWeight';
-      const rarities = Object.entries(catalog.rarities).filter(([, rarity]) => rarity[weightKey] > 0);
-      let roll = Math.random() * rarities.reduce((sum, [, rarity]) => sum + rarity[weightKey], 0);
-      const [rarityKey] = rarities.find(([, rarity]) => (roll -= rarity[weightKey]) < 0) || rarities[0];
-      const options = catalog.items.filter((item) => item.rarity === rarityKey);
-      const item = options[Math.floor(Math.random() * options.length)];
-      inventory.push({ id: item.id, foundAt: Date.now() });
-      saveLocalInventory();
-      renderInventory();
-      showToast(item, loot.kind);
-      if (loot.kind === 'drop') removeLoot(loot.id);
-      else { upsertLoot({ id: loot.id, open: true }); setTimeout(() => upsertLoot({ id: loot.id, open: false }), 120000); }
-    },
-    use(index) {
-      const item = inventory[index] && itemDefinition(inventory[index].id);
-      if (!item) return;
-      if (item.kind === 'consumable') { inventory.splice(index, 1); saveLocalInventory(); renderInventory(); }
-      applyEffect(item);
-    },
-    drop(index) { inventory.splice(index, 1); saveLocalInventory(); renderInventory(); }
-  };
-
-  function saveLocalInventory() {
-    try { localStorage.setItem(`github-multiverse-inventory-${hooks.localTag()}`, JSON.stringify(inventory)); } catch (error) { /* storage unavailable */ }
+  // Solo mode (no server): the chest is opened locally
+  function openLocal(loot) {
+    received(rollLocal(loot.kind), loot.kind);
+    if (loot.kind === 'drop') removeLoot(loot.id);
+    else { upsertLoot({ id: loot.id, open: true }); setTimeout(() => upsertLoot({ id: loot.id, open: false }), 120000); }
   }
 
   function online() {
@@ -261,24 +163,12 @@ const LootSystem = (() => {
     if (!nearestLoot) return false;
     if (nearestLoot.landsAtLocal > performance.now()) { hooks.system('The supply drop is still falling!'); return true; }
     if (online()) hooks.socket.emit('loot_open', { id: nearestLoot.id });
-    else local.open(nearestLoot);
+    else openLocal(nearestLoot);
     return true;
   }
 
-  function useSlot(index) {
-    if (!inventory[index]) return;
-    if (online()) hooks.socket.emit('item_use', { index });
-    else local.use(index);
-  }
-
-  function dropSlot(index) {
-    if (!inventory[index]) return;
-    if (online()) hooks.socket.emit('item_drop', { index });
-    else local.drop(index);
-  }
-
   // --------------------------------------------------------------------------
-  // Per-frame update: falling drops, glow, duck pet and the "Press E" prompt
+  // Per-frame update: falling drops, glow and the "Press E" prompt
   // --------------------------------------------------------------------------
   function update(time, deltaSeconds) {
     if (!catalog) return;
@@ -303,12 +193,6 @@ const LootSystem = (() => {
     ui.prompt.style.display = nearestLoot ? 'block' : 'none';
     if (nearestLoot) ui.prompt.textContent = nearestLoot.kind === 'drop' ? 'Press E to open the SUPPLY DROP' : 'Press E to open the chest';
 
-    if (duckPet) {
-      const target = avatar.clone().add(new THREE.Vector3(1.6, 0, 1.6));
-      duckPet.position.lerp(target, 1 - Math.exp(-deltaSeconds * 4));
-      duckPet.position.y = avatar.y + Math.abs(Math.sin(time * 6)) * 0.15;
-      duckPet.rotation.y = Math.atan2(avatar.x - duckPet.position.x, avatar.z - duckPet.position.z);
-    }
     if (Math.floor(time * 4) !== Math.floor((time - deltaSeconds) * 4)) renderBuffs();
   }
 
@@ -318,19 +202,8 @@ const LootSystem = (() => {
     return { speed: buffs.speed > now ? 1.6 : 1, jump: buffs.jump > now ? 1.6 : 1, jetpack: buffs.jetpack > now, lens: buffs.lens > now };
   }
 
-  function command(name, args) {
+  function command(name) {
     switch (name) {
-      case 'inv':
-      case 'inventory':
-        toggleInventory();
-        return true;
-      case 'use':
-        useSlot(parseInt(args[0], 10) - 1);
-        return true;
-      case 'drop':
-        if (!(parseInt(args[0], 10) >= 1)) { hooks.system('Usage: /drop <slot number>'); return true; }
-        dropSlot(parseInt(args[0], 10) - 1);
-        return true;
       case 'loot': {
         const avatar = hooks.avatarPosition();
         const available = Object.values(loots).filter((loot) => !loot.open).map((loot) => ({ loot, distance: Math.hypot(avatar.x - loot.x, avatar.z - loot.z) })).sort((a, b) => a.distance - b.distance);
@@ -344,11 +217,6 @@ const LootSystem = (() => {
     }
   }
 
-  function toggleInventory(force) {
-    const show = typeof force === 'boolean' ? force : ui.inventoryPanel.style.display !== 'block';
-    ui.inventoryPanel.style.display = show ? 'block' : 'none';
-  }
-
   async function init(options) {
     hooks = options;
     catalog = await (await fetch('maps/loot.json')).json();
@@ -357,27 +225,23 @@ const LootSystem = (() => {
       hooks.socket.on('loot_spawned', upsertLoot);
       hooks.socket.on('loot_state', ({ id, open }) => { if (loots[id]) upsertLoot({ ...loots[id], id, open, landsAt: null }); });
       hooks.socket.on('loot_removed', removeLoot);
-      hooks.socket.on('inventory', (list) => { inventory = list; renderInventory(); });
-      hooks.socket.on('loot_result', ({ item, from }) => showToast(itemDefinition(item), from));
-      hooks.socket.on('item_effect', ({ item }) => applyEffect(itemDefinition(item)));
+      hooks.socket.on('loot_result', ({ item, from }) => received(itemDefinition(item), from));
       hooks.socket.on('connect', () => hooks.socket.emit('loot_sync'));
       hooks.socket.emit('loot_sync');
     } else {
       catalog.spawns.forEach((spawn, index) => upsertLoot({ id: `chest${index}`, kind: 'chest', x: spawn.x, z: spawn.z, area: spawn.area, open: false }));
-      try { inventory = JSON.parse(localStorage.getItem(`github-multiverse-inventory-${hooks.localTag()}`)) || []; } catch (error) { inventory = []; }
       // Solo supply drops every three minutes too
       setInterval(() => {
         const spot = catalog.spawns[Math.floor(Math.random() * catalog.spawns.length)];
         upsertLoot({ id: `drop${Date.now()}`, kind: 'drop', x: spot.x, z: spot.z, area: spot.area, open: false, landsAt: Date.now() + 20000 });
-        hooks.system(`📦 A SUPPLY DROP is falling over ${spot.area}!`);
+        hooks.system(`A SUPPLY DROP is falling over ${spot.area}!`);
       }, 180000);
     }
-    renderInventory();
   }
 
   function addBuff(name, seconds) {
     buffs[name] = performance.now() + seconds * 1000;
   }
 
-  return { init, update, tryOpen, useSlot, command, modifiers, toggleInventory, addBuff };
+  return { init, update, tryOpen, command, modifiers, addBuff };
 })();

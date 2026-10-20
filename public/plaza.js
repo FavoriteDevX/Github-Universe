@@ -746,7 +746,7 @@
       });
       group.userData.label = 'Underground entrance: step in and fall for 5 seconds';
       // Big floating sign so newcomers (who spawn right in front) find the entrance
-      const sign = textSprite('⬇ UNDERGROUND · jump into the pool', { width: 11, background: 'rgba(24, 119, 242, 0.92)' });
+      const sign = textSprite('UNDERGROUND · jump into the pool', { width: 11, background: 'rgba(24, 119, 242, 0.92)' });
       sign.position.set(0, 5.5, 0);
       group.add(sign);
       animate(sign, (time) => { sign.position.y = 5.5 + Math.sin(time * 1.6) * 0.25; });
@@ -754,75 +754,858 @@
       window.undergroundEntrances.push({ group, size, depth });
     },
 
-    // Underground hall under the pool: closed rock cave around a Welcome Hall,
-    // a cozy bar/cafe social area, an elevator back to the surface
-    undergroundHall(group, { w, h, label }) {
+    // Underground hall under the pool: a Decentraland-style round welcome
+    // lounge, fully enclosed (the city and the real sky are never visible).
+    //   - Warm plank floor, maroon rugs under every furniture group.
+    //   - Central glass tube with falling water, dark metal base and top rings
+    //     and a curved gold "Welcome to Multiverse" sign; it rises through the
+    //     mezzanine opening into the square ceiling opening. The player lands inside it.
+    //   - The square opening is the UNDERSIDE OF THE ENTRANCE POOL: a glowing water
+    //     ceiling with rippling caustics. It is the main light of the hall (one
+    //     SpotLight straight down, caustics on the floor and the tube, faint god
+    //     rays); it follows the day/night cycle softly and never goes dark.
+    //   - Ring mezzanine (the upper floor, reached by stairs or warp pads) with
+    //     a curved wood-panel soffit and a glass railing; reading lounge,
+    //     lookout, arcade and gallery express upstairs.
+    //   - Ceiling with thick dark curved bands and amber glow strips.
+    //   - Wide arched window bays with wood frames showing painted backdrops
+    //     (pink blossom trees and the sea downstairs, sea and palms upstairs).
+    //   - Second glass column (the elevator back to the surface) with a round
+    //     wooden cap where it meets the mezzanine.
+    //   - Orange spot cans on thin rods and yellow disc lamps (accents only),
+    //     cafe tables with grey-blue chairs, a laptop table, potted palms, a
+    //     floating orange MVC coin, the Underground Cafe counter, and the portal
+    //     (+x) into the ring-shaped Hall of Internet History.
+    //   No people, avatars or statues anywhere in the hall.
+    undergroundHall(group, { w, label }) {
       const radius = w / 2;
-      builders.welcomeHall(group, { w, h, label: label || 'Welcome to the Underground', data: { openCenter: true } });
-      const rock = new THREE.MeshStandardMaterial({ color: '#5d4a3a', roughness: 1, flatShading: true, side: THREE.DoubleSide });
-      // Rock wall with an opening at +x where the history corridor starts
-      const gap = 2 * Math.asin(5.5 / (radius + 4));
-      group.add(mesh(new THREE.CylinderGeometry(radius + 4, radius + 4, h + 4, 24, 1, true, Math.PI / 2 + gap / 2, Math.PI * 2 - gap), rock, 0, h / 2, 0));
-      // Rock floor between the hall and the cave wall, plus a landing into the corridor
-      const caveFloor = material('#4a3b2e', { roughness: 1 });
-      group.add(cylinder(radius + 4, radius + 4, 0.3, caveFloor, 0, 0.12, 0, 48));
-      group.add(box(6, 0.3, 11, caveFloor, radius + 3, 0.12, 0));
-      // Ceiling with a square opening for the tunnel
-      const ceiling = new THREE.Shape();
-      ceiling.absarc(0, 0, radius + 4, 0, Math.PI * 2, false);
-      const opening = new THREE.Path();
-      opening.moveTo(-7.2, -7.2); opening.lineTo(7.2, -7.2); opening.lineTo(7.2, 7.2); opening.lineTo(-7.2, 7.2); opening.closePath();
-      ceiling.holes.push(opening);
-      const roof = mesh(new THREE.ShapeGeometry(ceiling, 24), rock, 0, h + 2, 0);
-      roof.rotation.x = Math.PI / 2;
-      group.add(roof);
-      // Glowing light where the tunnel enters
-      const skylight = box(14.4, 0.2, 14.4, glow('#bfeaff', 1.2), 0, h + 1.9, 0);
-      skylight.raycast = () => {};
-      group.add(skylight);
-      // Warm hanging lamps all around the cave
-      for (let i = 0; i < 10; i++) {
-        const angle = (i / 10) * Math.PI * 2;
-        group.add(sphere(0.45, glow('#ffb703', 1.8), Math.cos(angle) * (radius + 1.5), h - 1, Math.sin(angle) * (radius + 1.5), 10));
+      const outer = radius + 4; // wall radius (the history ring starts right outside)
+      const upperY = 6.4; // mezzanine deck
+      const upperIn = 14; // mezzanine inner edge
+      const ceilY = 16; // ceiling
+      const openR = 11; // reach of the pool light on the floor
+      const openHalf = 9.5; // square ceiling opening under the square entrance pool
+      const poolY = 23.5; // underside of the pool water
+      const gapAngle = 2 * Math.asin(5.5 / outer); // portal opening at +x (angle PI/2)
+      // In three.js cylinders, theta 0 points to +z and PI/2 to +x
+      const openStart = Math.PI / 2 + gapAngle / 2;
+      const openLength = Math.PI * 2 - gapAngle;
+      const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
+      const decor = new THREE.Group(); // static parts, merged at the end
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      const one = new THREE.Vector3(1, 1, 1);
+      const up = new THREE.Vector3(0, 1, 0);
+      const down = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+      const quiet = (object) => { object.raycast = () => {}; object.castShadow = false; object.receiveShadow = false; return object; };
+
+      // ---- Textures (all drawn in code) --------------------------------------
+      // Long warm planks with grain and visible seams
+      const planks = PropKit.kit.canvasTexture('lounge2|planks', 512, 512, (ctx, cw, ch) => {
+        const rows = 12;
+        const rowH = ch / rows;
+        for (let r = 0; r < rows; r++) {
+          let x = -((r * 131) % 300);
+          while (x < cw) {
+            const length = 260 + ((r * 71 + Math.abs(x) * 7) % 220);
+            const tone = ((r * 31 + Math.abs(x) * 3) % 5) - 2;
+            ctx.fillStyle = shade('#9a5c30', tone * 0.045);
+            ctx.fillRect(x, r * rowH, length, rowH);
+            for (let g = 0; g < 5; g++) {
+              ctx.strokeStyle = `rgba(70, 35, 12, ${0.08 + (g % 3) * 0.05})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              const gy = r * rowH + 5 + g * (rowH - 10) / 4;
+              ctx.moveTo(x, gy);
+              ctx.bezierCurveTo(x + length * 0.3, gy + 2, x + length * 0.6, gy - 2, x + length, gy + 1);
+              ctx.stroke();
+            }
+            ctx.fillStyle = 'rgba(30, 15, 5, 0.6)';
+            ctx.fillRect(x, r * rowH, 2, rowH);
+            x += length;
+          }
+          ctx.fillStyle = 'rgba(30, 15, 5, 0.55)';
+          ctx.fillRect(0, r * rowH, cw, 2);
+        }
+      });
+      // Wood-panel slats (soffit and ceiling)
+      const slats = PropKit.kit.canvasTexture('lounge2|slats', 256, 64, (ctx, cw, ch) => {
+        ctx.fillStyle = '#3a1f0e'; ctx.fillRect(0, 0, cw, ch);
+        for (let i = 0; i < 8; i++) {
+          ctx.fillStyle = shade('#a8693a', ((i * 3) % 5 - 2) * 0.04);
+          ctx.fillRect(i * 32 + 2, 0, 29, ch);
+          ctx.fillStyle = 'rgba(80, 40, 10, 0.18)';
+          for (let g = 0; g < 5; g++) ctx.fillRect(i * 32 + 5 + g * 5, 0, 1, ch);
+        }
+      });
+      // Window bay: wood wall, arched window with a wood frame and mullions,
+      // painted outside view. Two different bays side by side per texture.
+      const bayTexture = (key, cw, ch, windowTop, scene) => PropKit.kit.canvasTexture(key, cw, ch, (ctx) => {
+        const bw = cw / 2;
+        for (let b = 0; b < 2; b++) {
+          const x0 = b * bw;
+          ctx.fillStyle = '#7a4526'; ctx.fillRect(x0, 0, bw, ch);
+          for (let i = 0; i < 26; i++) { ctx.fillStyle = `rgba(40, 20, 8, ${0.06 + (i % 3) * 0.04})`; ctx.fillRect(x0 + i * 20 + (i % 4), 0, 2, ch); }
+          const wx = x0 + 26;
+          const ww = bw - 52;
+          const wy = windowTop;
+          const wh = ch - windowTop - 34;
+          const arch = ww * 0.32;
+          const windowPath = () => {
+            ctx.beginPath();
+            ctx.moveTo(wx, wy + wh);
+            ctx.lineTo(wx, wy + arch);
+            ctx.quadraticCurveTo(wx, wy, wx + arch, wy);
+            ctx.lineTo(wx + ww - arch, wy);
+            ctx.quadraticCurveTo(wx + ww, wy, wx + ww, wy + arch);
+            ctx.lineTo(wx + ww, wy + wh);
+            ctx.closePath();
+          };
+          ctx.save();
+          windowPath();
+          ctx.clip();
+          scene(ctx, wx, wy, ww, wh, b);
+          ctx.restore();
+          // Mullions and the frame
+          ctx.fillStyle = '#4a2a14';
+          [1, 2].forEach((k) => ctx.fillRect(wx + (ww * k) / 3 - 4, wy, 8, wh));
+          ctx.fillRect(wx, wy + wh * 0.72, ww, 6);
+          windowPath();
+          ctx.lineWidth = 16; ctx.strokeStyle = '#4a2a14'; ctx.stroke();
+          ctx.lineWidth = 3; ctx.strokeStyle = '#c08a5b'; ctx.stroke();
+          ctx.fillStyle = '#5a3219'; ctx.fillRect(x0 + 16, wy + wh + 4, bw - 32, 14); // sill
+        }
+      });
+      const blossomTree = (ctx, x, y, s) => {
+        ctx.fillStyle = '#5b3a29';
+        ctx.fillRect(x - 3 * s, y - 40 * s, 6 * s, 40 * s);
+        ctx.beginPath(); ctx.moveTo(x, y - 30 * s); ctx.lineTo(x - 16 * s, y - 52 * s); ctx.lineTo(x - 12 * s, y - 54 * s); ctx.lineTo(x + 2 * s, y - 36 * s); ctx.fill();
+        const pinks = ['#f7b6d2', '#ee8fbb', '#fbd3e6', '#e46fa5'];
+        for (let i = 0; i < 26; i++) {
+          ctx.fillStyle = pinks[i % pinks.length];
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.arc(x + Math.sin(i * 2.4) * 30 * s, y - 62 * s + Math.cos(i * 1.7) * 18 * s, (10 + (i % 4) * 3) * s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      };
+      const palmTree = (ctx, x, y, s) => {
+        ctx.strokeStyle = '#6b5039'; ctx.lineWidth = 6 * s;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 10 * s, y - 60 * s, x + 4 * s, y - 120 * s); ctx.stroke();
+        ctx.strokeStyle = '#2f8a3e'; ctx.lineWidth = 7 * s;
+        for (let f = 0; f < 7; f++) {
+          const a = -Math.PI + (f / 6) * Math.PI;
+          ctx.beginPath(); ctx.moveTo(x + 4 * s, y - 120 * s);
+          ctx.quadraticCurveTo(x + 4 * s + Math.cos(a) * 30 * s, y - 136 * s + Math.sin(a) * 10 * s, x + 4 * s + Math.cos(a) * 52 * s, y - 108 * s + Math.abs(Math.cos(a)) * 14 * s);
+          ctx.stroke();
+        }
+      };
+      const skyAndSea = (ctx, wx, wy, ww, wh, horizon) => {
+        const sky = ctx.createLinearGradient(0, wy, 0, wy + horizon);
+        sky.addColorStop(0, '#5fb4ec'); sky.addColorStop(1, '#cdeafb');
+        ctx.fillStyle = sky; ctx.fillRect(wx, wy, ww, horizon);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        for (let i = 0; i < 5; i++) { const cx = wx + ((i * 97) % ww); const cy = wy + 18 + (i * 23) % Math.max(20, horizon * 0.5); [0, 1, 2].forEach((k) => { ctx.beginPath(); ctx.arc(cx + k * 14, cy + (k % 2) * 4, 11 + (k % 2) * 5, 0, Math.PI * 2); ctx.fill(); }); }
+        const sea = ctx.createLinearGradient(0, wy + horizon, 0, wy + wh);
+        sea.addColorStop(0, '#2f86c9'); sea.addColorStop(1, '#1f5f99');
+        ctx.fillStyle = sea; ctx.fillRect(wx, wy + horizon, ww, wh - horizon);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        for (let i = 0; i < 16; i++) ctx.fillRect(wx + (i * 61) % ww, wy + horizon + 6 + (i * 13) % Math.max(8, wh - horizon - 10), 18 + (i % 3) * 8, 2);
+      };
+      const groundBays = bayTexture('lounge2|bayGround', 1024, 320, 30, (ctx, wx, wy, ww, wh, b) => {
+        skyAndSea(ctx, wx, wy, ww, wh, wh * 0.42);
+        ctx.fillStyle = '#7cc46a'; ctx.fillRect(wx, wy + wh * 0.66, ww, wh * 0.34);
+        ctx.fillStyle = '#e9d8b4'; ctx.fillRect(wx, wy + wh * 0.6, ww, wh * 0.07);
+        for (let t = 0; t < 4; t++) blossomTree(ctx, wx + 50 + t * (ww - 90) / 3 + (b ? 30 : 0), wy + wh * (0.8 + (t % 2) * 0.08), 0.95 + (t % 2) * 0.25);
+      });
+      const upperBays = bayTexture('lounge2|bayUpper', 1024, 512, 70, (ctx, wx, wy, ww, wh, b) => {
+        skyAndSea(ctx, wx, wy, ww, wh, wh * 0.62);
+        ctx.fillStyle = '#e9d8b4'; ctx.fillRect(wx, wy + wh * 0.86, ww, wh * 0.14);
+        palmTree(ctx, wx + (b ? 70 : 380), wy + wh * 0.95, 1.4);
+        blossomTree(ctx, wx + (b ? 330 : 140), wy + wh * 0.98, 1.3);
+      });
+      // Tileable caustics (bright wavy network) for the pool light
+      const caustics = PropKit.kit.canvasTexture('lounge2|caustics', 256, 256, (ctx, cw, ch) => {
+        const image = ctx.createImageData(cw, ch);
+        for (let y = 0; y < ch; y++) {
+          for (let x = 0; x < cw; x++) {
+            const u = (x / cw) * Math.PI * 2;
+            const v = (y / ch) * Math.PI * 2;
+            const a = Math.sin(3 * u + 2 * Math.sin(2 * v));
+            const b2 = Math.sin(4 * v + 2 * Math.sin(3 * u + 1));
+            const c = Math.sin(2 * u + 3 * v + 1.5 * Math.sin(u - 2 * v));
+            const value = Math.min(1, Math.pow(1 - Math.abs(a), 7) + Math.pow(1 - Math.abs(b2), 7) + Math.pow(1 - Math.abs(c), 7));
+            const i = (y * cw + x) * 4;
+            image.data[i] = value * 210; image.data[i + 1] = value * 245; image.data[i + 2] = value * 255; image.data[i + 3] = 255;
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+      });
+      // Pool tiles seen from below (the walls of the square opening)
+      const poolTiles = PropKit.kit.canvasTexture('lounge2|poolTiles', 128, 128, (ctx, cw, ch) => {
+        ctx.fillStyle = '#8fd8ec'; ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = '#c9f1fb';
+        for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) ctx.fillRect(x * 32 + 2, y * 32 + 2, 28, 28);
+      });
+      const rugTexture = PropKit.kit.canvasTexture('lounge2|rug', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#93404a'; ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = '#56101c'; ctx.fillRect(22, 22, cw - 44, ch - 44);
+        ctx.strokeStyle = '#d98a7e'; ctx.lineWidth = 3; ctx.strokeRect(12, 12, cw - 24, ch - 24);
+        ctx.strokeStyle = '#8a2230'; ctx.lineWidth = 4; ctx.strokeRect(34, 34, cw - 68, ch - 68);
+        for (let i = 0; i < 1500; i++) { ctx.fillStyle = `rgba(0,0,0,${(i % 5) * 0.025})`; ctx.fillRect((i * 37) % cw, (i * 71) % ch, 2, 2); }
+      });
+
+      // ---- Materials -----------------------------------------------------------
+      const floorWood = new THREE.MeshStandardMaterial({ map: repeated(planks, outer / 3.5, outer / 3.5), roughness: 0.5, metalness: 0.02 });
+      const deckWood = new THREE.MeshStandardMaterial({ map: repeated(planks, 7, 7), roughness: 0.55, side: THREE.DoubleSide });
+      const soffitWood = new THREE.MeshStandardMaterial({ map: repeated(slats, 70, 1), roughness: 0.7, side: THREE.DoubleSide });
+      const ceilingWood = new THREE.MeshStandardMaterial({ map: repeated(slats, 60, 1), roughness: 0.8, side: THREE.DoubleSide });
+      const bayMaterial = (texture, count) => {
+        const map = repeated(texture, count, 1);
+        return new THREE.MeshStandardMaterial({ map, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.32, roughness: 0.8, side: THREE.DoubleSide });
+      };
+      const darkWood = material('#4a2a14', { roughness: 0.6 });
+      const band = material('#2a201b', { roughness: 0.45, metalness: 0.2, side: THREE.DoubleSide });
+      const amber = glow('#ffa63d', 1.6);
+      const glass = material('#d7f0ff', { transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide });
+      const metal = material('#2b2d33', { metalness: 0.7, roughness: 0.4 });
+      const steel = material('#9aa3ad', { metalness: 0.8, roughness: 0.3 });
+      const rug = new THREE.MeshStandardMaterial({ map: rugTexture, roughness: 1 });
+
+      // ---- Floor, walls and window bays ---------------------------------------
+      group.add(cylinder(outer, outer, 0.3, floorWood, 0, 0.15, 0, 72));
+      const groundTop = upperY - 0.35;
+      const groundCount = Math.round(openLength / (Math.PI * 2 / 16) / 2); // pairs of bays
+      group.add(mesh(new THREE.CylinderGeometry(outer, outer, groundTop - 0.3, 72, 1, true, openStart, openLength), bayMaterial(groundBays, groundCount), 0, (groundTop + 0.3) / 2, 0));
+      group.add(mesh(new THREE.CylinderGeometry(outer, outer, ceilY - upperY + 0.45, 72, 1, true), bayMaterial(upperBays, 8), 0, (ceilY + upperY - 0.45) / 2, 0));
+      // Wood posts between the bays (3D depth over the painted frames)
+      for (let i = 0; i <= groundCount * 2; i++) {
+        const angle = openStart + (i / (groundCount * 2)) * openLength;
+        const [x, z] = toXZ(angle, outer - 0.2);
+        const post = box(0.45, groundTop - 0.3, 0.4, darkWood, x, (groundTop + 0.3) / 2, z);
+        post.rotation.y = angle;
+        decor.add(post);
       }
-      // Underground cafe: curved counter with stools, espresso machine, menu board, tables
-      const counterWood = new THREE.MeshStandardMaterial({ map: repeated(plankTexture('#6b3f22'), 6, 1), side: THREE.DoubleSide });
-      const counter = mesh(new THREE.CylinderGeometry(6, 6, 1.2, 32, 1, true, Math.PI * 0.15, Math.PI * 0.7), counterWood, radius * 0.45, 0.9, radius * 0.3);
-      group.add(counter);
-      group.add(PropKit.kit.interactive(box(0.7, 0.8, 0.5, material('#495057', { metalness: 0.7 }), radius * 0.45 + 2, 1.9, radius * 0.3 - 4.5), 'coffee', 'Underground Cafe espresso'));
-      for (let i = 0; i < 6; i++) {
-        const angle = Math.PI * 0.2 + i * (Math.PI * 0.6 / 5);
-        const stool = new THREE.Group();
-        stool.add(cylinder(0.35, 0.35, 0.12, material('#212529'), 0, 0.9, 0, 16));
-        stool.add(cylinder(0.05, 0.05, 0.9, material('#868e96', { metalness: 0.8 }), 0, 0.45, 0, 6));
-        stool.position.set(radius * 0.45 + Math.cos(angle) * 7.2, 0.3, radius * 0.3 + Math.sin(angle) * 7.2);
-        group.add(PropKit.kit.interactive(stool, 'sit', 'Cafe stool'));
+      for (let i = 0; i < 16; i++) {
+        const angle = (i / 16) * Math.PI * 2;
+        const [x, z] = toXZ(angle, outer - 0.2);
+        const post = box(0.45, ceilY - upperY, 0.4, darkWood, x, (ceilY + upperY) / 2, z);
+        post.rotation.y = angle;
+        decor.add(post);
       }
-      const menu = facedBox(5, 2.4, 0.15, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 40px Georgia, serif' }) }), radius * 0.45 + 3, 4, radius * 0.3 - 6.5);
-      group.add(PropKit.kit.interactive(menu, 'cafe_menu', 'Underground Cafe menu'));
-      const orderSign = textSprite('🍝 Order here (E) · dishes are code packages', { width: 7, background: 'rgba(43, 27, 18, 0.9)' });
-      orderSign.position.set(radius * 0.45 + 3, 6, radius * 0.3 - 6.3);
-      group.add(orderSign);
-      // Elevator back to Genesis Plaza
-      const elevator = new THREE.Group();
-      elevator.add(cylinder(1.6, 1.6, 0.3, glow('#1877f2', 0.8), 0, 0.45, 0, 24));
-      elevator.add(mesh(new THREE.CylinderGeometry(1.7, 1.7, 4, 24, 1, true), material('#cfe8ff', { transparent: true, opacity: 0.25, side: THREE.DoubleSide }), 0, 2.4, 0));
-      const caption = textSprite('Elevator · back to the surface (E)', { width: 7, background: 'rgba(24, 119, 242, 0.9)' });
-      caption.position.y = 5.2;
-      elevator.add(caption);
-      elevator.position.set(-radius * 0.6, 0, -radius * 0.45);
-      group.add(PropKit.kit.interactive(elevator, 'jump', 'plaza'));
+
+      // ---- Ceiling: wood ring, dark curved bands with amber strips -----------
+      // Round ceiling with a square opening, like the square pool above it
+      const ceilingShape = new THREE.Shape();
+      ceilingShape.absarc(0, 0, outer, 0, Math.PI * 2, false);
+      const squareHole = new THREE.Path();
+      squareHole.moveTo(-openHalf, -openHalf); squareHole.lineTo(openHalf, -openHalf); squareHole.lineTo(openHalf, openHalf); squareHole.lineTo(-openHalf, openHalf); squareHole.closePath();
+      ceilingShape.holes.push(squareHole);
+      const ceiling = mesh(new THREE.ShapeGeometry(ceilingShape, 96), ceilingWood, 0, ceilY, 0);
+      ceiling.rotation.x = Math.PI / 2;
+      group.add(ceiling);
+      // Thick band: a lathe of a flattened ellipse around the axis
+      const bandRing = (rc, yc, halfW, halfH) => {
+        const points = [];
+        for (let i = 0; i <= 24; i++) {
+          const a = (i / 24) * Math.PI * 2;
+          points.push(new THREE.Vector2(rc + Math.cos(a) * halfW, yc + Math.sin(a) * halfH));
+        }
+        decor.add(mesh(new THREE.LatheGeometry(points, 96), band));
+        const strip = mesh(new THREE.TorusGeometry(rc - halfW * 0.55, 0.07, 6, 128), amber, 0, yc - halfH * 0.8, 0);
+        strip.rotation.x = Math.PI / 2;
+        group.add(quiet(strip));
+      };
+      // Square frame around the opening: thick dark beams with amber strips
+      [[0, openHalf + 0.7, openHalf * 2 + 2.8, 1.4], [0, -(openHalf + 0.7), openHalf * 2 + 2.8, 1.4], [openHalf + 0.7, 0, 1.4, openHalf * 2], [-(openHalf + 0.7), 0, 1.4, openHalf * 2]].forEach(([x, z, w, d]) => {
+        decor.add(box(w, 1.2, d, band, x, ceilY - 0.45, z));
+        const strip = box(w > d ? w - 0.6 : 0.14, 0.12, w > d ? 0.14 : d, amber, x + (w > d ? 0 : -Math.sign(x) * 0.45), ceilY - 1.08, z + (w > d ? -Math.sign(z) * 0.45 : 0));
+        group.add(quiet(strip));
+      });
+      bandRing(19.5, ceilY - 0.4, 1.4, 0.5);
+      bandRing(outer - 0.6, ceilY - 0.3, 0.8, 0.4);
+
+      // ---- The oculus: underside of the entrance pool (main light) ------------
+      // Its tiled walls rise to the glowing water ceiling; the pool tunnel
+      // above ends just over the water, so nothing of the city shows through.
+      const wellHeight = poolY - ceilY + 0.2;
+      const wellMaterial = new THREE.MeshBasicMaterial({ map: repeated(poolTiles, 10, 4), color: '#bfe6f2', side: THREE.DoubleSide });
+      [0, 1, 2, 3].forEach((side) => {
+        const wall = mesh(new THREE.PlaneGeometry(openHalf * 2, wellHeight), wellMaterial, 0, (poolY + ceilY) / 2, 0);
+        wall.rotation.y = side * Math.PI / 2;
+        wall.position.set(Math.sin(side * Math.PI / 2) * openHalf, (poolY + ceilY) / 2, Math.cos(side * Math.PI / 2) * openHalf);
+        group.add(quiet(wall));
+      });
+      const water = mesh(new THREE.PlaneGeometry(openHalf * 2 + 0.2, openHalf * 2 + 0.2), new THREE.MeshBasicMaterial({ color: '#e6fbff', side: THREE.DoubleSide }), 0, poolY, 0);
+      water.rotation.x = Math.PI / 2;
+      group.add(quiet(water));
+      const causticLayer = (repeat, opacity, extra = {}) => {
+        const map = repeated(caustics, repeat, repeat);
+        return { map, material: new THREE.MeshBasicMaterial({ map, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, ...extra }) };
+      };
+      const ceilingRipples = [causticLayer(3, 0.55, { color: '#7fd8ff' }), causticLayer(4.5, 0.45, { color: '#ffffff' })];
+      ceilingRipples.forEach((layer, i) => {
+        const sheet = mesh(new THREE.PlaneGeometry(openHalf * 2 + 0.2, openHalf * 2 + 0.2), layer.material, 0, poolY - 0.05 - i * 0.05, 0);
+        sheet.rotation.x = Math.PI / 2;
+        group.add(quiet(sheet));
+      });
+      // Caustics projected on the floor: vertex colors fade them from the bright
+      // center (under the pool) to dim, warmer edges near the walls
+      const floorCaustics = [];
+      [[9, 0.15], [13, 0.1]].forEach(([repeat, opacity], i) => {
+        const geometry = new THREE.RingGeometry(0.01, outer - 0.3, 72, 10);
+        const colors = [];
+        const position = geometry.attributes.position;
+        for (let k = 0; k < position.count; k++) {
+          const r = Math.hypot(position.getX(k), position.getY(k));
+          const fade = r < openR - 1 ? 1 : Math.max(0.08, 1 - (r - openR + 1) / 11);
+          colors.push(fade, fade * (0.97 + 0.03 * fade), fade * (0.85 + 0.15 * fade));
+        }
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        const layer = causticLayer(repeat, opacity, { vertexColors: true });
+        floorCaustics.push(layer);
+        const sheet = mesh(geometry, layer.material, 0, 0.34 + i * 0.01, 0);
+        sheet.rotation.x = -Math.PI / 2;
+        group.add(quiet(sheet));
+      });
+      // Faint god rays: one wide shaft under the oculus and four thin ones
+      const rayGeometry = (rTop, rBottom, height, sides = 32) => {
+        const geometry = new THREE.CylinderGeometry(rTop, rBottom, height, sides, 4, true);
+        if (sides === 4) geometry.rotateY(Math.PI / 4); // square shaft under the square opening
+        const colors = [];
+        const position = geometry.attributes.position;
+        for (let k = 0; k < position.count; k++) { const t = (position.getY(k) + height / 2) / height; colors.push(t * 0.8, t * 0.95, t); }
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        return geometry;
+      };
+      const rayMaterial = new THREE.MeshBasicMaterial({ color: '#bfefff', vertexColors: true, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+      group.add(quiet(mesh(rayGeometry((openHalf - 0.4) * Math.SQRT2, (openHalf + 1.4) * Math.SQRT2, ceilY - 0.4, 4), rayMaterial, 0, (ceilY + 0.4) / 2, 0)));
+      const shafts = quiet(new THREE.InstancedMesh(rayGeometry(1.1, 2.2, poolY - 1), rayMaterial, 4));
+      for (let i = 0; i < 4; i++) {
+        const [x, z] = toXZ(0.4 + i * Math.PI / 2, 7);
+        q.setFromAxisAngle(new THREE.Vector3(Math.cos(0.4 + i * Math.PI / 2), 0, -Math.sin(0.4 + i * Math.PI / 2)), 0.08);
+        shafts.setMatrixAt(i, m.compose(new THREE.Vector3(x, poolY / 2 + 0.3, z), q, one));
+      }
+      group.add(shafts);
+      // The key light: one SpotLight straight down from the pool, range-limited
+      // to the hall (it never reaches the surface)
+      const poolLight = new THREE.SpotLight('#dff6ff', 1.2, 46, 1.0, 0.95, 1);
+      poolLight.position.set(0, poolY - 0.5, 0);
+      poolLight.castShadow = false;
+      const poolTarget = new THREE.Object3D();
+      group.add(poolLight, poolTarget);
+      poolLight.target = poolTarget;
+      let hemisphere = null;
+      animate(water, (time) => {
+        ceilingRipples[0].map.offset.set(time * 0.03, time * 0.02);
+        ceilingRipples[1].map.offset.set(-time * 0.025, time * 0.035);
+        floorCaustics[0].map.offset.set(time * 0.02, time * 0.012);
+        floorCaustics[1].map.offset.set(-time * 0.015, time * 0.022);
+        tubeCaustics.offset.set(time * 0.02, -time * 0.05);
+        // Follow the day/night cycle softly (the pool is lit by the sky above)
+        if (!hemisphere && typeof scene !== 'undefined') scene.traverse((node) => { if (node.isHemisphereLight) hemisphere = node; });
+        const day = hemisphere ? Math.min(1, Math.max(0, (hemisphere.intensity - 0.15) / 0.5)) : 1;
+        const shimmer = 1 + Math.sin(time * 1.7) * 0.04 + Math.sin(time * 2.9) * 0.03;
+        poolLight.intensity = (0.6 + day * 0.45) * shimmer;
+        poolLight.color.setRGB(0.82 + day * 0.05, 0.92 + day * 0.04, 1);
+        water.material.color.setRGB(0.55 + day * 0.35, 0.78 + day * 0.2, 0.9 + day * 0.1);
+        floorCaustics[0].material.opacity = 0.09 + day * 0.07;
+        floorCaustics[1].material.opacity = 0.06 + day * 0.05;
+      });
+
+      // ---- Central water tube with the gold sign ------------------------------
+      const tubeBottom = 0.65;
+      const tubeHeight = poolY - tubeBottom;
+      group.add(quiet(cylinder(3.2, 3.2, tubeHeight, glass, 0, tubeBottom + tubeHeight / 2, 0, 40)));
+      // Dense falling water streaks (white with a soft blue edge)
+      const rainTexture = PropKit.kit.canvasTexture('lounge2|rain', 256, 512, (ctx, cw, ch) => {
+        ctx.clearRect(0, 0, cw, ch);
+        for (let i = 0; i < 260; i++) {
+          const x = (i * 37 + (i % 7) * 11) % cw;
+          const y = (i * 97) % ch;
+          const length = 40 + (i % 5) * 26;
+          const gradient = ctx.createLinearGradient(0, y, 0, y + length);
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          gradient.addColorStop(0.5, `rgba(255, 255, 255, ${0.5 + (i % 3) * 0.2})`);
+          gradient.addColorStop(1, 'rgba(200, 235, 255, 0)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(x, y, 1 + (i % 2), length);
+          if (y + length > ch) ctx.fillRect(x, y - ch, 1 + (i % 2), length);
+        }
+      });
+      const rainMap = repeated(rainTexture, 6, 5);
+      const rain = cylinder(2.95, 2.95, tubeHeight, new THREE.MeshBasicMaterial({ map: rainMap, transparent: true, depthWrite: false, side: THREE.DoubleSide, color: '#d6f3ff' }), 0, tubeBottom + tubeHeight / 2, 0, 32);
+      group.add(quiet(rain));
+      const rainMap2 = repeated(rainTexture, 4, 3);
+      const rainInner = cylinder(2.2, 2.2, tubeHeight, new THREE.MeshBasicMaterial({ map: rainMap2, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, color: '#bfe9ff' }), 0, tubeBottom + tubeHeight / 2, 0, 24);
+      group.add(quiet(rainInner));
+      animate(rain, (time) => { rainMap.offset.y = time * 1.4; rainMap2.offset.y = time * 1.1; });
+      const core = cylinder(2.3, 2.3, tubeHeight, new THREE.MeshBasicMaterial({ color: '#7fd3ff', transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false }), 0, tubeBottom + tubeHeight / 2, 0, 24);
+      group.add(quiet(core));
+      const tubeCaustics = repeated(caustics, 4, 10);
+      group.add(quiet(cylinder(3.26, 3.26, tubeHeight, new THREE.MeshBasicMaterial({ map: tubeCaustics, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false }), 0, tubeBottom + tubeHeight / 2, 0, 40)));
+      // Dark metal base ring (low enough to step over), glowing water inside
+      decor.add(mesh(new THREE.CylinderGeometry(3.85, 3.95, tubeBottom - 0.3, 48, 1, true), metal, 0, (tubeBottom + 0.3) / 2, 0));
+      const baseTop = mesh(new THREE.RingGeometry(3.2, 3.85, 48, 1), metal, 0, tubeBottom, 0);
+      baseTop.rotation.x = -Math.PI / 2;
+      decor.add(baseTop);
+      group.add(cylinder(3.2, 3.2, 0.2, glow('#bfefff', 0.9), 0, 0.42, 0, 40));
+      const baseGlow = mesh(new THREE.TorusGeometry(3.25, 0.07, 6, 64), glow('#dff8ff', 2), 0, tubeBottom + 0.04, 0);
+      baseGlow.rotation.x = Math.PI / 2;
+      group.add(quiet(baseGlow));
+      // Mid band with the curved gold lettering and the top rings
+      decor.add(mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.5, 48, 1, true), metal, 0, 6.75, 0));
+      [6.5, 7.0].forEach((y) => { const lip = mesh(new THREE.TorusGeometry(3.5, 0.06, 6, 64), steel, 0, y, 0); lip.rotation.x = Math.PI / 2; decor.add(lip); });
+      [ceilY - 0.3, poolY - 0.4].forEach((y) => decor.add(mesh(new THREE.CylinderGeometry(3.6, 3.6, 0.7, 48, 1, true), metal, 0, y, 0)));
+      const signTexture = PropKit.kit.canvasTexture('lounge2|welcomeGold', 2048, 128, (ctx, cw, ch) => {
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.font = 'bold 86px Trebuchet MS, Segoe UI, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const gold = ctx.createLinearGradient(0, 24, 0, ch - 24);
+        gold.addColorStop(0, '#fff3b0'); gold.addColorStop(0.5, '#f5c242'); gold.addColorStop(1, '#b97a12');
+        [cw / 4, (cw * 3) / 4].forEach((x) => {
+          ctx.lineWidth = 8; ctx.strokeStyle = '#5a3a08'; ctx.strokeText('Welcome to Multiverse', x, ch / 2);
+          ctx.fillStyle = gold; ctx.fillText('Welcome to Multiverse', x, ch / 2);
+        });
+      });
+      const sign = mesh(new THREE.CylinderGeometry(3.62, 3.62, 1.4, 96, 1, true), new THREE.MeshBasicMaterial({ map: signTexture, transparent: true, alphaTest: 0.35, side: THREE.FrontSide }), 0, 7.75, 0);
+      group.add(quiet(sign));
+
+      // ---- Mezzanine (upper floor) ------------------------------------------
+      const deck = mesh(new THREE.RingGeometry(upperIn, outer - 0.1, 96, 1), deckWood, 0, upperY, 0);
+      deck.rotation.x = -Math.PI / 2;
+      group.add(deck);
+      // Curved wood-panel soffit: a rounded nose at the edge that sweeps under
+      // the deck and fades into a flat underside toward the windows
+      const soffitY = (r) => upperY - 0.35 - 1.15 * Math.pow(Math.max(0, 1 - (r - 15.6) / 5.5), 2);
+      const profile = [[upperIn, upperY], [upperIn - 0.12, upperY - 0.3], [upperIn - 0.08, upperY - 0.75], [upperIn + 0.25, upperY - 1.15], [upperIn + 0.8, upperY - 1.42]];
+      for (let r = 15.6; r <= outer - 0.1; r += 0.6) profile.push([r, soffitY(r)]);
+      group.add(mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), 96), soffitWood));
+      // Glass railing with a steel top rail and posts (gap where the stairs arrive)
+      const stairTop = Math.PI * 1.1;
+      const stairGap = 0.2;
+      const railStart = stairTop + stairGap;
+      const railLength = Math.PI * 2 - stairGap * 2;
+      group.add(quiet(mesh(new THREE.CylinderGeometry(upperIn + 0.1, upperIn + 0.1, 1.1, 96, 1, true, railStart, railLength), glass, 0, upperY + 0.55, 0)));
+      decor.add(mesh(new THREE.CylinderGeometry(upperIn + 0.12, upperIn + 0.12, 0.08, 96, 1, true, railStart, railLength), steel, 0, upperY + 1.12, 0));
+      for (let i = 0; i <= 40; i++) {
+        const [x, z] = toXZ(railStart + (i / 40) * railLength, upperIn + 0.1);
+        decor.add(cylinder(0.035, 0.035, 1.1, steel, x, upperY + 0.55, z, 6));
+      }
+      // Curved staircase in the atrium: 16 steps of 0.4 m up to the railing gap
+      const steps = 16;
+      const stairR = 12.6;
+      for (let i = 0; i < steps; i++) {
+        const angle = stairTop - 0.1 - (steps - i) * 0.072;
+        const [x, z] = toXZ(angle, stairR);
+        const step = box(1.2, 0.3, 2.4, deckWood, x, (upperY * (i + 1)) / steps - 0.15, z);
+        step.rotation.y = angle;
+        group.add(step);
+        if (i % 2 === 0) {
+          const [rx, rz] = toXZ(angle, stairR - 1.25);
+          decor.add(box(0.06, 1.0, 0.06, steel, rx, (upperY * (i + 1)) / steps + 0.5, rz));
+        }
+      }
+      const [lx, lz] = toXZ(stairTop, stairR + 0.3);
+      const landing = box(2.6, 0.3, 3.2, deckWood, lx, upperY - 0.15, lz);
+      landing.rotation.y = stairTop;
+      group.add(landing);
+      const stairSign = textSprite('Upper floor: reading lounge · lookout · arcade', { width: 7, background: 'rgba(58, 36, 22, 0.92)' });
+      const [sx0, sz0] = toXZ(stairTop - 1.25, stairR);
+      stairSign.position.set(sx0, 3, sz0);
+      group.add(stairSign);
+      // Warp pads between the floors (shortcut next to the stairs)
+      const [ux, uz] = toXZ(1.75, 10.5);
+      const [bx, bz] = toXZ(1.75, 16.5);
+      const warpUp = new THREE.Group();
+      warpUp.add(cylinder(0.9, 0.9, 0.1, glow('#ff9f1c', 0.8), 0, 0.35, 0, 24));
+      const upLabel = textSprite('Upper floor (E)', { width: 3.4, background: 'rgba(255, 159, 28, 0.9)' });
+      upLabel.position.y = 2.4;
+      warpUp.add(upLabel);
+      warpUp.position.set(ux, 0, uz);
+      warpUp.userData.destination = new THREE.Vector3(bx - ux, upperY + 0.5, bz - uz);
+      group.add(PropKit.kit.interactive(warpUp, 'warp', 'Up to the upper floor'));
+      const warpDown = new THREE.Group();
+      warpDown.add(cylinder(0.9, 0.9, 0.1, glow('#ff9f1c', 0.8), 0, 0.08, 0, 24));
+      warpDown.position.set(bx, upperY, bz);
+      warpDown.userData.destination = new THREE.Vector3(ux - bx, 0.5 - upperY, uz - bz);
+      group.add(PropKit.kit.interactive(warpDown, 'warp', 'Down to the lounge'));
+
+      // ---- Upper floor: reading lounge, lookout, arcade, gallery express ------
+      const books = PropKit.kit.canvasTexture('lounge|books', 256, 256, (ctx, cw, ch) => {
+        ctx.fillStyle = '#3a2416'; ctx.fillRect(0, 0, cw, ch);
+        const colors = ['#7a1f2b', '#1f4e79', '#2f6b3a', '#c9a227', '#5c3d7a', '#d9cbb3', '#8a5a33'];
+        for (let shelf = 0; shelf < 4; shelf++) {
+          let x = 6;
+          while (x < cw - 10) {
+            const bw = 8 + ((x * 7 + shelf * 13) % 9);
+            const bh = 44 + ((x * 3 + shelf) % 12);
+            ctx.fillStyle = colors[(x + shelf * 3) % colors.length];
+            ctx.fillRect(x, shelf * 64 + 60 - bh, bw, bh);
+            x += bw + 1;
+          }
+          ctx.fillStyle = '#24160c'; ctx.fillRect(0, shelf * 64 + 58, cw, 6);
+        }
+      });
+      const bookMaterial = new THREE.MeshStandardMaterial({ map: books, roughness: 0.8 });
+      const armchair = material('#7a1f2b', { roughness: 0.9 });
+      [4.4, 4.7, 5.0, 5.3].forEach((angle) => {
+        const [x, z] = toXZ(angle, outer - 0.8);
+        const shelf = new THREE.Group();
+        shelf.add(box(2.6, 3, 0.6, darkWood, 0, 1.5, 0));
+        shelf.add(mesh(new THREE.PlaneGeometry(2.4, 2.8), bookMaterial, 0, 1.5, 0.31));
+        shelf.position.set(x, upperY, z);
+        shelf.rotation.y = angle + Math.PI;
+        decor.add(shelf);
+      });
+      const addRug = (x, y, z, angle, rw = 5.2, rd = 5.2) => {
+        const carpet = mesh(new THREE.PlaneGeometry(rw, rd), rug, x, y + 0.012, z);
+        carpet.rotation.x = -Math.PI / 2;
+        carpet.rotation.z = angle;
+        carpet.castShadow = false;
+        decor.add(carpet);
+      };
+      {
+        const [x, z] = toXZ(4.85, 20);
+        addRug(x, upperY, z, 4.85, 7, 5);
+        [4.55, 4.75, 4.95, 5.15].forEach((angle, i) => {
+          const [cx, cz] = toXZ(angle, i % 2 ? 18.5 : 21.5);
+          const chair = new THREE.Group();
+          chair.add(box(1.0, 0.45, 0.9, armchair, 0, 0.45, 0));
+          chair.add(box(1.0, 0.75, 0.22, armchair, 0, 0.9, -0.4));
+          [-0.45, 0.45].forEach((ax) => chair.add(box(0.14, 0.6, 0.9, armchair, ax, 0.6, 0)));
+          chair.position.set(cx, upperY, cz);
+          chair.rotation.y = Math.atan2(x - cx, z - cz);
+          decor.add(chair);
+          group.add(PropKit.kit.seat(cx, upperY, cz, 'Reading armchair'));
+        });
+        decor.add(cylinder(0.5, 0.5, 0.06, material('#c08a5b'), x, upperY + 0.6, z, 20));
+        decor.add(cylinder(0.08, 0.2, 0.6, metal, x, upperY + 0.3, z, 8));
+      }
+      const readingSign = textSprite('Reading Lounge', { width: 4, background: 'rgba(122, 31, 43, 0.92)' });
+      const [rsx, rsz] = toXZ(4.85, 24);
+      readingSign.position.set(rsx, upperY + 4.2, rsz);
+      group.add(readingSign);
+      [0.15, 0.75, 5.85].forEach((angle) => {
+        const [x, z] = toXZ(angle, 15.6);
+        const bench = new THREE.Group();
+        bench.add(box(2.4, 0.1, 0.6, material('#8a5a33'), 0, 0.5, 0));
+        bench.add(box(2.4, 0.5, 0.08, material('#8a5a33'), 0, 0.8, 0.28));
+        [-1, 1].forEach((s) => bench.add(box(0.1, 0.45, 0.5, metal, s * 1.05, 0.25, 0)));
+        bench.position.set(x, upperY, z);
+        bench.rotation.y = angle + Math.PI;
+        decor.add(bench);
+        group.add(PropKit.kit.seat(x, upperY, z, 'Lookout bench'));
+      });
+      [0.45, 6.15].forEach((angle) => {
+        const [x, z] = toXZ(angle, 14.8);
+        const viewer = new THREE.Group();
+        viewer.add(cylinder(0.06, 0.1, 1.1, metal, 0, 0.55, 0, 8));
+        viewer.add(box(0.5, 0.25, 0.3, material('#c9a227', { metalness: 0.8, roughness: 0.3 }), 0, 1.2, 0));
+        viewer.position.set(x, upperY, z);
+        viewer.rotation.y = angle + Math.PI;
+        viewer.userData = { label: 'Lookout', info: 'From up here you can follow the water falling through the glass tube, the gold "Welcome to Multiverse" lettering and the glowing underside of the entrance pool above.' };
+        group.add(PropKit.kit.interactive(viewer, 'inspect', 'Lookout viewer'));
+      });
+      const lookoutSign = textSprite('Lookout', { width: 3, background: 'rgba(24, 119, 242, 0.9)' });
+      const [lsx, lsz] = toXZ(0.45, 16);
+      lookoutSign.position.set(lsx, upperY + 3.2, lsz);
+      group.add(lookoutSign);
+      const arcadeScreen = PropKit.kit.canvasTexture('lounge|arcade', 128, 128, (ctx, cw, ch) => {
+        ctx.fillStyle = '#05051a'; ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = '#51cf66'; [[20, 60], [28, 60], [36, 60], [44, 60], [44, 52]].forEach(([x, y]) => ctx.fillRect(x, y, 7, 7));
+        ctx.fillStyle = '#ff6b6b'; ctx.fillRect(84, 36, 7, 7);
+        ctx.fillStyle = '#ffd43b'; ctx.font = 'bold 14px monospace'; ctx.fillText('INSERT COIN', 18, 110);
+      });
+      ['#e64980', '#4dabf7', '#fab005', '#7950f2'].forEach((color, i) => {
+        const angle = 1.8 + i * 0.16;
+        const [x, z] = toXZ(angle, outer - 1.2);
+        const cabinet = new THREE.Group();
+        cabinet.add(box(0.9, 1.9, 0.8, material(color, { roughness: 0.5 }), 0, 0.95, 0));
+        cabinet.add(mesh(new THREE.PlaneGeometry(0.66, 0.5), new THREE.MeshBasicMaterial({ map: arcadeScreen }), 0, 1.45, 0.41));
+        cabinet.add(box(0.8, 0.12, 0.3, material('#212529'), 0, 1.0, 0.5));
+        cabinet.add(box(0.9, 0.25, 0.82, glow(color, 1.2), 0, 2.0, 0));
+        cabinet.position.set(x, upperY, z);
+        cabinet.rotation.y = angle + Math.PI;
+        group.add(PropKit.kit.interactive(cabinet, 'arcade', 'Lounge Arcade'));
+      });
+      const arcadeSign = textSprite('Arcade', { width: 3, background: 'rgba(230, 73, 128, 0.92)' });
+      const [asx, asz] = toXZ(2.04, outer - 2);
+      arcadeSign.position.set(asx, upperY + 3.4, asz);
+      group.add(arcadeSign);
+      const gallery = new THREE.Group();
+      gallery.add(cylinder(0.9, 0.9, 0.1, glow('#e8e6e1', 1.0), 0, 0.08, 0, 24));
+      gallery.add(box(1.6, 2.4, 0.15, material('#e8e6e1'), 0, 1.4, -1.1));
+      const galleryLabel = textSprite('Gallery express (E)', { width: 4, background: 'rgba(40, 40, 40, 0.9)' });
+      galleryLabel.position.y = 3;
+      gallery.add(galleryLabel);
+      const [gx, gz] = toXZ(Math.PI / 2, 21);
+      gallery.position.set(gx, upperY, gz);
+      gallery.rotation.y = -Math.PI / 2;
+      gallery.userData.destination = new THREE.Vector3(80, 0.6 - upperY, 0).applyAxisAngle(up, Math.PI / 2);
+      group.add(PropKit.kit.interactive(gallery, 'warp', 'Gallery express: Minimal Art Gallery'));
+
+      // ---- Second glass column: the elevator back to Genesis Plaza ------------
+      {
+        const [ex, ez] = toXZ(0.6, 12.4);
+        const elevator = new THREE.Group();
+        elevator.add(quiet(cylinder(1.6, 1.6, upperY + 3.4, glass, 0, (upperY + 3.4) / 2 + 0.3, 0, 32)));
+        elevator.add(quiet(cylinder(1.2, 1.2, upperY + 3.2, new THREE.MeshBasicMaterial({ color: '#7fd3ff', transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }), 0, (upperY + 3.2) / 2 + 0.3, 0, 20)));
+        elevator.add(cylinder(1.5, 1.5, 0.12, glow('#1877f2', 0.6), 0, 0.36, 0, 28));
+        elevator.position.set(ex, 0, ez);
+        const caption = textSprite('Elevator · back to the surface (E)', { width: 6, background: 'rgba(24, 119, 242, 0.9)' });
+        caption.position.y = 4.4;
+        elevator.add(caption);
+        group.add(PropKit.kit.interactive(elevator, 'jump', 'plaza'));
+        // Round wooden cap and ring where it meets the mezzanine, top cap
+        decor.add(cylinder(2.15, 2.15, 1.1, darkWood, ex, upperY - 0.45, ez, 36));
+        decor.add(cylinder(2.25, 2.25, 0.12, steel, ex, upperY + 0.12, ez, 36));
+        decor.add(cylinder(1.95, 1.95, 0.6, darkWood, ex, upperY + 3.9, ez, 36));
+        decor.add(cylinder(2.05, 2.05, 0.1, steel, ex, upperY + 3.55, ez, 36));
+        decor.add(cylinder(1.85, 1.95, 0.35, metal, ex, 0.47, ez, 36));
+      }
+
+      // ---- Lights (accents): orange spot cans and yellow disc lamps -----------
+      const cans = [];
+      for (let i = 0; i < 12; i++) cans.push(i * (Math.PI * 2 / 12) + 0.15);
+      const canBodies = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.32, 0.32, 0.8, 14), new THREE.MeshStandardMaterial({ color: '#e8590c', metalness: 0.4, roughness: 0.45 }), cans.length));
+      const canRims = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.34, 0.34, 0.12, 14), new THREE.MeshStandardMaterial({ color: '#1b1b1b', roughness: 0.5 }), cans.length));
+      const canLenses = quiet(new THREE.InstancedMesh(new THREE.CircleGeometry(0.28, 14), new THREE.MeshStandardMaterial({ color: '#ffe3b0', emissive: '#ffb347', emissiveIntensity: 1.4, side: THREE.DoubleSide }), cans.length));
+      const rods = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.018, 0.018, 1, 4), new THREE.MeshStandardMaterial({ color: '#111111' }), cans.length));
+      const beams = quiet(new THREE.InstancedMesh(new THREE.ConeGeometry(1.4, 5, 16, 1, true), new THREE.MeshBasicMaterial({ color: '#ffb35c', transparent: true, opacity: 0.035, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }), cans.length));
+      cans.forEach((angle, i) => {
+        const r = i % 2 ? 12.3 : 13.0;
+        const [x, z] = toXZ(angle, r);
+        const y = 10.2 + (i % 3) * 0.8;
+        // Tilt the can toward the tube (around the tangent axis)
+        const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(Math.cos(angle), 0, -Math.sin(angle)), -0.55);
+        const canPosition = new THREE.Vector3(x, y, z);
+        rods.setMatrixAt(i, m.compose(new THREE.Vector3(x, (y + ceilY) / 2, z), q.identity(), new THREE.Vector3(1, ceilY - y, 1)));
+        canBodies.setMatrixAt(i, m.compose(canPosition, tilt, one));
+        const axis = new THREE.Vector3(0, -1, 0).applyQuaternion(tilt);
+        canRims.setMatrixAt(i, m.compose(canPosition.clone().addScaledVector(axis, 0.4), tilt, one));
+        const lensQ = tilt.clone().multiply(down);
+        canLenses.setMatrixAt(i, m.compose(canPosition.clone().addScaledVector(axis, 0.47), lensQ, one));
+        beams.setMatrixAt(i, m.compose(canPosition.clone().addScaledVector(axis, 2.95), tilt, one));
+      });
+      group.add(canBodies, canRims, canLenses, rods, beams);
+      // Flat round yellow disc lamps hanging from the soffit
+      const discs = [];
+      for (let i = 0; i < 16; i++) discs.push([i * (Math.PI * 2 / 16) + 0.2, i % 2 ? 17.6 : 22]);
+      const discLamps = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.62, 0.62, 0.1, 24), new THREE.MeshStandardMaterial({ color: '#ffd43b', emissive: '#ffc53d', emissiveIntensity: 0.9 }), discs.length + 2));
+      const discRims = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.7, 0.7, 0.07, 24), new THREE.MeshStandardMaterial({ color: '#2a201b', roughness: 0.5 }), discs.length + 2));
+      const discRods = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.015, 1, 4), new THREE.MeshStandardMaterial({ color: '#111111' }), discs.length));
+      discs.forEach(([angle, r], i) => {
+        const [x, z] = toXZ(angle, r);
+        const top = r > 15.6 ? soffitY(r) : upperY - 1.4;
+        discLamps.setMatrixAt(i, m.compose(new THREE.Vector3(x, 4.3, z), q.identity(), one));
+        discRims.setMatrixAt(i, m.compose(new THREE.Vector3(x, 4.38, z), q.identity(), one));
+        discRods.setMatrixAt(i, m.compose(new THREE.Vector3(x, (4.4 + top) / 2, z), q.identity(), new THREE.Vector3(1, top - 4.4, 1)));
+      });
+      // Two floor-standing disc lamps (thin pole, cone foot) in the atrium
+      [[3.5, 7.2], [5.85, 7.4]].forEach(([angle, r], k) => {
+        const [x, z] = toXZ(angle, r);
+        discLamps.setMatrixAt(discs.length + k, m.compose(new THREE.Vector3(x, 4.6, z), q.identity(), one));
+        discRims.setMatrixAt(discs.length + k, m.compose(new THREE.Vector3(x, 4.68, z), q.identity(), one));
+        decor.add(cylinder(0.035, 0.035, 4.3, metal, x, 2.5, z, 6));
+        decor.add(cylinder(0.05, 0.4, 0.35, material('#8a6a2a', { metalness: 0.6, roughness: 0.4 }), x, 0.47, z, 14));
+      });
+      group.add(discLamps, discRims, discRods);
+
+      // ---- Ground floor furniture -------------------------------------------
+      const tableTop = material('#eef1f4', { roughness: 0.35 });
+      const shellChair = material('#9fb2c6', { roughness: 0.55 });
+      const tables = [[1.05, 9.3], [2.65, 8.4], [4.3, 10, true], [5.15, 9.4], [1.3, 20.5], [3.75, 20.5], [4.75, 20.5]];
+      tables.forEach(([angle, r, withLaptop]) => {
+        const [x, z] = toXZ(angle, r);
+        addRug(x, 0.3, z, angle);
+        decor.add(cylinder(0.62, 0.62, 0.05, tableTop, x, 1.05, z, 28));
+        decor.add(cylinder(0.05, 0.05, 0.72, metal, x, 0.68, z, 8));
+        decor.add(cylinder(0.32, 0.36, 0.05, metal, x, 0.34, z, 16));
+        const seats = withLaptop ? 2 : 3;
+        for (let s = 0; s < seats; s++) {
+          const a = angle + (s / seats) * Math.PI * 2 + (withLaptop ? Math.PI : Math.PI / seats);
+          const cx = x + Math.sin(a) * 1.15;
+          const cz = z + Math.cos(a) * 1.15;
+          const chair = new THREE.Group();
+          chair.add(box(0.52, 0.07, 0.5, shellChair, 0, 0.78, 0));
+          const back = box(0.52, 0.5, 0.06, shellChair, 0, 1.08, 0.24);
+          back.rotation.x = 0.18;
+          chair.add(back);
+          chair.add(cylinder(0.035, 0.035, 0.44, steel, 0, 0.55, 0, 6));
+          chair.add(cylinder(0.24, 0.26, 0.03, steel, 0, 0.32, 0, 14));
+          chair.position.set(cx, 0, cz);
+          chair.rotation.y = Math.atan2(cx - x, cz - z); // back away from the table
+          decor.add(chair);
+          group.add(PropKit.kit.seat(cx, 0.3, cz, 'Cafe chair'));
+        }
+        if (withLaptop) {
+          const [lx2, lz2] = [x + Math.sin(angle + Math.PI) * 0.15, z + Math.cos(angle + Math.PI) * 0.15];
+          group.add(PropKit.kit.laptop(lx2, 1.08, lz2, angle));
+        }
+      });
+      // Grey-blue sofas under the mezzanine
+      [3.0, 3.42].forEach((angle) => {
+        const [x, z] = toXZ(angle, outer - 1.6);
+        const sofa = new THREE.Group();
+        sofa.add(box(3.0, 0.45, 1.0, shellChair, 0, 0.55, 0));
+        sofa.add(box(3.0, 0.8, 0.25, shellChair, 0, 1.0, -0.45));
+        [-1.45, 1.45].forEach((ax) => sofa.add(box(0.2, 0.65, 1.0, shellChair, ax, 0.65, 0)));
+        sofa.position.set(x, 0, z);
+        sofa.rotation.y = angle + Math.PI;
+        decor.add(sofa);
+        group.add(PropKit.kit.seat(x, 0.3, z, 'Sofa'));
+        const [rx, rz] = toXZ(angle, outer - 2.2);
+        addRug(rx, 0.3, rz, angle, 4.2, 3.2);
+      });
+      // Floating orange coin sign (in-game MVC coin, not a real currency)
+      {
+        const coinFace = PropKit.kit.canvasTexture('lounge2|coin', 256, 256, (ctx, cw, ch) => {
+          ctx.fillStyle = '#f7931a'; ctx.beginPath(); ctx.arc(cw / 2, ch / 2, cw / 2 - 2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ffd08a'; ctx.lineWidth = 10; ctx.beginPath(); ctx.arc(cw / 2, ch / 2, cw / 2 - 22, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = '#ffffff'; ctx.font = 'bold 78px Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('MVC', cw / 2, ch / 2 + 4);
+        });
+        const faceMaterial = new THREE.MeshStandardMaterial({ map: coinFace, emissive: '#ffffff', emissiveMap: coinFace, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.3 });
+        const edge = material('#d9780f', { metalness: 0.6, roughness: 0.35 });
+        const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.14, 40), [edge, faceMaterial, faceMaterial]);
+        coin.rotation.x = Math.PI / 2;
+        const holder = new THREE.Group();
+        holder.add(quiet(coin));
+        const [cx, cz] = toXZ(4.75, 15.2);
+        holder.position.set(cx, 3.1, cz);
+        group.add(holder);
+        animate(holder, (time) => { holder.rotation.y = time * 0.9; holder.position.y = 3.1 + Math.sin(time * 1.4) * 0.15; });
+      }
+
+      // ---- Palms and potted plants ---------------------------------------------
+      const trunk = material('#8d6e4a', { roughness: 0.9 });
+      const frond = material('#2b8a3e', { roughness: 0.8, side: THREE.DoubleSide });
+      const pot = material('#d9cbb3', { roughness: 0.8 });
+      const palm = (x, y, z, scale) => {
+        const tree = new THREE.Group();
+        tree.add(cylinder(0.7, 0.55, 0.8, pot, 0, 0.7, 0, 16));
+        for (let s = 0; s < 6; s++) tree.add(cylinder(0.15 - s * 0.012, 0.18 - s * 0.012, 0.9, trunk, s * 0.05, 1.5 + s * 0.85, 0, 8));
+        for (let f = 0; f < 9; f++) {
+          const a = (f / 9) * Math.PI * 2;
+          const leaf = new THREE.Group();
+          const inner = mesh(new THREE.PlaneGeometry(0.6, 1.6), frond, 0, 0, 0.8);
+          inner.rotation.x = -Math.PI / 2 + 0.25;
+          const outerLeaf = mesh(new THREE.PlaneGeometry(0.5, 1.5), frond, 0, -0.45, 2.15);
+          outerLeaf.rotation.x = -Math.PI / 2 + 0.75;
+          leaf.add(inner, outerLeaf);
+          leaf.position.set(0.3, 6.4, 0);
+          leaf.rotation.y = a;
+          tree.add(leaf);
+        }
+        tree.position.set(x, y, z);
+        tree.scale.setScalar(scale);
+        decor.add(tree);
+      };
+      [[0.2, 10.4], [3.75, 10.6], [5.65, 10.6]].forEach(([angle, r]) => { const [x, z] = toXZ(angle, r); palm(x, 0, z, 1); });
+      [[0.95, 23], [3.0, 23], [5.65, 23]].forEach(([angle, r]) => { const [x, z] = toXZ(angle, r); palm(x, upperY, z, 0.9); });
+      const cafeFrom = 5.55;
+      const cafeTo = 6.45;
+      const inCafe = (angle) => { const a = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2); return (a > cafeFrom && a < cafeTo) || a < cafeTo - Math.PI * 2; };
+      const plantSpots = [];
+      for (let i = 0; i < 16; i++) {
+        const angle = openStart + 0.15 + i * ((openLength - 0.3) / 15);
+        if (!inCafe(angle) && !(angle > 2.85 && angle < 3.6)) plantSpots.push([...toXZ(angle, outer - 1), 0]);
+      }
+      [0.4, 1.3, 2.6, 3.45, 3.9, 5.95].forEach((angle) => plantSpots.push([...toXZ(angle, outer - 1), upperY]));
+      const pots = quiet(new THREE.InstancedMesh(new THREE.CylinderGeometry(0.5, 0.38, 0.8, 12), new THREE.MeshStandardMaterial({ color: '#d9cbb3', roughness: 0.8 }), plantSpots.length));
+      const leaves = quiet(new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.8, 1), new THREE.MeshStandardMaterial({ color: '#2f9e44', roughness: 0.9, flatShading: true }), plantSpots.length));
+      plantSpots.forEach(([x, z, y], i) => {
+        pots.setMatrixAt(i, m.makeTranslation(x, y + 0.7, z));
+        leaves.setMatrixAt(i, m.compose(new THREE.Vector3(x, y + 1.6, z), q.identity(), new THREE.Vector3(1, 1.2 + (i % 3) * 0.25, 1)));
+      });
+      group.add(pots, leaves);
+
+      // ---- Underground Cafe: curved counter, espresso, menu stand -------------
+      {
+        const cafeR = 20.2;
+        const sector = (rIn, rOut, from, to) => {
+          const shape = new THREE.Shape();
+          const n = 24;
+          for (let i = 0; i <= n; i++) { const a = from + (to - from) * (i / n); const [x, z] = toXZ(a, rOut); if (i === 0) shape.moveTo(x, z); else shape.lineTo(x, z); }
+          for (let i = n; i >= 0; i--) { const a = from + (to - from) * (i / n); const [x, z] = toXZ(a, rIn); shape.lineTo(x, z); }
+          return shape;
+        };
+        const counterFront = new THREE.MeshStandardMaterial({ map: repeated(slats, 14, 1), roughness: 0.6 });
+        const counter = new THREE.Mesh(new THREE.ExtrudeGeometry(sector(cafeR - 0.4, cafeR + 0.4, cafeFrom + 0.05, cafeTo - 0.05), { depth: 1.1, bevelEnabled: false }), counterFront);
+        counter.rotation.x = Math.PI / 2;
+        counter.position.y = 1.4;
+        decor.add(counter);
+        const top = new THREE.Mesh(new THREE.ExtrudeGeometry(sector(cafeR - 0.55, cafeR + 0.5, cafeFrom, cafeTo), { depth: 0.08, bevelEnabled: false }), material('#e9e2d6', { roughness: 0.3 }));
+        top.rotation.x = Math.PI / 2;
+        top.position.y = 1.48;
+        decor.add(top);
+        // Back bar against the windows: shelves with cups and bottles
+        for (let i = 0; i < 5; i++) {
+          const angle = cafeFrom + 0.1 + i * ((cafeTo - cafeFrom - 0.2) / 4);
+          const [x, z] = toXZ(angle, outer - 0.9);
+          const shelf = new THREE.Group();
+          shelf.add(box(2.6, 1.0, 0.7, darkWood, 0, 0.8, 0));
+          shelf.add(box(2.6, 0.08, 0.4, darkWood, 0, 2.2, -0.1));
+          for (let k = 0; k < 5; k++) shelf.add(cylinder(0.08, 0.06, 0.16, material(k % 2 ? '#f8f9fa' : '#c92a2a'), -1 + k * 0.5, 2.33, -0.1, 8));
+          shelf.position.set(x, 0, z);
+          shelf.rotation.y = angle + Math.PI;
+          decor.add(shelf);
+        }
+        const [mx, mz] = toXZ(6.0, cafeR + 0.1);
+        const espresso = box(0.7, 0.6, 0.5, material('#495057', { metalness: 0.7 }), mx, 1.82, mz);
+        espresso.rotation.y = 6.0;
+        group.add(PropKit.kit.interactive(espresso, 'coffee', 'Underground Cafe espresso'));
+        for (let i = 0; i < 6; i++) {
+          const angle = cafeFrom + 0.1 + i * ((cafeTo - cafeFrom - 0.2) / 5);
+          const [x, z] = toXZ(angle, cafeR - 1.1);
+          decor.add(cylinder(0.3, 0.3, 0.1, material('#212529'), x, 1.15, z, 16));
+          decor.add(cylinder(0.04, 0.04, 0.85, steel, x, 0.72, z, 6));
+          decor.add(cylinder(0.22, 0.24, 0.04, steel, x, 0.32, z, 14));
+          group.add(PropKit.kit.seat(x, 0.6, z, 'Cafe stool'));
+        }
+        // Menu stand in front of the counter (E opens the menu and ordering)
+        const [ax, az] = toXZ(6.25, cafeR - 2.4);
+        const menu = facedBox(1.4, 1.1, 0.1, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('MENU · order here', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 52px Georgia, serif' }) }), 0, 1.25, 0);
+        const stand = new THREE.Group();
+        stand.add(menu);
+        stand.add(cylinder(0.04, 0.04, 0.8, steel, 0, 0.7, 0, 6));
+        stand.position.set(ax, 0, az);
+        stand.rotation.y = 6.25 + Math.PI;
+        group.add(PropKit.kit.interactive(stand, 'cafe_menu', 'Underground Cafe menu'));
+        // Big menu board on the window wall behind the bar
+        const [bx2, bz2] = toXZ(6.0, outer - 0.45);
+        const board = facedBox(5, 1.6, 0.12, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 40px Georgia, serif' }) }), bx2, 4.6, bz2);
+        board.rotation.y = 6.0 + Math.PI;
+        group.add(board);
+        const orderSign = textSprite('Underground Cafe · order at the menu (E)', { width: 6, background: 'rgba(43, 27, 18, 0.9)' });
+        const [ox, oz] = toXZ(6.1, cafeR - 2);
+        orderSign.position.set(ox, 2.9, oz);
+        group.add(orderSign);
+      }
+
+      // Signage toward the history portal
+      const portalSign = textSprite('Hall of Internet History  >  Art Gallery · Gig Plaza', { width: 9, background: 'rgba(58, 36, 22, 0.92)' });
+      portalSign.position.set(outer - 6, 4.2, 0);
+      group.add(portalSign);
+      [-1, 1].forEach((side) => {
+        const [x, z] = toXZ(Math.PI / 2 + side * gapAngle / 2, outer);
+        decor.add(box(0.8, groundTop, 0.8, darkWood, x, groundTop / 2, z));
+      });
+
+      group.add(PropKit.kit.mergeByMaterial(decor));
+      group.userData.label = label || 'Welcome to the Underground';
     },
 
     // Firepit: circular fire surrounded by concentric rings of benches
     firepit(group, { w }) {
       const radius = w / 2;
       group.add(realCampfire());
-      // Fry your Code: roast your code block over the fire to hunt bugs
-      const roastSpot = new THREE.Object3D();
-      roastSpot.position.set(0, 1, 3.2);
-      group.add(PropKit.kit.interactive(roastSpot, 'roast', 'Fry your Code'));
-      const roastSign = textSprite('🔥 Fry your Code (E)', { width: 5, background: 'rgba(201, 42, 42, 0.9)' });
+      // Fry your Code: F near the fire roasts your code block to hunt bugs
+      // (E stays free for the benches around it)
+      const roastSign = textSprite('Fry your Code (F) · Sit (E)', { width: 6, background: 'rgba(201, 42, 42, 0.9)' });
       roastSign.position.set(0, 4.6, 0);
       group.add(roastSign);
       window.firepits = window.firepits || [];
@@ -1794,7 +2577,7 @@
       group.add(poolGlow);
       const places = (window.MULTIVERSE_WORLDS || []);
       const sections = [
-        { title: 'Top Rated', items: ['apple', 'festival', 'equalizer', 'techsquare', 'gamer'].map((key) => places.find((world) => world.key === key)).filter(Boolean) },
+        { title: 'Top Rated', items: ['apple', 'equalizer', 'techsquare', 'gamer'].map((key) => places.find((world) => world.key === key)).filter(Boolean) },
         { title: 'Events Explorer', items: places.filter((world) => world.world).slice(0, 5) },
         { title: 'Dev News', news: true }
       ];

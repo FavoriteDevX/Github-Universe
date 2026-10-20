@@ -1109,7 +1109,7 @@ const GameSystems = (() => {
   function equipHammer() {
     localToolEquipped = true;
     hooks.setWearable('hammer');
-    hooks.system('🔨 Git Commit Hammer equipped. Click bugs in the Debug Dungeon to squash them!');
+    hooks.system('Git Commit Hammer equipped. Click bugs in the Debug Dungeon to squash them!');
   }
 
   return { init, handleClick, command, toEmbedUrl, findMonster, equipHammer, WEARABLES, DECOR_ITEMS, get greenTechGroup() { return greenTechGroup; } };

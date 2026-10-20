@@ -221,7 +221,7 @@
       hotelBed.position.set(side * w * 0.22, 0.3, -d * 0.1);
       group.add(hotelBed);
     });
-    const sign = textSprite(`🛏️ ${(data && data.name) || 'Mini Hotel'} · sleep here (E)`, { width: 7, background: 'rgba(91, 31, 58, 0.9)' });
+    const sign = textSprite(`${(data && data.name) || 'Mini Hotel'} · sleep here (E)`, { width: 7, background: 'rgba(91, 31, 58, 0.9)' });
     sign.position.set(0, h + 2.5, d / 2);
     group.add(sign);
     group.userData.label = (data && data.name) || 'Mini Hotel';
@@ -400,6 +400,7 @@
     exitSign.position.set(0, 3.6, -d / 2 + 0.6);
     group.add(exitSign);
     if (data && data.backyard !== false) buildBackyard(group, { w, d });
+    if (data && data.forest) buildLodgeForest(group, { w, d });
     const titleText = (data && data.title) || 'The Hotel';
     let inside = false;
     const center = new THREE.Vector3();
@@ -417,6 +418,44 @@
   }
 
   // Backyard: wooden fence, pine trees, a concrete bunker gate and the hatch
+  // Privacy: the chalet stands in a clearing of a dense pine forest (two to
+  // three rings of instanced pines, with a path open in front and the
+  // backyard clearing behind)
+  function buildLodgeForest(group, { w, d }) {
+    let seed = 1984;
+    const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const pine = PropKit.kit.realisticTreeGeometry('pine');
+    const spots = [];
+    const inner = Math.max(w, d) / 2 + 30; // leaves room for the chalet and the backyard
+    for (let ring = 0; ring < 3; ring++) {
+      const radius = inner + ring * 6;
+      const count = Math.round((Math.PI * 2 * radius) / 5);
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + ring * 0.4 + (random() - 0.5) * 0.08;
+        // Keep the front path open (the chalet faces +z)
+        if (Math.abs(Math.atan2(Math.sin(angle), Math.cos(angle)) - Math.PI / 2) < 0.16) continue;
+        const r = radius + (random() - 0.5) * 3;
+        spots.push([Math.cos(angle) * r, Math.sin(angle) * r - 8, 0.8 + random() * 0.6, random() * 6.28]);
+      }
+    }
+    const trees = new THREE.InstancedMesh(pine, PropKit.kit.treeMaterial(), spots.length);
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    spots.forEach(([x, z, size, turn], index) => {
+      matrix.compose(new THREE.Vector3(x, 0, z), quaternion.setFromAxisAngle(up, turn), new THREE.Vector3(size, size * (0.9 + (index % 4) * 0.08), size));
+      trees.setMatrixAt(index, matrix);
+    });
+    trees.raycast = () => {};
+    trees.receiveShadow = true;
+    group.add(trees);
+    // Mossy forest floor under the trees
+    const floor = new THREE.Mesh(new THREE.RingGeometry(inner - 4, inner + 16, 64).rotateX(-Math.PI / 2), material('#3f5f2e', { roughness: 1 }));
+    floor.position.set(0, 0.03, -8);
+    floor.raycast = () => {};
+    group.add(floor);
+  }
+
   function buildBackyard(group, { w, d }) {
     const yardDepth = 22;
     const zBack = -d / 2;
@@ -473,25 +512,28 @@
     const mazeOrigin = new THREE.Vector3(-w / 4, -30, zBack - yardDepth / 2 - 2);
     hatch.userData.destination = new THREE.Vector3(mazeOrigin.x, mazeOrigin.y + 0.4, mazeOrigin.z);
     group.add(interactive(hatch, 'warp', 'Down the hatch: the ventilation ducts'));
-    const hatchSign = textSprite('⚠ Hatch (E) · ventilation ducts', { width: 5, background: 'rgba(139, 37, 37, 0.92)' });
+    const hatchSign = textSprite('Hatch (E) · ventilation ducts', { width: 5, background: 'rgba(139, 37, 37, 0.92)' });
     hatchSign.position.set(-w / 4, 3, zBack - yardDepth / 2 - 2);
     group.add(hatchSign);
     buildDuctMaze(group, mazeOrigin);
   }
 
-  // A not-too-hard maze of metal ventilation ducts (7 x 7 cells, generated
-  // with a seeded depth-first search plus a few extra openings). The far
-  // corner has a vent that drops you into the Genesis Plaza Underground.
+  // A real maze of metal ventilation ducts: 13 x 13 cells of 4 m (52 x 52 m),
+  // generated with a seeded depth-first search plus some extra openings, so
+  // there are loops, long corridors and many dead ends. Walls and light
+  // strips are instanced (cheap to draw). The far corner has a vent that
+  // drops you into the Genesis Plaza Underground.
   function buildDuctMaze(group, origin) {
-    const size = 7;
+    const size = 13;
     const cell = 4;
     const height = 3;
+    const start = Math.floor(size / 2);
     let seed = 42;
     const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     const walls = { h: [], v: [] }; // h[x][y]: wall south of (x,y); v[x][y]: wall east of (x,y)
     for (let x = 0; x < size; x++) { walls.h[x] = []; walls.v[x] = []; for (let y = 0; y < size; y++) { walls.h[x][y] = true; walls.v[x][y] = true; } }
-    const visited = new Set(['3,0']);
-    const stack = [[3, 0]];
+    const visited = new Set([`${start},0`]);
+    const stack = [[start, 0]];
     while (stack.length) {
       const [x, y] = stack[stack.length - 1];
       const options = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy, dx, dy]).filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < size && ny < size && !visited.has(`${nx},${ny}`));
@@ -504,8 +546,8 @@
       visited.add(`${nx},${ny}`);
       stack.push([nx, ny]);
     }
-    // A few extra openings make it easier (loops instead of only dead ends)
-    for (let i = 0; i < 8; i++) {
+    // Extra openings create loops (it stays a maze, but you are never stuck in one path)
+    for (let i = 0; i < 18; i++) {
       const x = Math.floor(random() * (size - 1));
       const y = Math.floor(random() * (size - 1));
       if (random() < 0.5) walls.v[x][y] = false; else walls.h[x][y] = false;
@@ -514,28 +556,53 @@
     maze.position.copy(origin);
     const metal = new THREE.MeshStandardMaterial({ map: metalTexture(), roughness: 0.4, metalness: 0.6 });
     const floorMetal = new THREE.MeshStandardMaterial({ map: repeated(metalTexture(), size, size), roughness: 0.5, metalness: 0.6 });
-    // Cell (3, 0) is at the origin; x grows to the right, y grows away (-z)
-    const cx = (x) => (x - 3) * cell;
+    const ceilingMetal = new THREE.MeshStandardMaterial({ map: repeated(metalTexture(), size, size), roughness: 0.45, metalness: 0.6 });
+    // The start cell is at the origin; x grows to the right, y grows away (-z)
+    const cx = (x) => (x - start) * cell;
     const cz = (y) => -y * cell;
-    const spanX = size * cell;
-    maze.add(box(spanX, 0.3, spanX, floorMetal, cx(3), -0.15, cz(3)));
-    maze.add(box(spanX, 0.3, spanX, metal, cx(3), height + 0.15, cz(3)));
+    const span = size * cell;
+    const middleX = cx((size - 1) / 2);
+    const middleZ = cz((size - 1) / 2);
+    maze.add(box(span, 0.3, span, floorMetal, middleX, -0.15, middleZ));
+    maze.add(box(span, 0.3, span, ceilingMetal, middleX, height + 0.15, middleZ));
     // Outer walls
-    maze.add(box(spanX, height, 0.3, metal, cx(3), height / 2, cz(0) + cell / 2));
-    maze.add(box(spanX, height, 0.3, metal, cx(3), height / 2, cz(size - 1) - cell / 2));
-    maze.add(box(0.3, height, spanX, metal, cx(0) - cell / 2, height / 2, cz(3)));
-    maze.add(box(0.3, height, spanX, metal, cx(size - 1) + cell / 2, height / 2, cz(3)));
+    maze.add(box(span, height, 0.3, metal, middleX, height / 2, cz(0) + cell / 2));
+    maze.add(box(span, height, 0.3, metal, middleX, height / 2, cz(size - 1) - cell / 2));
+    maze.add(box(0.3, height, span, metal, cx(0) - cell / 2, height / 2, middleZ));
+    maze.add(box(0.3, height, span, metal, cx(size - 1) + cell / 2, height / 2, middleZ));
+    // Inner walls (one instanced mesh) and light strips (another one)
+    const segments = [];
+    const strips = [];
     for (let x = 0; x < size; x++) {
       for (let y = 0; y < size; y++) {
-        if (x < size - 1 && walls.v[x][y]) maze.add(box(0.3, height, cell, metal, cx(x) + cell / 2, height / 2, cz(y)));
-        if (y < size - 1 && walls.h[x][y]) maze.add(box(cell, height, 0.3, metal, cx(x), height / 2, cz(y) - cell / 2));
-        // Dim light strips along the ceiling, some flickering
-        if ((x + y) % 2 === 0) maze.add(box(1.4, 0.06, 0.2, glow((x * y) % 5 === 0 ? '#ff6b6b' : '#c5f6fa', 1.2), cx(x), height - 0.05, cz(y)));
+        if (x < size - 1 && walls.v[x][y]) segments.push([cx(x) + cell / 2, cz(y), true]);
+        if (y < size - 1 && walls.h[x][y]) segments.push([cx(x), cz(y) - cell / 2, false]);
+        if ((x + y) % 2 === 0) strips.push([cx(x), cz(y), (x * 7 + y * 3) % 9 === 0]);
       }
     }
-    // Fans at a few dead ends
+    const matrix = new THREE.Matrix4();
+    const turn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+    const still = new THREE.Quaternion();
+    const wallMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(cell + 0.3, height, 0.3), metal, segments.length);
+    segments.forEach(([x, z, vertical], index) => {
+      matrix.compose(new THREE.Vector3(x, height / 2, z), vertical ? turn : still, new THREE.Vector3(1, 1, 1));
+      wallMesh.setMatrixAt(index, matrix);
+    });
+    wallMesh.receiveShadow = true;
+    maze.add(wallMesh);
+    const stripMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 0.06, 0.2), glow('#c5f6fa', 1.2), strips.length);
+    stripMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(strips.length * 3).fill(1), 3);
+    const red = new THREE.Color('#ff6b6b');
+    strips.forEach(([x, z, alarm], index) => {
+      matrix.makeTranslation(x, height - 0.05, z);
+      stripMesh.setMatrixAt(index, matrix);
+      if (alarm) stripMesh.setColorAt(index, red);
+    });
+    stripMesh.raycast = () => {};
+    maze.add(stripMesh);
+    // Fans at a few dead ends and junctions
     const fans = [];
-    [[0, 6], [6, 0], [1, 3]].forEach(([x, y]) => {
+    [[0, size - 1], [size - 1, 0], [1, 3], [4, 9], [9, 4], [11, 11], [6, 6]].forEach(([x, y]) => {
       const fan = new THREE.Group();
       for (let i = 0; i < 4; i++) { const blade = box(1.6, 0.05, 0.4, material('#5c646b', { metalness: 0.7 }), 0, 0, 0); blade.rotation.y = (i / 4) * Math.PI; fan.add(blade); }
       fan.position.set(cx(x), height - 0.4, cz(y));
@@ -545,18 +612,18 @@
     // Ladder back up at the entrance
     const ladder = new THREE.Group();
     for (let i = 0; i < 6; i++) ladder.add(box(1, 0.08, 0.08, material('#ced4da', { metalness: 0.8 }), 0, 0.4 + i * 0.45, 0));
-    ladder.position.set(cx(3), 0, cz(0) + cell / 2 - 0.3);
+    ladder.position.set(cx(start), 0, cz(0) + cell / 2 - 0.3);
     ladder.userData.destination = new THREE.Vector3(0, 30.6, 3.2);
     maze.add(interactive(ladder, 'warp', 'Ladder back up to the backyard'));
     // Exit vent at the far corner
-    const exitCell = [6, 6];
+    const exitCell = [size - 1, size - 1];
     const vent = box(2.4, 0.1, 2.4, glow('#74c0fc', 1.4), cx(exitCell[0]), 0.08, cz(exitCell[1]));
     maze.add(vent);
-    const exitSign = textSprite('↓ Vent to the Genesis Plaza Underground', { width: 5, background: 'rgba(24, 119, 242, 0.92)' });
+    const exitSign = textSprite('Vent to the Genesis Plaza Underground', { width: 5, background: 'rgba(24, 119, 242, 0.92)' });
     exitSign.position.set(cx(exitCell[0]), 2.3, cz(exitCell[1]));
     maze.add(exitSign);
-    const startSign = textSprite('Find the blue vent · follow the light strips', { width: 3.2, background: 'rgba(17, 17, 17, 0.85)' });
-    startSign.position.set(cx(3), 2.6, cz(0) - 1.6);
+    const startSign = textSprite('Find the blue vent in the far corner · listen to the fans', { width: 4.2, background: 'rgba(17, 17, 17, 0.85)' });
+    startSign.position.set(cx(start), 2.6, cz(0) - 1.6);
     maze.add(startSign);
     group.add(maze);
     const ventWorld = new THREE.Vector3();

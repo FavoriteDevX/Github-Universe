@@ -41,7 +41,7 @@ const Codify = (() => {
     panel.innerHTML = `
       <header><b>&lt;/&gt; Codify</b><button type="button" id="codify-close" aria-label="Close">&times;</button></header>
       <label>Language <select id="codify-language">${Object.entries(LANGUAGES).map(([key, lang]) => `<option value="${key}">${lang.name}</option>`).join('')}</select></label>
-      <textarea id="codify-code" spellcheck="false" maxlength="${MAX_CODE}" placeholder="// Write some code...\nfunction hello(dev) {\n  return 'Hello, ' + dev;\n}"></textarea>
+      <div class="codify-editor"><pre id="codify-highlight" aria-hidden="true"></pre><textarea id="codify-code" spellcheck="false" maxlength="${MAX_CODE}" placeholder="// Write some code...\nfunction hello(dev) {\n  return 'Hello, ' + dev;\n}"></textarea></div>
       <div class="codify-row">
         <button type="button" id="codify-add">Add to world</button>
         <label class="codify-share"><input type="checkbox" id="codify-share"> Visible to others</label>
@@ -57,8 +57,14 @@ const Codify = (() => {
       add: panel.querySelector('#codify-add'),
       share: panel.querySelector('#codify-share'),
       status: panel.querySelector('#codify-status'),
-      report: panel.querySelector('#codify-report')
+      report: panel.querySelector('#codify-report'),
+      highlight: panel.querySelector('#codify-highlight')
     };
+    // Colored code: a highlighted copy sits under the transparent textarea
+    const repaint = () => { paintEditor(); };
+    ui.code.addEventListener('input', repaint);
+    ui.code.addEventListener('scroll', () => { ui.highlight.scrollTop = ui.code.scrollTop; ui.highlight.scrollLeft = ui.code.scrollLeft; });
+    ui.language.addEventListener('change', repaint);
     panel.querySelector('#codify-close').addEventListener('click', close);
     ui.add.addEventListener('click', () => {
       if (active) { active = null; ui.add.textContent = 'Add to world'; ui.code.value = ''; setStatus(); return; }
@@ -79,9 +85,81 @@ const Codify = (() => {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // Editor syntax colors (GitHub dark palette), per language
+  // --------------------------------------------------------------------------
+  const CONSTANTS = ['true', 'false', 'null', 'undefined', 'None', 'True', 'False', 'nil', 'this', 'self', 'super', 'NULL'];
+  const EXTRA_KEYWORDS = {
+    javascript: ['of', 'in', 'do', 'switch', 'case', 'break', 'continue', 'default', 'throw', 'finally', 'typeof', 'instanceof', 'delete', 'yield', 'extends', 'static', 'get', 'set'],
+    typescript: ['var', 'of', 'in', 'switch', 'case', 'break', 'continue', 'default', 'throw', 'finally', 'typeof', 'extends', 'implements', 'enum', 'public', 'private', 'readonly', 'as', 'keyof', 'new', 'while'],
+    python: ['in', 'is', 'not', 'and', 'or', 'pass', 'break', 'continue', 'raise', 'finally', 'global', 'yield', 'del', 'assert'],
+    rust: ['const', 'static', 'trait', 'where', 'while', 'in', 'as', 'ref', 'move', 'mod', 'crate', 'dyn', 'async', 'await', 'break', 'continue'],
+    go: ['switch', 'case', 'default', 'break', 'continue', 'interface', 'map', 'chan', 'select', 'goto', 'fallthrough'],
+    java: ['protected', 'final', 'extends', 'implements', 'interface', 'throws', 'throw', 'finally', 'switch', 'case', 'break', 'continue', 'package', 'this', 'int', 'boolean', 'double', 'long', 'char', 'String'],
+    c: ['const', 'static', 'unsigned', 'long', 'short', 'double', 'float', 'switch', 'case', 'break', 'continue', 'sizeof', 'typedef', 'enum', 'define'],
+    shell: ['else', 'elif', 'while', 'case', 'esac', 'function', 'local', 'return', 'in', 'sudo', 'npm', 'git', 'cat', 'grep'],
+    sql: ['CREATE', 'TABLE', 'AND', 'OR', 'NOT', 'NULL', 'AS', 'ON', 'LEFT', 'RIGHT', 'INNER', 'LIMIT', 'SET', 'PRIMARY', 'KEY', 'INT', 'TEXT', 'VARCHAR', 'COUNT', 'HAVING', 'DISTINCT']
+  };
+  const span = (kind, text) => `<span class="ck-${kind}">${escapeHtml(text)}</span>`;
+
+  function highlightCode(code, language) {
+    const lang = LANGUAGES[language] || LANGUAGES.javascript;
+    if (language === 'html') {
+      return code.replace(/(<!--[\s\S]*?(?:-->|$))|(<\/?)([\w-]+)([^>]*)(>?)|([^<]+)/g, (match, comment, open, tag, attrs, close, text) => {
+        if (comment) return span('comment', comment);
+        if (text) return escapeHtml(text);
+        const attrHtml = attrs.replace(/([\w-:@]+)(=)?("[^"]*"|'[^']*')?|([^\w"']+)/g, (m, name, eq, value, rest) => (rest ? escapeHtml(rest) : span('attr', name) + (eq || '') + (value ? span('string', value) : '')));
+        return escapeHtml(open) + span('tag', tag) + attrHtml + escapeHtml(close);
+      });
+    }
+    const caseless = ['sql', 'docker'].includes(language);
+    const keywords = new Set([...lang.keywords, ...(EXTRA_KEYWORDS[language] || [])].map((word) => (caseless ? word.toUpperCase() : word)));
+    const hashComments = ['python', 'shell', 'yaml', 'docker'].includes(language);
+    const pattern = new RegExp([
+      '(\\/\\*[\\s\\S]*?(?:\\*\\/|$))', // block comment
+      hashComments ? '(#[^\\n]*)' : language === 'sql' ? '(--[^\\n]*)' : '(\\/\\/[^\\n]*)', // line comment
+      '("(?:\\\\.|[^"\\\\\\n])*"?|\'(?:\\\\.|[^\'\\\\\\n])*\'?|`(?:\\\\.|[^`\\\\])*`?)', // strings
+      '(\\b\\d+(?:\\.\\d+)?\\b)', // numbers
+      '(@[A-Za-z_]\\w*)', // decorators / annotations
+      '([A-Za-z_$][\\w$]*)' // words
+    ].join('|'), 'g');
+    let html = '';
+    let last = 0;
+    code.replace(pattern, (match, block, line, string, number, decorator, word, offset) => {
+      html += escapeHtml(code.slice(last, offset));
+      last = offset + match.length;
+      if (block && !hashComments) html += span('comment', block);
+      else if (block) html += escapeHtml(block);
+      else if (line) html += span('comment', line);
+      else if (string) html += span('string', string);
+      else if (number) html += span('number', number);
+      else if (decorator) html += span('function', decorator);
+      else if (word) {
+        const after = code.slice(last).match(/^\s*(\(|:)/);
+        if (keywords.has(caseless ? word.toUpperCase() : word)) html += span('keyword', word);
+        else if (CONSTANTS.includes(word)) html += span('constant', word);
+        else if (language === 'yaml' && after && after[1] === ':') html += span('attr', word);
+        else if (after && after[1] === '(') html += span('function', word);
+        else if (/^[A-Z][a-z]/.test(word)) html += span('type', word);
+        else html += escapeHtml(word);
+      }
+      return match;
+    });
+    return html + escapeHtml(code.slice(last));
+  }
+
+  function paintEditor() {
+    if (!ui || !ui.highlight) return;
+    // A trailing newline needs a placeholder so the last empty line keeps its height
+    ui.highlight.innerHTML = highlightCode(ui.code.value, ui.language.value) + '\n ';
+    ui.highlight.scrollTop = ui.code.scrollTop;
+    ui.highlight.scrollLeft = ui.code.scrollLeft;
+  }
+
   function setStatus() {
+    paintEditor();
     if (!active) { ui.status.textContent = 'Write some code and press "Add to world". Blocks are private unless you tick "Visible to others".'; return; }
-    ui.status.textContent = active.shared ? '👀 Shared: devs near you can see this block and its code live.' : '🔒 Private: only you can see this block. Edits appear in the world as you type.';
+    ui.status.textContent = active.shared ? 'Shared: devs near you can see this block and its code live.' : 'Private: only you can see this block. Edits appear in the world as you type.';
   }
 
   function open(block) {
@@ -247,7 +325,7 @@ const Codify = (() => {
     ui.add.textContent = 'New block';
     if (block.shared) sync(block);
     setStatus();
-    hooks.system('🧱 Code block added to the world. Keep typing: it updates live. Walk to the Genesis Plaza firepit to "Fry your Code".');
+    hooks.system('Code block added to the world. Keep typing: it updates live. Press F next to any firepit to "Fry your Code".');
   }
 
   function removeBlock(id) {
@@ -319,7 +397,7 @@ const Codify = (() => {
   function startRoast(firepit) {
     const block = active || [...blocks.values()].reverse().find((candidate) => candidate.own);
     if (!block) {
-      hooks.system('🔥 Fry your Code: first write some code with Codify (C) and press "Add to world".');
+      hooks.system('Fry your Code: first write some code with Codify (C) and press "Add to world".');
       open();
       return;
     }
@@ -334,7 +412,7 @@ const Codify = (() => {
     const original = { position: block.group.position.clone(), scale: block.group.scale.clone(), visible: block.sprite.visible };
     block.sprite.visible = false;
     roast = { block, stick, fire, direction, start: performance.now(), original, bugs: findBugs(block.code, block.language), popped: [] };
-    hooks.system(`🔥 Roasting your ${LANGUAGES[block.language].name} code over the fire... looking for bugs.`);
+    hooks.system(`Roasting your ${LANGUAGES[block.language].name} code over the fire... looking for bugs.`);
   }
 
   function updateRoast() {
@@ -357,7 +435,7 @@ const Codify = (() => {
     // Each bug pops out of the fire as a little bug that burns up
     const due = Math.floor(t / (5 / Math.max(1, roast.bugs.length)));
     while (roast.popped.length < Math.min(due, roast.bugs.length)) {
-      const bug = PropKit.kit.textSprite('🐛', { width: 1.2, background: 'rgba(0, 0, 0, 0)', font: 'bold 96px Segoe UI Emoji, Apple Color Emoji, sans-serif' });
+      const bug = PropKit.kit.textSprite('BUG', { width: 1.2, background: 'rgba(201, 42, 42, 0.9)' });
       bug.position.copy(tip);
       bug.userData.born = t;
       bug.userData.drift = new THREE.Vector3((Math.random() - 0.5) * 2, 3, (Math.random() - 0.5) * 2);
@@ -382,9 +460,9 @@ const Codify = (() => {
     const lang = LANGUAGES[block.language] || LANGUAGES.javascript;
     block.glowRing.material.emissive.set(lang.color);
     roast = null;
-    const verdict = bugs.length === 0 ? '✨ Perfectly toasted: no bugs found!' : `🐛 ${bugs.length} bug${bugs.length > 1 ? 's' : ''} burned out of your code:`;
-    hooks.system(`🔥 Fry your Code — ${verdict}`);
-    ui.report.innerHTML = `<h4>🔥 Roast report</h4><p>${verdict}</p>${bugs.length ? `<ul>${bugs.map((bug) => `<li>${bug.line ? `<b>line ${bug.line}</b> ` : ''}${escapeHtml(bug.message)}</li>`).join('')}</ul>` : ''}<p class="codify-note">A playful bug finder (simple checks + the JavaScript parser), not a full linter.</p>`;
+    const verdict = bugs.length === 0 ? 'Perfectly toasted: no bugs found!' : `${bugs.length} bug${bugs.length > 1 ? 's' : ''} burned out of your code:`;
+    hooks.system(`Fry your Code — ${verdict}`);
+    ui.report.innerHTML = `<h4>Roast report</h4><p>${verdict}</p>${bugs.length ? `<ul>${bugs.map((bug) => `<li>${bug.line ? `<b>line ${bug.line}</b> ` : ''}${escapeHtml(bug.message)}</li>`).join('')}</ul>` : ''}<p class="codify-note">A playful bug finder (simple checks + the JavaScript parser), not a full linter.</p>`;
     open(block.own ? block : null);
   }
 
@@ -431,9 +509,115 @@ const Codify = (() => {
     active = null;
     ui.language.value = LANGUAGES[language] ? language : 'javascript';
     ui.code.value = code;
-    ui.report.innerHTML = `<h4>🍽️ ${escapeHtml(title)}</h4><p>Your package is in the editor. Press "Add to world" to place it as a code block.</p>`;
+    ui.report.innerHTML = `<h4>${escapeHtml(title)}</h4><p>Your package is in the editor. Press "Add to world" to place it as a code block.</p>`;
     open();
   }
 
-  return { init, open, close, isOpen, update, interact, startRoast, findBugs, loadTemplate };
+
+  // --------------------------------------------------------------------------
+  // Night soundtrack: "Hand Covers Bruise" (The Social Network) plays only at
+  // night while Codify is open or a block is roasting at a firepit. It is a
+  // hidden YouTube player (no audio file is shipped); the video can be changed
+  // with localStorage "multiverse-night-music" (a YouTube link or video id).
+  // --------------------------------------------------------------------------
+  // Default tracks: licensed orchestral recordings of "Hand Covers Bruise"
+  // (The Original Movies Orchestra, The London Film Score Orchestra). Players
+  // add more with /music add <YouTube link>.
+  const NIGHT_MUSIC_DEFAULT = ['fVv5RnNM8hg', 'gG8S3_krTpI'];
+  const music = { frame: null, ready: false, playing: false, volume: 0, target: 0, lastSent: -1 };
+
+  function youtubeId(text) {
+    const match = String(text || '').match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/) || String(text || '').trim().match(/^([\w-]{11})$/);
+    return match ? match[1] : null;
+  }
+
+  function customTracks() {
+    let saved = '';
+    try { saved = localStorage.getItem('multiverse-night-music') || ''; } catch (error) { saved = ''; }
+    return saved.split(/[\s,]+/).map(youtubeId).filter(Boolean);
+  }
+
+  function nightMusicTracks() {
+    const tracks = [...NIGHT_MUSIC_DEFAULT, ...customTracks()].filter((id, index, list) => list.indexOf(id) === index);
+    // A different track first every time the player starts
+    const first = Math.floor(Math.random() * tracks.length);
+    return [...tracks.slice(first), ...tracks.slice(0, first)];
+  }
+
+  // /music add <link> | remove <link> | list | next | clear
+  function musicChat(args, say) {
+    const action = (args[0] || 'list').toLowerCase();
+    const saveCustom = (list) => { try { localStorage.setItem('multiverse-night-music', list.join(',')); } catch (error) { /* storage blocked */ } };
+    if (action === 'add' || action === 'remove') {
+      const id = youtubeId(args[1]);
+      if (!id) { say(`Usage: /music ${action} <YouTube link>`); return; }
+      const list = customTracks().filter((track) => track !== id);
+      if (action === 'add') list.push(id);
+      saveCustom(list);
+      resetMusicPlayer();
+      say(action === 'add' ? `Night soundtrack: track added (${list.length + NIGHT_MUSIC_DEFAULT.length} in the playlist).` : 'Night soundtrack: track removed.');
+    } else if (action === 'clear') {
+      saveCustom([]);
+      resetMusicPlayer();
+      say('Night soundtrack: back to the default tracks.');
+    } else if (action === 'next' || action === 'skip') {
+      if (music.ready && music.playing) { musicCommand('nextVideo'); say('Night soundtrack: next track.'); } else say('The night soundtrack plays at night while Codify is open or your code is frying.');
+    } else {
+      const all = [...NIGHT_MUSIC_DEFAULT, ...customTracks()];
+      say(`Night soundtrack (${all.length} tracks): ${all.map((id) => `youtu.be/${id}`).join(' · ')}. Use /music add <YouTube link>, /music remove <link>, /music next or /music clear.`);
+    }
+  }
+
+  function resetMusicPlayer() {
+    if (music.frame) music.frame.remove();
+    music.frame = null;
+    music.ready = false;
+    music.playing = false;
+    music.volume = 0;
+    music.lastSent = -1;
+  }
+
+  function musicCommand(func, args = []) {
+    if (!music.frame || !music.frame.contentWindow) return;
+    music.frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+  }
+
+  function createMusicPlayer() {
+    const tracks = nightMusicTracks();
+    const id = tracks[0];
+    const frame = document.createElement('iframe');
+    frame.title = 'Night soundtrack';
+    frame.allow = 'autoplay';
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;width:1px;height:1px;left:-10px;bottom:-10px;opacity:0;pointer-events:none;border:0';
+    frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&loop=1&playlist=${tracks.join(',')}&controls=0&enablejsapi=1&playsinline=1`;
+    frame.addEventListener('load', () => {
+      music.ready = true;
+      music.lastSent = -1;
+      musicCommand('setVolume', [0]);
+      musicCommand('playVideo');
+      music.playing = true;
+    });
+    document.body.appendChild(frame);
+    music.frame = frame;
+  }
+
+  // Called every frame: fades the soundtrack in (night + Codify/roast) or out
+  function updateMusic(isNight, deltaSeconds = 1 / 60) {
+    const soundOn = typeof Sound === 'undefined' || !Sound.isEnabled || Sound.isEnabled();
+    const wanted = Boolean(isNight && soundOn && (isOpen() || roast));
+    music.target = wanted ? 60 : 0;
+    if (wanted && !music.frame) {
+      try { createMusicPlayer(); } catch (error) { console.warn('Night music unavailable', error); }
+    }
+    if (!music.ready) return;
+    const step = deltaSeconds * (wanted ? 25 : 40);
+    music.volume = music.volume < music.target ? Math.min(music.target, music.volume + step) : Math.max(music.target, music.volume - step);
+    const rounded = Math.round(music.volume);
+    if (rounded !== music.lastSent) { musicCommand('setVolume', [rounded]); music.lastSent = rounded; }
+    if (wanted && !music.playing) { musicCommand('playVideo'); music.playing = true; }
+    if (!wanted && music.playing && music.volume <= 0) { musicCommand('pauseVideo'); music.playing = false; }
+  }
+
+  return { init, open, close, isOpen, update, updateMusic, musicChat, highlightCode, isRoasting: () => Boolean(roast), interact, startRoast, findBugs, loadTemplate };
 })();
