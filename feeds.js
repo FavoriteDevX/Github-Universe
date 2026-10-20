@@ -17,7 +17,7 @@ const REDDIT_API = process.env.REDDIT_API_URL || 'https://www.reddit.com';
 const WATCHED_REPOS = ['torvalds/linux', 'facebook/react', 'microsoft/vscode', 'nodejs/node'];
 const PR_REPOS = ['facebook/react', 'microsoft/vscode'];
 const STOCKS = [['AAPL', 'Apple'], ['GOOGL', 'Alphabet'], ['NVDA', 'NVIDIA'], ['MSFT', 'Microsoft'], ['META', 'Meta'], ['AMZN', 'Amazon']];
-const USER_AGENT = 'GitHubMultiverse/1.0 (+https://github.com/claudecoded/Github-Universe)';
+const USER_AGENT = 'GitHubMultiverse/1.0 (+https://github.com/FavoriteDevX/Github-Universe)';
 
 const state = {
   github: { commits: [], pulls: [], updatedAt: null, error: null },
