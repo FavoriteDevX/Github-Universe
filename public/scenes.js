@@ -650,10 +650,12 @@
       for (let x = -w / 2; x <= w / 2 + 0.01; x += w / 6) group.add(box(0.12, h, 0.12, steel, x, h / 2, d / 2));
       group.add(box(w + 0.4, 0.5, d + 0.4, material('#f5f5f7'), 0, h + 0.25, 0));
       for (let i = 0; i < 4; i++) group.add(box(w * 0.8, 0.05, 1.2, glow('#ffffff', 0.9), 0, h - 0.05, -d / 2 + (i + 0.5) * (d / 4)));
-      // Official ads: Apple's own YouTube channel uploads playing on a screen behind the Genius Bar
+      // Indoor billboard behind the Genius Bar: a silent reel of clips from three
+      // official videos, played back to back (reel.html; the sound stays off)
       const adScreen = box(w * 0.32, w * 0.18, 0.1, material('#000000'), w * 0.3, h * 0.55, -d / 2 + 0.4);
       group.add(adScreen);
-      VideoScreens.register(adScreen, w * 0.32, w * 0.18, VideoScreens.channelUploadsEmbed('UCE_M8A5yxnLfW0KghEeajjw'));
+      const STORE_REEL = [['bJKTjCk7KV4', 127, 156], ['bJKTjCk7KV4', 159, 187], ['tBjgG1Sj86g', 202, 217], ['tR8O3pE1Ypk', 38, 68]];
+      VideoScreens.register(adScreen, w * 0.32, w * 0.18, `reel.html?s=${encodeURIComponent(STORE_REEL.map(([id, start, end]) => `${id}:${start}-${end}`).join(','))}&silent=1`);
       // Ad carousel on the right wall: cycles through every banner in assets/ads/ads.json
       const carouselFace = new THREE.MeshBasicMaterial({ map: productBoard('Mac', 'Add your banners to assets/ads', '#000000', '#ffffff') });
       const carousel = box(0.15, w * 0.22, d * 0.6, [material('#1d1d1f'), carouselFace, material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f'), material('#1d1d1f')], w / 2 - 0.4, h * 0.5, 0);

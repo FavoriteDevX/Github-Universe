@@ -11,11 +11,12 @@
 <script>
 // Plays a list of clips from official YouTube videos back to back, as one
 // continuous reel, and loops. Used by the 3D video screens (video.js):
-//   reel.html?s=VIDEO_ID:START-END,VIDEO_ID:START-END&mute=1
+//   reel.html?s=VIDEO_ID:START-END,VIDEO_ID:START-END&mute=1 (or &silent=1: always muted)
 // START and END are seconds (END may be empty to play until the video ends).
 // Nothing is downloaded or re-encoded: each clip streams from YouTube's player.
 const params = new URLSearchParams(location.search);
-const muted = params.get('mute') !== '0';
+// silent=1 keeps the reel muted even when the player turns the screens' sound on (V)
+const muted = params.get('silent') === '1' || params.get('mute') !== '0';
 const clips = (params.get('s') || '').split(',').map((entry) => {
   const match = /^([\w-]{11}):(\d*)-(\d*)$/.exec(entry.trim());
   return match ? { videoId: match[1], startSeconds: Number(match[2] || 0), endSeconds: match[3] ? Number(match[3]) : undefined } : null;
