@@ -879,6 +879,56 @@
       group.userData.label = 'House of MAC';
     },
 
+    // macOS section: an arc of lit banner panels (the macOS ads in
+    // public/assets/ads, listed in the block's "images") on an aluminum deck,
+    // under a big "macOS" sign; E on a panel shows its title
+    macosSection(group, { w, h, d, data }) {
+      const banners = (data && data.banners) || [];
+      const aluminum = material('#c9ccd1', { metalness: 0.7, roughness: 0.35 });
+      group.add(box(w, 0.2, d, aluminum, 0, 0.1, 0));
+      group.add(box(w + 0.3, 0.06, d + 0.3, glow('#4dabf7', 1.2), 0, 0.03, 0));
+      // The sign: macOS in light letters on a dark gradient bar
+      const signTexture = canvasTexture('macosSectionSign', 1024, 256, (ctx, cw, ch) => {
+        const gradient = ctx.createLinearGradient(0, 0, cw, 0);
+        gradient.addColorStop(0, '#1c1c2e'); gradient.addColorStop(0.5, '#23233f'); gradient.addColorStop(1, '#1c1c2e');
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, cw, ch);
+        const text = ctx.createLinearGradient(cw * 0.3, 0, cw * 0.7, 0);
+        text.addColorStop(0, '#7dd3fc'); text.addColorStop(0.5, '#c4b5fd'); text.addColorStop(1, '#f9a8d4');
+        ctx.fillStyle = text; ctx.font = '600 150px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('macOS', cw / 2, ch / 2 + 6);
+      });
+      const sign = box(w * 0.45, w * 0.45 / 4, 0.2, [material('#1c1c2e'), material('#1c1c2e'), material('#1c1c2e'), material('#1c1c2e'), new THREE.MeshBasicMaterial({ map: signTexture }), new THREE.MeshBasicMaterial({ map: signTexture })], 0, h - 0.4, 0);
+      group.add(sign);
+      [-1, 1].forEach((side) => group.add(box(0.18, h - 0.4, 0.18, aluminum, side * w * 0.2, (h - 0.4) / 2, 0)));
+      // Banner panels on an arc facing the visitors (+z of the block)
+      const count = Math.max(1, banners.length);
+      const radius = w * 0.62;
+      const panelWidth = Math.min(4.6, (Math.PI * 0.62 * radius) / count - 0.4);
+      banners.forEach((banner, index) => {
+        const angle = (index - (count - 1) / 2) * (Math.PI * 0.62 / count);
+        const panel = new THREE.Group();
+        panel.position.set(Math.sin(angle) * radius, 0, -Math.cos(angle) * radius + radius - d * 0.15);
+        panel.rotation.y = -angle;
+        const face = new THREE.MeshBasicMaterial({ color: '#111111' });
+        const frameHeight = panelWidth * 0.62;
+        const board = box(panelWidth, frameHeight, 0.08, [material('#0d0d0f'), material('#0d0d0f'), material('#0d0d0f'), material('#0d0d0f'), face, material('#0d0d0f')], 0, 1.4 + frameHeight / 2, 0);
+        panel.add(board);
+        panel.add(box(panelWidth + 0.24, frameHeight + 0.24, 0.06, material('#2b2d33', { metalness: 0.8, roughness: 0.3 }), 0, 1.4 + frameHeight / 2, -0.06));
+        panel.add(box(0.12, 1.4, 0.12, aluminum, 0, 0.7, -0.05));
+        panel.add(box(1.2, 0.08, 0.6, aluminum, 0, 0.24, 0));
+        loadAd(banner.file, (texture) => {
+          face.map = texture; face.color.set('#ffffff'); face.needsUpdate = true;
+          const aspect = texture.image.width / texture.image.height;
+          board.scale.y = (panelWidth / aspect) / frameHeight;
+          board.position.y = 1.4 + (panelWidth / aspect) / 2;
+        });
+        panel.userData.label = 'macOS';
+        panel.userData.info = banner.title || 'macOS';
+        group.add(interactive(panel, 'inspect', banner.title || 'macOS'));
+      });
+      group.userData.label = 'macOS section';
+    },
+
     // Freestanding ad boards (official product logo + name). When the ad banner
     // image exists in public/assets/ads/ (block "image"), the board shows it,
     // resized to the banner's aspect ratio.
@@ -1073,7 +1123,7 @@
     [/gradient_floor/, 'gradientFloor'], [/glass_wall_panel/, 'glassWall'], [/glass_table/, 'glassTable'], [/round_sofa/, 'roundSofa'],
     [/commit_board/, 'commitBoard'], [/parkour_platform/, 'parkourPlatform'], [/^coin/, 'coin'], [/parkour_(start|finish)/, 'parkourPad'],
     [/purple_rocks/, 'purpleRocks'], [/toki_ground/, 'tokiGround'], [/beach_arena/, 'beachArena'], [/sky_waterfall/, 'skyWaterfall'], [/bar_counter/, 'barCounter'], [/floating_crystal/, 'floatingCrystal'], [/wall_tv/, 'wallTv'],
-    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/mac_flagship/, 'macFlagship'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/apple_billboard/, 'appleBillboard']
+    [/showcase_shelf/, 'showcaseShelf'], [/apple_store/, 'appleStore'], [/mac_flagship/, 'macFlagship'], [/gravity_tower/, 'gravityTower'], [/glass_villa/, 'glassVilla'], [/water_mirror/, 'waterMirror'], [/apple_video_billboard/, 'appleVideoBillboard'], [/macos_section/, 'macosSection'], [/apple_billboard/, 'appleBillboard']
   ];
   rules.slice().reverse().forEach(([pattern, name]) => PropKit.registerBuilder(pattern, name, builders[name]));
 })();
