@@ -1,6 +1,6 @@
 # 🌐 GitHub Multiverse
 
-<img width="1000" height="561" alt="GitHub Multiverse" src="https://github.com/user-attachments/assets/1c7a81c7-6897-4ce4-bc3c-422fa9a61cfe" />
+<img width="1369" height="768" alt="image" src="https://github.com/user-attachments/assets/1d43db17-2b05-41dd-a486-5373ef3742c3" />
 
 A Decentraland-like, fully functional 3D collaborative metaverse built for developers. Instead of clunky character avatars, every developer walks the world as a custom **three-dimensional mouse pointer**. Everyone starts in **Genesis City**, one continuous, organic space around Genesis Plaza (no street grid, no square blocks) made of small themed scenes, with an **underground level** below the plaza, a **metro** to every district, and bigger **Worlds**: interactive mini-games and a Silicon Valley tech campus.
 
