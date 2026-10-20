@@ -484,11 +484,16 @@
   // [year, illustration kind, title, short description (our own words), era, optional 3D model on a plinth]
   const ARTIFACTS = [
     [1969, 'lo', 'ARPANET: "LO"', 'A UCLA student tried to log in to a computer at SRI, hundreds of miles away. The system crashed after two letters, so the first message ever sent over the network was simply "LO".', 'early'],
+    [1969, 'unix', 'Unix', 'At Bell Labs, Ken Thompson and Dennis Ritchie built a small operating system on a spare minicomputer. Pipes, plain text files and little tools that do one thing well still shape every terminal.', 'early'],
     [1971, 'email', 'The first network email', 'Ray Tomlinson sent a throwaway test message between two machines standing side by side, and picked the @ sign to join the user name and the host.', 'early'],
+    [1972, 'clang', 'The C language', 'Dennis Ritchie created C so Unix could be rewritten in something easier than assembly. Its "hello, world" became the first program almost every developer types.', 'early'],
     [1982, 'smiley', 'The smiley :-)', 'On a Carnegie Mellon message board, Scott Fahlman suggested marking jokes with a sideways face so nobody would take them literally. The face outlived the thread.', 'early'],
+    [1984, 'macos', 'The Macintosh desktop', 'The first Macintosh shipped with windows, icons, menus and a mouse pointer. Drag a file to the trash: a whole generation learned computing by pointing and clicking.', 'early'],
     [1985, 'symbolics', 'symbolics.com', 'A Lisp machine maker registered the very first .com domain. For months almost nobody else bothered to get one.', 'early'],
     [1988, 'irc', 'Internet Relay Chat', 'A Finnish student wrote IRC to replace a bulletin board chat. Channels starting with # are still where many developer communities hang out.', 'early'],
     [1991, 'firstsite', 'The first website', 'Tim Berners-Lee put the first web page online at CERN. It explained what the World Wide Web was and how anyone could publish their own pages.', 'early'],
+    [1991, 'linux', 'Linux', 'A Finnish student announced a free operating system kernel, "just a hobby, won\'t be big". Thousands of volunteers joined in, and today it runs most servers, phones and supercomputers.', 'early'],
+    [1991, 'python', 'Python', 'Guido van Rossum released a language that reads almost like plain English, named after a comedy troupe rather than the snake. Indentation is the syntax.', 'early'],
     [1993, 'coffeepot', 'The Trojan Room coffee pot', 'Researchers at Cambridge pointed a camera at the shared coffee pot to avoid walking to an empty one. Once the picture went on the web, it became the first famous webcam.', 'early', 'coffeepot'],
     [1993, 'mosaic', 'Mosaic', 'A browser that placed pictures inline with text. Suddenly the web looked like a magazine anyone could flip through.', 'early'],
     [1993, 'dog', 'Nobody knows who you are', 'A 1993 magazine cartoon joked that online nobody can tell who (or what) is typing on the other side. It became the classic shorthand for internet anonymity.', 'early'],
@@ -496,6 +501,9 @@
     [1994, 'modem', 'The dial-up handshake', 'Screech, hiss, bong: two modems negotiating a connection. Nobody could use the phone, and a single photo loaded one stripe at a time.', 'early'],
     [1994, 'netscape', 'Netscape Navigator', 'The browser with a meteor shower logo. It came on floppy disks, cost money for businesses and made the web feel like a frontier.', 'early'],
     [1994, 'geocities', 'GeoCities', 'Free homepages sorted into themed "neighborhoods". Under-construction GIFs were not a phase, they were a lifestyle.', 'early'],
+    [1995, 'win95', 'Windows 95', 'A Start button, a taskbar and long file names. People queued at midnight to buy an operating system, and the PC desktop took the shape it still has.', 'dotcom'],
+    [1995, 'java', 'Java', 'A language meant for TV set-top boxes became the language of big business. "Write once, run anywhere": compile to bytecode and let a virtual machine do the rest.', 'dotcom'],
+    [1995, 'javascript', 'JavaScript', 'Brendan Eich wrote the first version in about ten days so web pages could react to clicks. Today it runs in every browser on the planet, and far beyond it.', 'dotcom'],
     [1995, 'amazon', 'Amazon opens', 'An online bookstore started in a garage. Legend says a bell rang for every order, until there were far too many orders to ring it.', 'dotcom'],
     [1995, 'ebay', 'A broken laser pointer', 'One of the first sales on AuctionWeb, later eBay: a broken laser pointer for $14.83. The buyer said he collected broken laser pointers.', 'dotcom', 'laser'],
     [1996, 'spacejam', 'The Space Jam website', 'A movie promo site made of planet-shaped buttons on a starfield. It stayed online, almost untouched, for more than two decades.', 'dotcom'],
@@ -514,6 +522,7 @@
     [2004, 'thefacebook', 'Thefacebook', 'Started in a college dorm as an online directory for students, then slowly opened up to everyone.', 'web2'],
     [2004, 'gmail', 'Gmail', 'Announced on April Fools\' Day with 1 GB of free storage, so many people thought it was a joke. Invites were traded like treasure.', 'web2'],
     [2004, 'orkut', 'Orkut', 'Scraps, testimonials and communities about everything. Huge in Brazil and India, where it felt like the whole country was online at once.', 'web2'],
+    [2005, 'git', 'Git', 'Linus Torvalds wrote a new version control system in a couple of weeks when the Linux kernel lost its old one. Branches became cheap and every clone is a full backup.', 'web2'],
     [2005, 'youtube05', '"Me at the zoo"', 'The first video uploaded to YouTube: 19 seconds of a co-founder standing in front of the elephants.', 'web2'],
     [2006, 'tweet', 'The first tweet', 'A short status update, "just setting up my twttr". Real-time micro posts became a new way to spread news.', 'web2'],
     [2007, 'iphone', 'The iPhone', 'A phone, a music player and an internet communicator in one touch screen. When apps arrived, the web moved into every pocket.', 'mobile', 'phone'],
@@ -521,6 +530,7 @@
     [2007, 'chipmunk', 'Dramatic Chipmunk', 'Five seconds: a small rodent turns its head, the camera zooms, the music stings. Perfect comic timing.', 'mobile'],
     [2007, 'rickroll', 'Rickrolling', 'A link that promises something exciting but secretly opens a 1987 music video. The prank turned the song into an internet anthem.', 'mobile'],
     [2008, 'github', 'GitHub', 'Git hosting with pull requests, forks and profiles. Open source turned into a social network of millions of developers.', 'mobile'],
+    [2008, 'appstore', 'The App Store', 'The iPhone opened to outside developers with about 500 apps on day one. Installing software became one tap, and a new kind of developer career began.', 'mobile'],
     [2008, 'stackoverflow', 'Stack Overflow', 'Questions, voted answers and a green check mark. The place every developer lands after pasting an error message into a search box.', 'mobile'],
     [2008, 'chrome', 'Google Chrome', 'A minimal browser with one box for addresses and searches, and every tab in its own process. Introduced with a comic book.', 'mobile'],
     [2009, 'genesis', 'Bitcoin genesis block', 'The first block of the Bitcoin blockchain carried a newspaper headline about bank bailouts. Shown here as a piece of history only, not as an investment.', 'mobile'],
@@ -532,6 +542,7 @@
     [2013, 'react', 'React', 'A library that redraws the screen from data, with HTML-like syntax inside JavaScript. Controversial at launch, everywhere a few years later.', 'mobile'],
     [2014, 'icebucket', 'Ice Bucket Challenge', 'Film yourself under a bucket of ice water, nominate three friends. The chain raised awareness and funds for ALS research.', 'mobile'],
     [2015, 'dress', 'The Dress', 'A washed-out photo of a striped dress split the internet: blue and black, or white and gold? Scientists studied it too.', 'mobile'],
+    [2015, 'vscode', 'Visual Studio Code', 'A free, lightweight code editor built with web technology, with extensions for every language. Within a few years it was the editor most developers used.', 'mobile'],
     [2016, 'pokemongo', 'Pokemon GO', 'An augmented reality game sent millions of players walking around parks and streets, phone in hand, looking for creatures.', 'modern'],
     [2017, 'fortnite', 'Fortnite Battle Royale', 'A free battle royale with building and dance emotes that doubled as a hangout and a stage for virtual concerts.', 'modern'],
     [2020, 'amongus', 'Among Us', 'A small 2018 game exploded during the 2020 lockdowns: friends on a call, trying to find the impostor on a spaceship.', 'modern'],
@@ -1104,6 +1115,124 @@
       [['#c678dd', 'function Hello() {'], ['#abb2bf', '  return ('], ['#e06c75', '    <h1>Hi</h1>'], ['#abb2bf', '  );'], ['#c678dd', '}']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 290, 130 + i * 28); });
       ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px Arial'; ctx.fillText('React · 2013', 300, 60);
     },
+    unix(ctx, w, h) {
+      ctx.fillStyle = '#f3ecd8'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(18, 18, w - 36, h - 80);
+      ctx.fillStyle = '#ffb000'; ctx.font = '19px Courier New, monospace';
+      ['login: ken', '% who', 'ken      tty0   Nov  3', 'dmr      tty1   Nov  3', '% ls /usr/bin | wc -l', '      34', '% cat notes | grep pipe | sort', 'pipes: | joins small tools'].forEach((line, i) => ctx.fillText(line, 34, 50 + i * 30));
+      ctx.fillStyle = '#5c4b2e'; ctx.font = 'bold 22px Georgia, serif'; ctx.fillText('Bell Labs · PDP-7 · 1969', 24, h - 28);
+      ctx.fillStyle = '#ffb000'; ctx.fillRect(34 + 10 * 11.5, 260, 10, 18);
+    },
+    clang(ctx, w, h) {
+      ctx.fillStyle = '#fbf8ef'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#1c3f94'; ctx.font = 'bold 150px Georgia, serif'; ctx.fillText('C', 360, 170);
+      ctx.fillStyle = '#212529'; ctx.font = '20px Courier New, monospace';
+      ['#include <stdio.h>', '', 'main()', '{', '    printf("hello, world\\n");', '}'].forEach((line, i) => ctx.fillText(line, 28, 60 + i * 30));
+      ctx.fillStyle = '#adb5bd'; ctx.fillRect(28, 250, 456, 2);
+      ctx.fillStyle = '#495057'; ctx.font = '17px Courier New, monospace'; ctx.fillText('$ cc hello.c', 28, 290); ctx.fillText('$ ./a.out', 28, 316); ctx.fillText('hello, world', 28, 342);
+    },
+    macos(ctx, w, h) {
+      ctx.fillStyle = '#9a9a9a';
+      for (let y = 0; y < h; y += 2) for (let x = (y / 2) % 2 ? 0 : 1; x < w; x += 2) ctx.fillRect(x, y, 1, 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, 26); ctx.fillStyle = '#000000'; ctx.fillRect(0, 26, w, 2);
+      ctx.font = 'bold 16px Chicago, Geneva, Arial'; ['File', 'Edit', 'View', 'Special'].forEach((item, i) => ctx.fillText(item, 40 + i * 70, 19));
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(60, 70, 300, 200); ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.strokeRect(60, 70, 300, 200);
+      for (let i = 0; i < 6; i++) ctx.fillRect(62, 74 + i * 3, 296, 1);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(160, 72, 120, 16); ctx.fillStyle = '#000000'; ctx.font = 'bold 14px Geneva, Arial'; ctx.fillText('System Disk', 172, 85);
+      [[90, 110, 'System'], [190, 110, 'MacPaint'], [290, 110, 'MacWrite']].forEach(([x, y, name]) => {
+        ctx.strokeRect(x, y, 34, 42); ctx.fillRect(x + 6, y + 8, 22, 3); ctx.fillRect(x + 6, y + 16, 22, 3);
+        ctx.font = '12px Geneva, Arial'; ctx.fillText(name, x - 6, y + 60);
+      });
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(420, 300, 44, 50); ctx.strokeRect(420, 300, 44, 50); ctx.strokeRect(416, 296, 52, 6);
+      for (let i = 0; i < 4; i++) ctx.fillRect(428 + i * 9, 308, 2, 36);
+      ctx.fillStyle = '#000000'; ctx.font = '12px Geneva, Arial'; ctx.fillText('Trash', 426, 368);
+      ctx.beginPath(); ctx.moveTo(250, 200); ctx.lineTo(250, 224); ctx.lineTo(256, 218); ctx.lineTo(262, 230); ctx.lineTo(266, 228); ctx.lineTo(260, 216); ctx.lineTo(268, 216); ctx.closePath();
+      ctx.fillStyle = '#000000'; ctx.fill();
+    },
+    linux(ctx, w, h) {
+      ctx.fillStyle = '#101418'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#e9ecef'; ctx.font = '15px Courier New, monospace';
+      ['From: torvalds (Linus Benedict Torvalds)', 'Newsgroups: comp.os.minix', 'Subject: What would you like to see most', '', 'I\'m doing a (free) operating system', '(just a hobby, won\'t be big and', 'professional...)'].forEach((line, i) => ctx.fillText(line, 20, 34 + i * 24));
+      ctx.fillStyle = '#7ee787'; ctx.fillText('$ uname -sr', 20, 230); ctx.fillStyle = '#e9ecef'; ctx.fillText('Linux 0.01', 20, 254);
+      const px = 410; const py = 270;
+      ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.ellipse(px, py, 46, 62, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f8f9fa'; ctx.beginPath(); ctx.ellipse(px, py + 14, 30, 44, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.arc(px, py - 62, 30, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff'; [-10, 10].forEach((dx) => { ctx.beginPath(); ctx.arc(px + dx, py - 68, 7, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = '#111111'; [-10, 10].forEach((dx) => { ctx.beginPath(); ctx.arc(px + dx + 2, py - 67, 3, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = '#fab005'; ctx.beginPath(); ctx.moveTo(px - 12, py - 54); ctx.lineTo(px + 12, py - 54); ctx.lineTo(px, py - 42); ctx.fill();
+      [-1, 1].forEach((s) => { ctx.beginPath(); ctx.ellipse(px + s * 22, py + 64, 20, 8, 0, 0, Math.PI * 2); ctx.fill(); });
+    },
+    python(ctx, w, h) {
+      ctx.fillStyle = '#1e2a3a'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#3776ab'; roundRect(ctx, 370, 30, 70, 70, 16); ctx.fill();
+      ctx.fillStyle = '#ffd43b'; roundRect(ctx, 400, 60, 70, 70, 16); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(390, 48, 6, 0, Math.PI * 2); ctx.arc(452, 112, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '18px Courier New, monospace';
+      [['#8b949e', 'Python 0.9.0 (Feb 1991)'], ['#7ee787', '>>> print("Hello, world!")'], ['#e9ecef', 'Hello, world!'], ['#7ee787', '>>> for n in range(3):'], ['#7ee787', '...     print(n * "py ")'], ['#e9ecef', ''], ['#e9ecef', 'py'], ['#e9ecef', 'py py'], ['#7ee787', '>>> import this'], ['#ffd43b', 'Beautiful is better than ugly.']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 22, 40 + i * 32); });
+    },
+    java(ctx, w, h) {
+      ctx.fillStyle = '#f8f1e7'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#e76f00'; ctx.beginPath(); ctx.moveTo(360, 150); ctx.lineTo(470, 150); ctx.lineTo(456, 250); ctx.quadraticCurveTo(415, 270, 374, 250); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#e76f00'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(474, 190, 20, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+      ctx.strokeStyle = '#5382a1'; ctx.lineWidth = 5;
+      [385, 415, 445].forEach((x, i) => { ctx.beginPath(); ctx.moveTo(x, 135); ctx.bezierCurveTo(x - 14, 115, x + 14, 95, x, 70 - i * 4); ctx.stroke(); });
+      ctx.fillStyle = '#5382a1'; ctx.font = 'bold 22px Georgia, serif'; ctx.fillText('Write once, run anywhere', 24, 44);
+      ctx.fillStyle = '#212529'; ctx.font = '15px Courier New, monospace';
+      ['public class Hello {', '  public static void', '      main(String[] args) {', '    System.out.println(', '        "Hello, world");', '  }', '}'].forEach((line, i) => ctx.fillText(line, 24, 92 + i * 26));
+      ctx.fillStyle = '#868e96'; ctx.font = '15px Courier New, monospace'; ctx.fillText('Hello.java -> javac -> Hello.class -> JVM', 24, 350);
+    },
+    javascript(ctx, w, h) {
+      const top = oldBrowser(ctx, w, h, 'Netscape Navigator 2.0', 'http://home.example/', '#ffffff');
+      ctx.fillStyle = '#f7df1e'; ctx.fillRect(w - 120, top + 14, 96, 96); ctx.fillStyle = '#111111'; ctx.font = 'bold 44px Arial'; ctx.fillText('JS', w - 76, top + 98);
+      ctx.fillStyle = '#212529'; ctx.font = '15px Courier New, monospace';
+      ['<script language="JavaScript">', '  function hello() {', '    alert("Hello from 1995!");', '  }', '</script>', '<input type=button onclick="hello()">'].forEach((line, i) => ctx.fillText(line, 18, top + 30 + i * 24));
+      ctx.fillStyle = '#c0c0c0'; ctx.fillRect(120, top + 180, 280, 110); ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.strokeRect(120, top + 180, 280, 110);
+      ctx.fillStyle = '#000080'; ctx.fillRect(121, top + 181, 278, 20); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px Arial'; ctx.fillText('JavaScript Alert', 128, top + 196);
+      ctx.fillStyle = '#000000'; ctx.font = '15px Arial'; ctx.fillText('Hello from 1995!', 190, top + 236);
+      ctx.fillStyle = '#e9ecef'; ctx.fillRect(225, top + 252, 70, 26); ctx.strokeRect(225, top + 252, 70, 26); ctx.fillStyle = '#000000'; ctx.fillText('OK', 250, top + 270);
+    },
+    git(ctx, w, h) {
+      ctx.fillStyle = '#1b1b1b'; ctx.fillRect(0, 0, w, h);
+      ctx.lineWidth = 5;
+      const node = (x, y, color) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill(); };
+      ctx.strokeStyle = '#f05033'; ctx.beginPath(); ctx.moveTo(40, 80); ctx.lineTo(470, 80); ctx.stroke();
+      ctx.strokeStyle = '#4dabf7'; ctx.beginPath(); ctx.moveTo(130, 80); ctx.quadraticCurveTo(160, 150, 210, 150); ctx.lineTo(330, 150); ctx.quadraticCurveTo(380, 150, 400, 80); ctx.stroke();
+      ctx.strokeStyle = '#69db7c'; ctx.beginPath(); ctx.moveTo(250, 150); ctx.quadraticCurveTo(270, 210, 310, 210); ctx.lineTo(360, 210); ctx.stroke();
+      [40, 130, 220, 310, 400, 470].forEach((x) => node(x, 80, '#f05033'));
+      [210, 270, 330].forEach((x) => node(x, 150, '#4dabf7'));
+      [310, 360].forEach((x) => node(x, 210, '#69db7c'));
+      ctx.fillStyle = '#e9ecef'; ctx.font = '13px Arial'; ctx.fillText('main', 440, 60); ctx.fillText('feature', 300, 132); ctx.fillText('experiment', 330, 236);
+      ctx.font = '16px Courier New, monospace';
+      [['#7ee787', '$ git init'], ['#7ee787', '$ git commit -m "Initial revision"'], ['#7ee787', '$ git checkout -b feature'], ['#adb5bd', 'Switched to a new branch \'feature\'']].forEach(([color, line], i) => { ctx.fillStyle = color; ctx.fillText(line, 24, 268 + i * 26); });
+    },
+    appstore(ctx, w, h) {
+      ctx.fillStyle = '#e7f1ff'; ctx.fillRect(0, 0, w, h);
+      const [sx, sy, sw, sh] = phoneOutline(ctx, 150, h / 2, 190, 350);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(sx, sy, sw, sh);
+      const colors = ['#ff6b6b', '#fcc419', '#51cf66', '#339af0', '#845ef7', '#f783ac', '#20c997', '#ff922b'];
+      for (let i = 0; i < 16; i++) { ctx.fillStyle = colors[(i * 3) % colors.length]; roundRect(ctx, sx + 12 + (i % 4) * 41, sy + 14 + Math.floor(i / 4) * 52, 32, 32, 8); ctx.fill(); }
+      ctx.fillStyle = '#1c7ed6'; roundRect(ctx, sx + 40, sy + sh - 52, sw - 80, 30, 15); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 15px Arial'; ctx.fillText('INSTALL', sx + 58, sy + sh - 32);
+      ctx.fillStyle = '#1d1b26'; ctx.font = 'bold 30px Arial'; ctx.fillText('500 apps', 290, 130);
+      ctx.font = '20px Arial'; ctx.fillText('on day one', 290, 162);
+      ctx.fillStyle = '#495057'; ctx.font = '16px Arial'; ['Games, maps, notes,', 'flashlights and lots', 'of tiny experiments.'].forEach((line, i) => ctx.fillText(line, 290, 220 + i * 24));
+    },
+    vscode(ctx, w, h) {
+      ctx.fillStyle = '#1e1e1e'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#333333'; ctx.fillRect(0, 0, 40, h);
+      ctx.fillStyle = '#252526'; ctx.fillRect(40, 0, 120, h);
+      ctx.fillStyle = '#2d2d2d'; ctx.fillRect(160, 0, w - 160, 28); ctx.fillStyle = '#1e1e1e'; ctx.fillRect(160, 0, 110, 28);
+      ctx.fillStyle = '#ffffff'; ctx.font = '13px Arial'; ctx.fillText('app.js', 176, 19);
+      ctx.fillStyle = '#cccccc'; ctx.font = '12px Arial'; ['EXPLORER', '  src', '    app.js', '    utils.js', '  package.json', '  README.md'].forEach((line, i) => ctx.fillText(line, 48, 22 + i * 22));
+      for (let i = 0; i < 4; i++) { ctx.fillStyle = i ? '#858585' : '#ffffff'; ctx.fillRect(12, 16 + i * 44, 16, 16); }
+      ctx.font = '14px Courier New, monospace';
+      const code = [[['#c586c0', 'import '], ['#9cdcfe', 'express '], ['#c586c0', 'from '], ['#ce9178', "'express'"]], [], [['#569cd6', 'const '], ['#9cdcfe', 'app '], ['#d4d4d4', '= '], ['#dcdcaa', 'express'], ['#d4d4d4', '();']], [['#9cdcfe', 'app'], ['#d4d4d4', '.'], ['#dcdcaa', 'get'], ['#d4d4d4', '('], ['#ce9178', "'/'"], ['#d4d4d4', ', (req, res) =>']], [['#d4d4d4', '  res.'], ['#dcdcaa', 'send'], ['#d4d4d4', '('], ['#ce9178', "'hi'"], ['#d4d4d4', '));']], [['#9cdcfe', 'app'], ['#d4d4d4', '.'], ['#dcdcaa', 'listen'], ['#d4d4d4', '('], ['#b5cea8', '3000'], ['#d4d4d4', ');']]];
+      code.forEach((tokens, i) => { let x = 196; ctx.fillStyle = '#858585'; ctx.fillText(String(i + 1), 170, 56 + i * 24); tokens.forEach(([color, text]) => { ctx.fillStyle = color; ctx.fillText(text, x, 56 + i * 24); x += ctx.measureText(text).width; }); });
+      ctx.fillStyle = '#252526'; ctx.fillRect(196, 210, 230, 70); ctx.strokeStyle = '#454545'; ctx.strokeRect(196, 210, 230, 70);
+      ctx.fillStyle = '#d4d4d4'; ctx.font = '13px Courier New, monospace'; ['listen', 'locals', 'lock'].forEach((s, i) => ctx.fillText(s, 206, 230 + i * 20));
+      ctx.fillStyle = '#007acc'; ctx.fillRect(0, h - 24, w, 24); ctx.fillStyle = '#ffffff'; ctx.font = '12px Arial'; ctx.fillText('main  ·  Ln 6, Col 18  ·  JavaScript', 12, h - 8);
+    },
     here(ctx, w, h) {
       const sky = ctx.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, '#1b1036'); sky.addColorStop(1, '#3b5bdb');
       ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
@@ -1418,11 +1547,19 @@
   }
 
   Object.assign(builders, {
-    // ONE ring corridor around the Underground Lounge (same center), entered
-    // from the lounge through a portal (data.portal, degrees; 90 = +x). The 43
-    // artifacts run clockwise from 1969 next to the portal all the way around
-    // to "You are here" on the other side of it. Outer doors (data.doors) get
-    // short vestibules: the Minimal Art Gallery link and the Gig Plaza tunnel.
+    // ONE ring corridor around the Underground Lounge (same center): the Hall
+    // of Internet & Software History. The 67 artifacts run clockwise from 1969
+    // next to the lounge portal (data.portal, degrees; 90 = +x) all the way
+    // around to "You are here" on the other side of it. Outer doors
+    // (data.doors) get short vestibules: the Minimal Art Gallery link, the Gig
+    // Plaza tunnel and the themed alcoves.
+    // Shared wall (data.bays, same values as the underground_hall block): the
+    // lounge's ground-floor wall IS the inner wall of the ring. The lounge
+    // builds it (solid wood piers between arched glass bays, open arches at
+    // data.bays.openings, the first one is the portal); the ring adds only the
+    // band above it and hangs its inner exhibits on the piers, so every lounge
+    // window looks at the real corridor. Without data.bays the ring builds its
+    // own inner wall with a single portal (exhibits alternate between walls).
     // Fully enclosed: floor, ceiling, both walls; plus a dark rock shell around
     // the whole underground so no gap can ever show the city or the sky.
     historyRing(group, { w, h, label, data }) {
@@ -1430,18 +1567,23 @@
       const innerR = (data && data.inner) || 26.25;
       const midR = (innerR + outerR) / 2;
       const deg = Math.PI / 180;
+      const TAU = Math.PI * 2;
       const portal = ((data && data.portal) || 90) * deg;
-      const portalWidth = 6;
+      const bays = (data && data.bays) || null;
+      const portalWidth = bays ? bays.openingWidth || 5 : 6;
+      const portalHeight = bays ? bays.openingHeight || 4.6 : 5.4;
       const doors = ((data && data.doors) || []).map((door) => ({ ...door, theta: door.angle * deg }));
       const surfaces = hallSurfaces(outerR * 2, outerR * 2);
       const decor = new THREE.Group();
       const beams = new THREE.Group();
       const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
-      // Floor and ceiling rings
-      const floor = mesh(new THREE.RingGeometry(innerR - 0.3, outerR + 0.2, 128, 1), surfaces.floor, 0, 0.3, 0);
+      const after = (angle) => (((angle - portal) % TAU) + TAU) % TAU; // clockwise distance from the portal
+      // Floor and ceiling rings. With the shared wall they start at the lounge
+      // wall, so nothing pokes into the lounge (no ledge, no z-fighting)
+      const floor = mesh(new THREE.RingGeometry(bays ? innerR - 0.05 : innerR - 0.3, outerR + 0.2, 128, 1), surfaces.floor, 0, 0.3, 0);
       floor.rotation.x = -Math.PI / 2;
       group.add(floor);
-      const ceiling = mesh(new THREE.RingGeometry(innerR - 0.3, outerR + 0.2, 128, 1), surfaces.ceiling, 0, h, 0);
+      const ceiling = mesh(new THREE.RingGeometry(bays ? innerR : innerR - 0.3, outerR + 0.2, 128, 1), surfaces.ceiling, 0, h, 0);
       ceiling.rotation.x = -Math.PI / 2;
       group.add(ceiling);
       const lightRing = mesh(new THREE.RingGeometry(midR - 0.25, midR + 0.25, 128, 1), glow('#fff3c4', 1.1, { side: THREE.DoubleSide }), 0, h - 0.03, 0);
@@ -1451,10 +1593,10 @@
       // Curved walls with gaps; lintels above every gap
       const curvedWall = (radius, gaps, doorHeight) => {
         const sorted = gaps.slice().sort((a, b) => a.start - b.start);
-        let cursor = sorted.length ? sorted[sorted.length - 1].start + sorted[sorted.length - 1].length - Math.PI * 2 : 0;
+        let cursor = sorted.length ? sorted[sorted.length - 1].start + sorted[sorted.length - 1].length - TAU : 0;
         const pieces = [];
         sorted.forEach((gap) => { pieces.push([cursor, gap.start - cursor]); cursor = gap.start + gap.length; });
-        if (!sorted.length) pieces.push([0, Math.PI * 2]);
+        if (!sorted.length) pieces.push([0, TAU]);
         pieces.forEach(([start, length]) => { if (length > 0.001) group.add(mesh(new THREE.CylinderGeometry(radius, radius, h, Math.max(8, Math.round(length * 40)), 1, true, start, length), surfaces.wall, 0, h / 2, 0)); });
         sorted.forEach((gap) => {
           const top = gap.height || doorHeight;
@@ -1462,25 +1604,33 @@
         });
       };
       const portalHalf = Math.asin(portalWidth / 2 / innerR);
-      curvedWall(innerR, [{ start: portal - portalHalf, length: portalHalf * 2, height: 5.4 }], 5.4);
+      if (bays) {
+        // Band from the top of the lounge's ground-floor wall up to the ceiling
+        const top = bays.top || 6.05;
+        group.add(mesh(new THREE.CylinderGeometry(innerR, innerR, h - top, 128, 1, true), surfaces.wall, 0, top + (h - top) / 2, 0));
+      } else {
+        curvedWall(innerR, [{ start: portal - portalHalf, length: portalHalf * 2, height: portalHeight }], portalHeight);
+      }
       curvedWall(outerR, doors.map((door) => {
         const half = Math.asin(door.width / 2 / outerR);
         return { start: door.theta - half, length: half * 2, height: door.height };
       }), 4.6);
-      // Skirting and picture rail along both walls
-      [innerR + 0.05, outerR - 0.05].forEach((radius) => {
+      // Skirting and picture rail (the lounge wall has its own wood base)
+      (bays ? [outerR - 0.05] : [innerR + 0.05, outerR - 0.05]).forEach((radius) => {
         decor.add(mesh(new THREE.CylinderGeometry(radius, radius, 0.25, 128, 1, true), hallParts().dark, 0, 0.42, 0));
         decor.add(mesh(new THREE.CylinderGeometry(radius, radius, 0.06, 128, 1, true), hallParts().brass, 0, h - 1.4, 0));
       });
       // Portal frame (both faces) with title signs
-      const portalTitle = labelTexture(`${label || 'Hall of Internet History'} · 1969 to today`, { bg: '#3a2416', fg: '#ffe8a3', width: 1024, height: 160, font: 'bold 56px Georgia, serif' });
-      [-1, 1].forEach((side) => {
-        const [x, z] = toXZ(portal + side * portalHalf, innerR);
-        decor.add(box(0.7, 5.6, 0.7, material('#3a2416'), x, 2.8, z));
-      });
+      const portalTitle = labelTexture(`${label || 'Hall of Internet History'} · 1969 to today`, { bg: '#3a2416', fg: '#ffe8a3', width: 1024, height: 160, font: 'bold 50px Georgia, serif' });
+      if (!bays) {
+        [-1, 1].forEach((side) => {
+          const [x, z] = toXZ(portal + side * portalHalf, innerR);
+          decor.add(box(0.7, 5.6, 0.7, material('#3a2416'), x, 2.8, z));
+        });
+      }
       [[innerR + 0.08, portal], [innerR - 0.3, portal + Math.PI]].forEach(([radius, facing]) => {
         const [x, z] = toXZ(portal, radius);
-        const sign = mesh(new THREE.PlaneGeometry(6.4, 1.0), new THREE.MeshBasicMaterial({ map: portalTitle }), x, 5.95, z);
+        const sign = mesh(new THREE.PlaneGeometry(6.4, 1.0), new THREE.MeshBasicMaterial({ map: portalTitle }), x, portalHeight + 0.55, z);
         sign.rotation.y = facing;
         group.add(sign);
       });
@@ -1504,48 +1654,75 @@
         group.add(sign);
         if (door.alcove) buildAlcove(holder, sign, door, start, length, doorHeight, surfaces.wall);
       });
-      // Exhibits: clockwise from the portal, alternating outer / inner wall
+      // Exhibit slots [angle, onOuter] in chronological (clockwise) order, and
+      // the era arches between eras
       const items = ARTIFACTS;
-      const clear = 0.22;
-      const gap = 2.8 / midR;
-      const eraChanges = items.filter((item, i) => i > 0 && item[4] !== items[i - 1][4]).length;
-      const step = (Math.PI * 2 - clear * 2 - gap * eraChanges) / (items.length - 1);
+      const slots = [];
+      const arches = [];
       const doorClear = (theta, radius, width) => doors.some((door) => Math.abs(Math.atan2(Math.sin(theta - door.theta), Math.cos(theta - door.theta))) * radius < door.width / 2 + 1.8 + (width || 0));
-      let theta = portal + clear;
-      const yearEntries = [];
-      items.forEach((artifact, i) => {
-        if (i > 0) {
-          if (artifact[4] !== items[i - 1][4]) {
-            const archTheta = theta + (step + gap) / 2;
-            const live = new THREE.Group();
-            const still = new THREE.Group();
-            [live, still].forEach((holder) => { holder.rotation.y = archTheta; });
-            eraArch(live, still, 0, innerR + 0.25, outerR - 0.25, h, artifact[4]);
-            group.add(live);
-            decor.add(still);
-            yearEntries.push({ angle: archTheta, text: ERAS[artifact[4]].name.toUpperCase(), color: ERAS[artifact[4]].accent, font: 'bold 22px Arial' });
-            theta += gap;
-          }
-          theta += step;
+      if (bays) {
+        // One exhibit on every pier of the shared wall, the rest spread evenly
+        // over the free outer wall between the doors (most of them face a window)
+        const count = bays.count || 18;
+        const module = TAU / count;
+        for (let k = 0; k < count; k++) slots.push([portal + (k + 0.5) * module, false]);
+        const outerCount = items.length - count;
+        const free = [];
+        for (let i = 0; i < 3000; i++) {
+          const theta = portal + 0.05 + ((i + 0.5) / 3000) * (TAU - 0.1);
+          if (!doorClear(theta, outerR)) free.push(theta);
         }
-        let onOuter = i % 2 === 0;
-        if (onOuter && doorClear(theta, outerR)) onOuter = false;
-        const radius = onOuter ? outerR - 0.02 : innerR + 0.05;
+        for (let i = 0; i < outerCount; i++) slots.push([free[Math.floor(((i + 0.5) / outerCount) * free.length)], true]);
+        slots.sort((a, b) => after(a[0]) - after(b[0]));
+        items.forEach((artifact, i) => {
+          if (i === 0 || artifact[4] === items[i - 1][4]) return;
+          const a = slots[i - 1][0];
+          const b = slots[i][0];
+          if ((b - a) * midR > 1.2) arches.push([(a + b) / 2, artifact[4]]);
+        });
+      } else {
+        const clear = 0.22;
+        const gap = 2.8 / midR;
+        const eraChanges = items.filter((item, i) => i > 0 && item[4] !== items[i - 1][4]).length;
+        const step = (TAU - clear * 2 - gap * eraChanges) / (items.length - 1);
+        let theta = portal + clear;
+        items.forEach((artifact, i) => {
+          if (i > 0) {
+            if (artifact[4] !== items[i - 1][4]) { arches.push([theta + (step + gap) / 2, artifact[4]]); theta += gap; }
+            theta += step;
+          }
+          let onOuter = i % 2 === 0;
+          if (onOuter && doorClear(theta, outerR)) onOuter = false;
+          slots.push([theta, onOuter]);
+        });
+      }
+      // With the shared wall the arch posts stand free in the aisle, clear of
+      // the lecterns on both walls
+      const archInset = bays ? 1.4 : 0.25;
+      const yearEntries = [];
+      const addArch = (angle, era) => {
+        const live = new THREE.Group();
+        const still = new THREE.Group();
+        [live, still].forEach((holder) => { holder.rotation.y = angle; });
+        eraArch(live, still, 0, innerR + archInset, outerR - archInset, h, era);
+        group.add(live);
+        decor.add(still);
+      };
+      arches.forEach(([angle, era]) => {
+        addArch(angle, era);
+        yearEntries.push({ angle, text: ERAS[era].name.toUpperCase(), color: ERAS[era].accent, font: 'bold 22px Arial' });
+      });
+      slots.forEach(([theta, onOuter], i) => {
+        const artifact = items[i];
+        const radius = onOuter ? outerR - 0.02 : innerR + (bays ? -0.03 : 0.05);
         const [x, z] = toXZ(theta, radius);
         placeExhibit(group, decor, beams, artifact, x, z, onOuter ? theta + Math.PI : theta, h);
         yearEntries.push({ angle: theta, text: artifact[0] === 2026 ? 'TODAY' : String(artifact[0]), color: '#ffe8a3', font: 'bold 34px Georgia, serif' });
       });
       // First arch right after the portal; start / end markers
-      {
-        const live = new THREE.Group();
-        const still = new THREE.Group();
-        [live, still].forEach((holder) => { holder.rotation.y = portal + clear * 0.55; });
-        eraArch(live, still, 0, innerR + 0.25, outerR - 0.25, h, 'early');
-        group.add(live);
-        decor.add(still);
-      }
+      addArch(portal + 0.12, 'early');
       yearEntries.push({ angle: portal + 0.06, text: 'START  >>', color: '#8ce99a', font: 'bold 26px Arial' });
-      yearEntries.push({ angle: portal + Math.PI * 2 - 0.06, text: '<< END', color: '#ff8fab', font: 'bold 26px Arial' });
+      yearEntries.push({ angle: portal + TAU - 0.06, text: '<< END', color: '#ff8fab', font: 'bold 26px Arial' });
       for (let k = 0; k < 4; k++) {
         const start = portal + k * Math.PI / 2;
         const end = start + Math.PI / 2;
@@ -1554,8 +1731,9 @@
       // No decorative visitor figures in the underground (only real players)
       // Dark rock shell around the whole underground (decorative, never blocks):
       // whatever the camera sees through a gap is rock, never the city or sky
-      const shellCenter = new THREE.Vector3(...((data && data.shellCenter) || [62, 12, -22]));
-      const shell = new THREE.Mesh(new THREE.BoxGeometry(192, 25, 192), new THREE.MeshBasicMaterial({ color: '#0d0a08', side: THREE.BackSide }));
+      // (sized so the ring, its alcoves, the Gig Plaza and the gallery all fit)
+      const shellCenter = new THREE.Vector3(...((data && data.shellCenter) || [60, 12, -22]));
+      const shell = new THREE.Mesh(new THREE.BoxGeometry(200, 25, 200), new THREE.MeshBasicMaterial({ color: '#0d0a08', side: THREE.BackSide }));
       shell.position.copy(shellCenter);
       shell.raycast = () => {};
       shell.castShadow = false;

@@ -965,7 +965,19 @@
     44
    ],
    "color": "#b07a45",
-   "label": "Welcome to the Underground"
+   "label": "Welcome to the Underground",
+   "bays": {
+    "count": 18,
+    "top": 6.05,
+    "openings": [
+     90,
+     30,
+     150,
+     270
+    ],
+    "openingWidth": 5,
+    "openingHeight": 4.6
+   }
   },
   {
    "type": "history_ring",
@@ -975,34 +987,34 @@
     22
    ],
    "scale": [
-    68,
+    72,
     7,
-    68
+    72
    ],
    "color": "#b3001b",
-   "label": "Hall of Internet History",
-   "inner": 26.25,
+   "label": "Hall of Internet & Software History",
+   "inner": 26.05,
    "portal": 90,
    "doors": [
     {
      "angle": 90,
      "width": 6,
      "height": 5,
-     "length": 4,
+     "length": 2,
      "label": "MINIMAL ART GALLERY  >>"
     },
     {
      "angle": 180,
      "width": 4.2,
      "height": 5,
-     "length": 4,
+     "length": 2,
      "label": "THE GIG PLAZA  >>"
     },
     {
      "angle": 0,
      "width": 7,
      "height": 4.2,
-     "length": 5,
+     "length": 3.5,
      "label": "DIAL-UP CORNER",
      "alcove": "dialup"
     },
@@ -1010,7 +1022,7 @@
      "angle": 135,
      "width": 7,
      "height": 4.2,
-     "length": 5,
+     "length": 3.5,
      "label": "FLASH GAMES ARCADE",
      "alcove": "flash"
     },
@@ -1018,7 +1030,7 @@
      "angle": 225,
      "width": 7,
      "height": 4.2,
-     "length": 5,
+     "length": 3.5,
      "label": "BROWSER WARS",
      "alcove": "browsers"
     },
@@ -1026,11 +1038,23 @@
      "angle": 315,
      "width": 7,
      "height": 4.2,
-     "length": 5,
+     "length": 3.5,
      "label": "CHAT ROOMS",
      "alcove": "chat"
     }
-   ]
+   ],
+   "bays": {
+    "count": 18,
+    "top": 6.05,
+    "openings": [
+     90,
+     30,
+     150,
+     270
+    ],
+    "openingWidth": 5,
+    "openingHeight": 4.6
+   }
   },
   {
    "type": "gallery_link",

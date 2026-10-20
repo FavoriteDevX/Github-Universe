@@ -768,28 +768,45 @@
     //     a curved wood-panel soffit and a glass railing; reading lounge,
     //     lookout, arcade and gallery express upstairs.
     //   - Ceiling with thick dark curved bands and amber glow strips.
-    //   - Wide arched window bays with wood frames showing painted backdrops
-    //     (pink blossom trees and the sea downstairs, sea and palms upstairs).
+    //   - Ground floor: the round wall is SHARED with the Hall of Internet &
+    //     Software History, the ring corridor that wraps around the lounge
+    //     (history_ring, same center, same data.bays). Solid wood piers (the
+    //     ring hangs an exhibit on the corridor side of each one) alternate
+    //     with wide arched glass bays in wood frames, so every window looks at
+    //     the real corridor: its exhibits, museum lights and floor. Open arches
+    //     at data.bays.openings (the first one, +x, is the portal) lead into it.
+    //   - Upper floor: arched window bays with painted backdrops (sea and palms).
     //   - Second glass column (the elevator back to the surface) with a round
     //     wooden cap where it meets the mezzanine.
     //   - Orange spot cans on thin rods and yellow disc lamps (accents only),
     //     cafe tables with grey-blue chairs, a laptop table, potted palms, a
-    //     floating orange MVC coin, the Underground Cafe counter, and the portal
-    //     (+x) into the ring-shaped Hall of Internet History.
+    //     floating orange MVC coin and the Underground Cafe counter.
     //   No people, avatars or statues anywhere in the hall.
-    undergroundHall(group, { w, label }) {
+    undergroundHall(group, { w, label, data }) {
       const radius = w / 2;
-      const outer = radius + 4; // wall radius (the history ring starts right outside)
+      const outer = radius + 4; // wall radius (shared with the history ring around it)
       const upperY = 6.4; // mezzanine deck
       const upperIn = 14; // mezzanine inner edge
       const ceilY = 16; // ceiling
       const openR = 11; // reach of the pool light on the floor
       const openHalf = 9.5; // square ceiling opening under the square entrance pool
       const poolY = 23.5; // underside of the pool water
-      const gapAngle = 2 * Math.asin(5.5 / outer); // portal opening at +x (angle PI/2)
+      // Ground-floor wall shared with the history ring (data.bays): bayCount
+      // modules, each an arched glass bay centered on portal + k * module with
+      // half a solid pier on each side; the bays in `openings` are open arches.
       // In three.js cylinders, theta 0 points to +z and PI/2 to +x
-      const openStart = Math.PI / 2 + gapAngle / 2;
-      const openLength = Math.PI * 2 - gapAngle;
+      const TAU = Math.PI * 2;
+      const bays = (data && data.bays) || {};
+      const bayCount = bays.count || 18;
+      const module = TAU / bayCount;
+      const openings = (bays.openings || [90, 30, 150, 270]).map((angle) => angle * Math.PI / 180);
+      const portalAngle = openings[0];
+      const archWidth = bays.openingWidth || 5;
+      const archHeight = bays.openingHeight || 4.6;
+      const archHalf = Math.asin(archWidth / 2 / outer);
+      const pierWidth = 3.4;
+      const bayWidth = module * outer - pierWidth;
+      const isOpening = (angle) => openings.some((o) => Math.abs(Math.atan2(Math.sin(angle - o), Math.cos(angle - o))) < module / 4);
       const toXZ = (angle, r) => [Math.sin(angle) * r, Math.cos(angle) * r];
       const decor = new THREE.Group(); // static parts, merged at the end
       const m = new THREE.Matrix4();
@@ -913,11 +930,45 @@
         ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
         for (let i = 0; i < 16; i++) ctx.fillRect(wx + (i * 61) % ww, wy + horizon + 6 + (i * 13) % Math.max(8, wh - horizon - 10), 18 + (i % 3) * 8, 2);
       };
-      const groundBays = bayTexture('lounge2|bayGround', 1024, 320, 30, (ctx, wx, wy, ww, wh, b) => {
-        skyAndSea(ctx, wx, wy, ww, wh, wh * 0.42);
-        ctx.fillStyle = '#7cc46a'; ctx.fillRect(wx, wy + wh * 0.66, ww, wh * 0.34);
-        ctx.fillStyle = '#e9d8b4'; ctx.fillRect(wx, wy + wh * 0.6, ww, wh * 0.07);
-        for (let t = 0; t < 4; t++) blossomTree(ctx, wx + 50 + t * (ww - 90) / 3 + (b ? 30 : 0), wy + wh * (0.8 + (t % 2) * 0.08), 0.95 + (t % 2) * 0.25);
+      // Ground-floor module (one bay with half a pier on each side): wood wall
+      // with the arched window cut out (alpha), wood mullions, fanlight bar,
+      // frame and sill. Through the hole you see the real history corridor.
+      const groundBay = PropKit.kit.canvasTexture(`lounge3|groundBay|${bayCount}`, 512, 320, (ctx, cw, ch) => {
+        const perMeter = ch / (upperY - 0.35 - 0.3);
+        ctx.fillStyle = '#7a4526'; ctx.fillRect(0, 0, cw, ch);
+        for (let i = 0; i < 26; i++) { ctx.fillStyle = `rgba(40, 20, 8, ${0.06 + (i % 3) * 0.04})`; ctx.fillRect(i * 20 + (i % 4), 0, 2, ch); }
+        // Pier panels (half on each edge) with a darker inset frame
+        ctx.strokeStyle = 'rgba(40, 20, 8, 0.55)'; ctx.lineWidth = 4;
+        const pierPx = cw * pierWidth / (module * outer) / 2;
+        [[-pierPx, 0], [cw - pierPx, 0]].forEach(([x]) => ctx.strokeRect(x + 14, 20, pierPx * 2 - 28, ch - 40));
+        const ww = cw - pierPx * 2;
+        const wx = pierPx;
+        const wy = ch - 5.25 * perMeter;
+        const wh = (5.25 - 0.55) * perMeter;
+        const arch = ww * 0.3;
+        const windowPath = () => {
+          ctx.beginPath();
+          ctx.moveTo(wx, wy + wh);
+          ctx.lineTo(wx, wy + arch);
+          ctx.quadraticCurveTo(wx, wy, wx + arch, wy);
+          ctx.lineTo(wx + ww - arch, wy);
+          ctx.quadraticCurveTo(wx + ww, wy, wx + ww, wy + arch);
+          ctx.lineTo(wx + ww, wy + wh);
+          ctx.closePath();
+        };
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = '#000000';
+        windowPath();
+        ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#4a2a14';
+        [1, 2].forEach((k) => ctx.fillRect(wx + (ww * k) / 3 - 3, wy + 4, 6, wh - 4));
+        ctx.fillRect(wx, wy + wh * 0.28, ww, 5);
+        windowPath();
+        ctx.lineWidth = 14; ctx.strokeStyle = '#4a2a14'; ctx.stroke();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#c08a5b'; ctx.stroke();
+        ctx.fillStyle = '#5a3219'; ctx.fillRect(wx - 10, wy + wh + 2, ww + 20, 12);
       });
       const upperBays = bayTexture('lounge2|bayUpper', 1024, 512, 70, (ctx, wx, wy, ww, wh, b) => {
         skyAndSea(ctx, wx, wy, ww, wh, wh * 0.62);
@@ -976,17 +1027,55 @@
       // ---- Floor, walls and window bays ---------------------------------------
       group.add(cylinder(outer, outer, 0.3, floorWood, 0, 0.15, 0, 72));
       const groundTop = upperY - 0.35;
-      const groundCount = Math.round(openLength / (Math.PI * 2 / 16) / 2); // pairs of bays
-      group.add(mesh(new THREE.CylinderGeometry(outer, outer, groundTop - 0.3, 72, 1, true, openStart, openLength), bayMaterial(groundBays, groundCount), 0, (groundTop + 0.3) / 2, 0));
+      // Ground floor: wall segments between the open arches. The texture is
+      // offset so a bay is always centered on portal + k * module, where the
+      // history ring expects it (its exhibits hang on the piers in between).
+      // The whole wall is collidable: glass bays stop the avatar like a wall.
+      const sortedOpenings = openings.slice().sort((a, b) => a - b);
+      const moduleBase = portalAngle - module / 2;
+      sortedOpenings.forEach((o, i) => {
+        const next = i + 1 < sortedOpenings.length ? sortedOpenings[i + 1] : sortedOpenings[0] + TAU;
+        const start = o + archHalf;
+        const length = next - archHalf - start;
+        const map = repeated(groundBay, length / module, 1);
+        map.offset.x = ((((start - moduleBase) / module) % 1) + 1) % 1;
+        const wallMaterial = new THREE.MeshStandardMaterial({ map, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: 0.32, roughness: 0.8, side: THREE.DoubleSide, alphaTest: 0.5 });
+        group.add(mesh(new THREE.CylinderGeometry(outer, outer, groundTop - 0.3, Math.max(8, Math.round(length * 30)), 1, true, start, length), wallMaterial, 0, (groundTop + 0.3) / 2, 0));
+      });
       group.add(mesh(new THREE.CylinderGeometry(outer, outer, ceilY - upperY + 0.45, 72, 1, true), bayMaterial(upperBays, 8), 0, (ceilY + upperY - 0.45) / 2, 0));
-      // Wood posts between the bays (3D depth over the painted frames)
-      for (let i = 0; i <= groundCount * 2; i++) {
-        const angle = openStart + (i / (groundCount * 2)) * openLength;
-        const [x, z] = toXZ(angle, outer - 0.2);
-        const post = box(0.45, groundTop - 0.3, 0.4, darkWood, x, (groundTop + 0.3) / 2, z);
-        post.rotation.y = angle;
-        decor.add(post);
+      // Glass panes and 3D wood posts at both sides of every glazed bay
+      const pane = new THREE.MeshStandardMaterial({ color: '#d7f0ff', transparent: true, opacity: 0.1, roughness: 0.05, metalness: 0.3, depthWrite: false, side: THREE.DoubleSide });
+      const bayHalf = bayWidth / 2 / outer;
+      for (let k = 0; k < bayCount; k++) {
+        const angle = portalAngle + k * module;
+        if (isOpening(angle)) continue;
+        group.add(quiet(mesh(new THREE.CylinderGeometry(outer + 0.04, outer + 0.04, 4.7, 12, 1, true, angle - bayHalf, bayHalf * 2), pane, 0, 0.85 + 2.35, 0)));
+        [-1, 1].forEach((side) => {
+          const [x, z] = toXZ(angle + side * (bayHalf + 0.004), outer - 0.18);
+          const post = box(0.4, groundTop - 0.3, 0.36, darkWood, x, (groundTop + 0.3) / 2, z);
+          post.rotation.y = angle;
+          decor.add(post);
+        });
       }
+      // Open arches into the ring: wood jambs and a slatted lintel; small
+      // signs on both faces (the portal's title sign is built by the ring)
+      const lintelWood = new THREE.MeshStandardMaterial({ map: repeated(slats, 4, 1), roughness: 0.7, side: THREE.DoubleSide });
+      openings.forEach((o, i) => {
+        group.add(mesh(new THREE.CylinderGeometry(outer, outer, groundTop - archHeight, 12, 1, true, o - archHalf, archHalf * 2), lintelWood, 0, (groundTop + archHeight) / 2, 0));
+        [-1, 1].forEach((side) => {
+          const [x, z] = toXZ(o + side * archHalf, outer - 0.1);
+          const jamb = box(0.7, archHeight - 0.3, 0.7, darkWood, x, (archHeight + 0.3) / 2, z);
+          jamb.rotation.y = o;
+          decor.add(jamb);
+        });
+        if (i === 0) return;
+        [[outer - 0.08, o + Math.PI, 'Hall of Internet & Software History'], [outer + 0.08, o, 'Welcome Lounge · cafe · elevator']].forEach(([r, facing, text]) => {
+          const [x, z] = toXZ(o, r);
+          const plate = mesh(new THREE.PlaneGeometry(4.2, 0.62), new THREE.MeshBasicMaterial({ map: labelTexture(text, { bg: '#3a2416', fg: '#ffe8a3', width: 1024, height: 150, font: 'bold 52px Georgia, serif' }) }), x, archHeight + 0.62, z);
+          plate.rotation.y = facing;
+          group.add(quiet(plate));
+        });
+      });
       for (let i = 0; i < 16; i++) {
         const angle = (i / 16) * Math.PI * 2;
         const [x, z] = toXZ(angle, outer - 0.2);
@@ -1510,8 +1599,9 @@
       const cafeTo = 6.45;
       const inCafe = (angle) => { const a = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2); return (a > cafeFrom && a < cafeTo) || a < cafeTo - Math.PI * 2; };
       const plantSpots = [];
-      for (let i = 0; i < 16; i++) {
-        const angle = openStart + 0.15 + i * ((openLength - 0.3) / 15);
+      for (let k = 0; k < bayCount; k++) {
+        // One plant in front of every pier (never in front of a window or an arch)
+        const angle = (((portalAngle + (k + 0.5) * module) % TAU) + TAU) % TAU;
         if (!inCafe(angle) && !(angle > 2.85 && angle < 3.6)) plantSpots.push([...toXZ(angle, outer - 1), 0]);
       }
       [0.4, 1.3, 2.6, 3.45, 3.9, 5.95].forEach((angle) => plantSpots.push([...toXZ(angle, outer - 1), upperY]));
@@ -1575,10 +1665,11 @@
         stand.position.set(ax, 0, az);
         stand.rotation.y = 6.25 + Math.PI;
         group.add(PropKit.kit.interactive(stand, 'cafe_menu', 'Underground Cafe menu'));
-        // Big menu board on the window wall behind the bar
-        const [bx2, bz2] = toXZ(6.0, outer - 0.45);
-        const board = facedBox(5, 1.6, 0.12, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', font: 'bold 40px Georgia, serif' }) }), bx2, 4.6, bz2);
-        board.rotation.y = 6.0 + Math.PI;
+        // Big menu board on the wood pier behind the bar (between two bays)
+        const boardAngle = portalAngle + Math.round((5.95 - portalAngle) / module - 0.5) * module + module / 2;
+        const [bx2, bz2] = toXZ(boardAngle, outer - 0.45);
+        const board = facedBox(3.1, 1.6, 0.12, material('#2b1b12'), new THREE.MeshBasicMaterial({ map: labelTexture('UNDERGROUND CAFE · espresso · cold brew · git pull-over', { bg: '#2b1b12', fg: '#ffd166', width: 512, height: 264, font: 'bold 40px Georgia, serif' }) }), bx2, 4.6, bz2);
+        board.rotation.y = boardAngle + Math.PI;
         group.add(board);
         const orderSign = textSprite('Underground Cafe · order at the menu (E)', { width: 6, background: 'rgba(43, 27, 18, 0.9)' });
         const [ox, oz] = toXZ(6.1, cafeR - 2);
@@ -1587,13 +1678,10 @@
       }
 
       // Signage toward the history portal
-      const portalSign = textSprite('Hall of Internet History  >  Art Gallery · Gig Plaza', { width: 9, background: 'rgba(58, 36, 22, 0.92)' });
-      portalSign.position.set(outer - 6, 4.2, 0);
+      const portalSign = textSprite('Hall of Internet & Software History  >  Art Gallery · Gig Plaza', { width: 10, background: 'rgba(58, 36, 22, 0.92)' });
+      const [psx, psz] = toXZ(portalAngle, outer - 6);
+      portalSign.position.set(psx, 4.2, psz);
       group.add(portalSign);
-      [-1, 1].forEach((side) => {
-        const [x, z] = toXZ(Math.PI / 2 + side * gapAngle / 2, outer);
-        decor.add(box(0.8, groundTop, 0.8, darkWood, x, groundTop / 2, z));
-      });
 
       group.add(PropKit.kit.mergeByMaterial(decor));
       group.userData.label = label || 'Welcome to the Underground';
