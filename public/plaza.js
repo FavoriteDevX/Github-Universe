@@ -372,7 +372,48 @@
     });
   }
 
+  // Real screenshots of every place, packed in one image (assets/places.jpg):
+  // tiles of 320 x 224 in rows of 8, in the order of maps/worlds.json; the
+  // places that have one are marked "photo": true there
+  const PLACE_TILE = { w: 320, h: 224, columns: 8 };
+  let placeAtlas = null;
+  function placeAtlasImage() {
+    if (!placeAtlas) {
+      placeAtlas = new Promise((resolve) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => resolve(null);
+        image.src = 'assets/places.jpg';
+      });
+    }
+    return placeAtlas;
+  }
+  function drawPlacePhoto(texture, world) {
+    const index = (window.MULTIVERSE_WORLDS || []).indexOf(world);
+    if (!world.photo || index < 0) return;
+    placeAtlasImage().then((image) => {
+      if (!image) return;
+      const ctx = texture.image.getContext('2d');
+      const sx = (index % PLACE_TILE.columns) * PLACE_TILE.w;
+      const sy = Math.floor(index / PLACE_TILE.columns) * PLACE_TILE.h;
+      ctx.drawImage(image, sx, sy, PLACE_TILE.w, PLACE_TILE.h, 16, 16, texture.image.width - 32, 360);
+      // A soft fade into the card so the title stays readable
+      const fade = ctx.createLinearGradient(0, 300, 0, 376);
+      fade.addColorStop(0, 'rgba(13, 27, 62, 0)');
+      fade.addColorStop(1, 'rgba(13, 27, 62, 0.85)');
+      ctx.fillStyle = fade;
+      ctx.fillRect(16, 300, texture.image.width - 32, 76);
+      texture.needsUpdate = true;
+    });
+  }
+
   function eventCardTexture(world) {
+    const texture = eventCardIllustration(world);
+    drawPlacePhoto(texture, world);
+    return texture;
+  }
+
+  function eventCardIllustration(world) {
     return PropKit.kit.canvasTexture(`eventcard|${world.key}`, 512, 640, (ctx, w, h) => {
       ctx.fillStyle = '#0d1b3e';
       ctx.fillRect(0, 0, w, h);

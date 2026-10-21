@@ -867,6 +867,11 @@ function bindInputEvents() {
     pointerDownAt = null;
     if (dragDistance >= 5 || !hoveredObject) return;
     if (viewMode === 'map' && hoverPoint) { flyTo(hoverPoint, null, 'Jumped in.'); return; }
+    // JUMP IN cards (Events Wall, Events Explorer, star pads): a click jumps into the place
+    for (let node = hoveredObject; node; node = node.parent) {
+      const interactable = node.userData && node.userData.interactable;
+      if (interactable && interactable.type === 'jump') { Sound.play('teleport'); interactionHooks().jumpTo(interactable.label); return; }
+    }
     if (GameSystems.handleClick(hoveredObject)) return;
     const labeled = findLabeledAncestor(hoveredObject);
     if (labeled) openInfoCard(labeled.userData);
