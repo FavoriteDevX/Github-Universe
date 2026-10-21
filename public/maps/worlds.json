@@ -16,7 +16,8 @@
   "spawn": [
    -62,
    42
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "districts",
@@ -28,7 +29,8 @@
    0
   ],
   "color": "#9b59b6",
-  "scale": 1.4
+  "scale": 1.4,
+  "photo": true
  },
  {
   "key": "social",
@@ -39,7 +41,8 @@
    -2,
    0
   ],
-  "color": "#3498db"
+  "color": "#3498db",
+  "photo": true
  },
  {
   "key": "lobby",
@@ -50,7 +53,8 @@
    0,
    -2
   ],
-  "color": "#4a4a5a"
+  "color": "#4a4a5a",
+  "photo": true
  },
  {
   "key": "pavilion",
@@ -61,7 +65,8 @@
    1,
    -2
   ],
-  "color": "#39d353"
+  "color": "#39d353",
+  "photo": true
  },
  {
   "key": "agile",
@@ -72,7 +77,8 @@
    -1,
    -2
   ],
-  "color": "#4dabf7"
+  "color": "#4dabf7",
+  "photo": true
  },
  {
   "key": "gallery",
@@ -84,7 +90,8 @@
    2
   ],
   "color": "#27ae60",
-  "scale": 1.5
+  "scale": 1.5,
+  "photo": true
  },
  {
   "key": "mall",
@@ -96,7 +103,8 @@
    2
   ],
   "color": "#ff007f",
-  "scale": 1.4
+  "scale": 1.4,
+  "photo": true
  },
  {
   "key": "apple",
@@ -107,7 +115,8 @@
    -1,
    2
   ],
-  "color": "#a2aaad"
+  "color": "#a2aaad",
+  "photo": true
  },
  {
   "key": "cyberpunk",
@@ -119,7 +128,8 @@
    -1
   ],
   "color": "#00ffcc",
-  "scale": 1.6
+  "scale": 1.6,
+  "photo": true
  },
  {
   "key": "arcade",
@@ -130,7 +140,8 @@
    2,
    1
   ],
-  "color": "#00a8ff"
+  "color": "#00a8ff",
+  "photo": true
  },
  {
   "key": "house",
@@ -142,7 +153,8 @@
    -2
   ],
   "color": "#e84118",
-  "scale": 1.5
+  "scale": 1.5,
+  "photo": true
  },
  {
   "key": "sandbox",
@@ -154,7 +166,8 @@
    2
   ],
   "color": "#00d2ff",
-  "scale": 1.4
+  "scale": 1.4,
+  "photo": true
  },
  {
   "key": "retro",
@@ -166,7 +179,8 @@
    2
   ],
   "color": "#39d353",
-  "scale": 2.2
+  "scale": 2.2,
+  "photo": true
  },
  {
   "key": "beach",
@@ -184,7 +198,8 @@
     84
    ]
   },
-  "scale": 1.5
+  "scale": 1.5,
+  "photo": true
  },
  {
   "key": "zen",
@@ -197,7 +212,8 @@
   ],
   "elevation": 26,
   "color": "#2ed573",
-  "scale": 1.6
+  "scale": 1.6,
+  "photo": true
  },
  {
   "key": "workspace",
@@ -208,7 +224,8 @@
    2,
    -2
   ],
-  "color": "#74c0fc"
+  "color": "#74c0fc",
+  "photo": true
  },
  {
   "key": "parkour",
@@ -219,7 +236,8 @@
    -2,
    1
   ],
-  "color": "#e03131"
+  "color": "#e03131",
+  "photo": true
  },
  {
   "key": "techsquare",
@@ -234,7 +252,8 @@
    2,
    2
   ],
-  "color": "#ffd43b"
+  "color": "#ffd43b",
+  "photo": true
  },
  {
   "key": "gamer",
@@ -249,7 +268,8 @@
    2,
    2
   ],
-  "color": "#9775fa"
+  "color": "#9775fa",
+  "photo": true
  },
  {
   "key": "villas",
@@ -264,7 +284,8 @@
    2,
    2
   ],
-  "color": "#4dabf7"
+  "color": "#4dabf7",
+  "photo": true
  },
  {
   "key": "equalizer",
@@ -279,7 +300,8 @@
    1,
    1
   ],
-  "color": "#4dabf7"
+  "color": "#4dabf7",
+  "photo": true
  },
  {
   "key": "hotel",
@@ -294,7 +316,8 @@
    2,
    2
   ],
-  "color": "#ff8fd8"
+  "color": "#ff8fd8",
+  "photo": true
  },
  {
   "key": "arena",
@@ -311,7 +334,8 @@
     72
    ]
   },
-  "color": "#e03131"
+  "color": "#e03131",
+  "photo": true
  },
  {
   "key": "candles",
@@ -328,7 +352,8 @@
     96
    ]
   },
-  "color": "#2f9e44"
+  "color": "#2f9e44",
+  "photo": true
  },
  {
   "key": "terminal",
@@ -345,7 +370,8 @@
     96
    ]
   },
-  "color": "#4c6ef5"
+  "color": "#4c6ef5",
+  "photo": true
  },
  {
   "key": "metablock",
@@ -362,7 +388,8 @@
     160
    ]
   },
-  "color": "#20c997"
+  "color": "#20c997",
+  "photo": true
  },
  {
   "key": "orchard",
@@ -379,7 +406,8 @@
     140
    ]
   },
-  "color": "#adb5bd"
+  "color": "#adb5bd",
+  "photo": true
  },
  {
   "key": "azure",
@@ -396,7 +424,8 @@
     64
    ]
   },
-  "color": "#1c7ed6"
+  "color": "#1c7ed6",
+  "photo": true
  },
  {
   "key": "mobmaze",
@@ -413,7 +442,8 @@
     80
    ]
   },
-  "color": "#7048e8"
+  "color": "#7048e8",
+  "photo": true
  },
  {
   "key": "glasscube",
@@ -430,7 +460,8 @@
     56
    ]
   },
-  "color": "#dee2e6"
+  "color": "#dee2e6",
+  "photo": true
  },
  {
   "key": "lodge",
@@ -447,7 +478,8 @@
     130
    ]
   },
-  "color": "#5a3a24"
+  "color": "#5a3a24",
+  "photo": true
  },
  {
   "key": "devlife",
@@ -468,7 +500,8 @@
   "spawn": [
    0,
    26
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "museum",
@@ -491,7 +524,8 @@
    0,
    30,
    60
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "dungeon",
@@ -514,7 +548,8 @@
    0,
    30,
    60
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "opensource",
@@ -537,7 +572,8 @@
    0,
    30,
    60
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "keynote",
@@ -560,7 +596,8 @@
    0,
    30,
    60
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "greentech",
@@ -583,7 +620,8 @@
    0,
    30,
    60
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "valley",
@@ -724,7 +762,8 @@
   "spawn": [
    0,
    150
-  ]
+  ],
+  "photo": true
  },
  {
   "key": "cryptovalley",
@@ -742,7 +781,8 @@
     240
    ]
   },
-  "color": "#f59f00"
+  "color": "#f59f00",
+  "photo": true
  },
  {
   "key": "jpegworld",
@@ -760,6 +800,7 @@
     160
    ]
   },
-  "color": "#ffffff"
+  "color": "#ffffff",
+  "photo": true
  }
 ]
