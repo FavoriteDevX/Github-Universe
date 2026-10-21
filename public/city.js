@@ -106,72 +106,11 @@ const City = (() => {
     return isSceneParcel(px, pz) ? 'scene' : 'land';
   }
 
-  // Natural grass for one parcel (no visible tiling: soft multi-scale noise,
-  // clover patches and blades) and interlocking pavers for the roads
+  // Natural grass for one parcel (from the shared surface library: dense
+  // blades, clover, bare soil spots, relief) and stone pavers for the roads
   function parcelTextures() {
-    const grass = PropKit.kit.canvasTexture('parcelGrass', 512, 512, (ctx, w) => {
-      let seed = 3;
-      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-      ctx.fillStyle = '#5f8f3a';
-      ctx.fillRect(0, 0, w, w);
-      // Large soft patches, then smaller ones (wrapping at the edges so parcels join seamlessly)
-      [[14, 90, 160, 0.16], [60, 25, 60, 0.18], [220, 6, 18, 0.22]].forEach(([count, minR, maxR, alpha]) => {
-        for (let k = 0; k < count; k++) {
-          const x = random() * w;
-          const y = random() * w;
-          const r = minR + random() * (maxR - minR);
-          const light = random() < 0.5;
-          [[0, 0], [w, 0], [-w, 0], [0, w], [0, -w]].forEach(([ox, oy]) => {
-            const patch = ctx.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
-            patch.addColorStop(0, light ? `rgba(168, 201, 92, ${alpha})` : `rgba(38, 74, 28, ${alpha})`);
-            patch.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = patch;
-            ctx.fillRect(x + ox - r, y + oy - r, r * 2, r * 2);
-          });
-        }
-      });
-      // Blades of grass
-      for (let k = 0; k < 7000; k++) {
-        const x = random() * w;
-        const y = random() * w;
-        const tone = random();
-        ctx.strokeStyle = tone < 0.33 ? 'rgba(140, 186, 80, 0.55)' : tone < 0.66 ? 'rgba(52, 96, 34, 0.5)' : 'rgba(110, 150, 60, 0.45)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (random() - 0.5) * 3, y - 2 - random() * 5); ctx.stroke();
-      }
-      // Tiny flowers and pebbles
-      for (let k = 0; k < 40; k++) {
-        ctx.fillStyle = ['#f8f9fa', '#ffe066', '#e599f7', '#ced4da'][k % 4];
-        ctx.beginPath(); ctx.arc(random() * w, random() * w, 1.2 + random() * 1.3, 0, Math.PI * 2); ctx.fill();
-      }
-    });
-    const road = PropKit.kit.canvasTexture('parcelRoad', 512, 512, (ctx, w) => {
-      let seed = 8;
-      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-      ctx.fillStyle = '#8d877c';
-      ctx.fillRect(0, 0, w, w);
-      // Herringbone-like interlocking pavers with worn, rounded stones
-      const brick = 48;
-      for (let y = 0; y < w; y += brick / 2) {
-        for (let x = ((y / (brick / 2)) % 2) * (brick / 2) - brick; x < w + brick; x += brick) {
-          const l = 62 + random() * 12;
-          ctx.fillStyle = `hsl(${32 + random() * 10}, ${8 + random() * 8}%, ${l}%)`;
-          const bx = x + 2;
-          const by = y + 2;
-          const bw = brick - 4;
-          const bh = brick / 2 - 4;
-          ctx.beginPath();
-          ctx.moveTo(bx + 4, by); ctx.arcTo(bx + bw, by, bx + bw, by + bh, 4); ctx.arcTo(bx + bw, by + bh, bx, by + bh, 4);
-          ctx.arcTo(bx, by + bh, bx, by, 4); ctx.arcTo(bx, by, bx + bw, by, 4); ctx.fill();
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-          ctx.fillRect(bx + 3, by + 1, bw - 6, 2);
-        }
-      }
-      for (let k = 0; k < 1500; k++) {
-        ctx.fillStyle = random() < 0.5 ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)';
-        ctx.fillRect(random() * w, random() * w, 1 + random() * 2, 1 + random() * 2);
-      }
-    });
+    const grass = PropKit.kit.grassTexture('#4d7d2c');
+    const road = PropKit.kit.cobbleTexture('#b0a796');
     return { grass, road };
   }
 
@@ -225,7 +164,7 @@ const City = (() => {
       grassMesh.setMatrixAt(index, matrix);
       grassMesh.setColorAt(index, color.setHSL(0, 0, 0.94 + parcelHash(pz, px) * 0.08));
     });
-    const roadMesh = new THREE.InstancedMesh(plane, new THREE.MeshStandardMaterial({ map: road, roughness: 0.95, ...onTop }), roadSpots.length);
+    const roadMesh = new THREE.InstancedMesh(plane, new THREE.MeshStandardMaterial({ map: repeated(road, 2, 2), roughness: 0.95, ...onTop }), roadSpots.length);
     roadSpots.forEach(([x, z], index) => {
       matrix.makeTranslation(x, GROUND_LEVEL + 0.014, z);
       roadMesh.setMatrixAt(index, matrix);
@@ -335,30 +274,21 @@ const City = (() => {
   function buildSeas() {
     const seas = landLayout.seas || [];
     if (!seas.length) return;
-    const ripples = PropKit.kit.canvasTexture('seaRipples', 256, 256, (ctx, w) => {
-      const image = ctx.createImageData(w, w);
-      for (let y = 0; y < w; y++) {
-        for (let x = 0; x < w; x++) {
-          const a = Math.sin((x / w) * Math.PI * 6 + Math.sin((y / w) * Math.PI * 4) * 1.5);
-          const b = Math.cos((y / w) * Math.PI * 8 + Math.sin((x / w) * Math.PI * 2) * 2);
-          const i = (y * w + x) * 4;
-          image.data[i] = 128 + a * 40;
-          image.data[i + 1] = 128 + b * 40;
-          image.data[i + 2] = 255;
-          image.data[i + 3] = 255;
-        }
-      }
-      ctx.putImageData(image, 0, 0);
-    });
-    const normalMap = ripples.clone();
+    // Fractal ripples (tileable normal map from the surface library)
+    const normalMap = PropKit.kit.waterNormals().clone();
     normalMap.needsUpdate = true;
     normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
     normalMap.repeat.set(1 / 14, 1 / 14);
     const onTop = { polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -6 };
-    const water = new THREE.MeshStandardMaterial({ color: '#1c7fb5', roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.88, normalMap, normalScale: new THREE.Vector2(0.5, 0.5), ...onTop });
-    const shallow = new THREE.MeshStandardMaterial({ color: '#3fb6c9', roughness: 0.2, transparent: true, opacity: 0.9, ...onTop });
-    const sand = new THREE.MeshStandardMaterial({ color: '#e3cf9f', roughness: 1, ...onTop });
-    const islandGrass = new THREE.MeshStandardMaterial({ color: '#6aa84f', roughness: 1 });
+    const water = new THREE.MeshStandardMaterial({ color: '#1c7fb5', roughness: 0.06, metalness: 0.25, transparent: true, opacity: 0.88, normalMap, normalScale: new THREE.Vector2(0.7, 0.7), ...onTop });
+    const shallowNormals = PropKit.kit.waterNormals().clone();
+    shallowNormals.needsUpdate = true;
+    shallowNormals.repeat.set(1 / 9, 1 / 9);
+    const shallow = new THREE.MeshStandardMaterial({ color: '#3fb6c9', roughness: 0.15, transparent: true, opacity: 0.9, normalMap: shallowNormals, normalScale: new THREE.Vector2(0.4, 0.4), ...onTop });
+    // Shape geometries use world meters as UVs: sand every 6 m, grass every 10 m
+    const sandMap = repeated(PropKit.kit.sandTexture('#e3cf9f'), 1 / 6, 1 / 6);
+    const sand = new THREE.MeshStandardMaterial({ map: sandMap, roughness: 1, ...onTop });
+    const islandGrass = new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.grassTexture('#5a8f38'), 1 / 10, 1 / 10), roughness: 1 });
     const group = new THREE.Group();
     seas.forEach((sea, i) => {
       const seed = i + 1;
@@ -526,7 +456,7 @@ const City = (() => {
   function buildWorldIsland(size, key) {
     const island = new THREE.Group();
     const radius = Math.max(size[0], size[1]) * 0.75 + 120;
-    const grass = new THREE.Mesh(new THREE.CircleGeometry(radius, 64), material('#7cb342', { roughness: 1 }));
+    const grass = new THREE.Mesh(new THREE.CircleGeometry(radius, 64), new THREE.MeshStandardMaterial({ map: repeated(PropKit.kit.grassTexture('#558a33'), radius / 5, radius / 5), roughness: 1 }));
     grass.rotation.x = -Math.PI / 2;
     grass.position.y = GROUND_LEVEL;
     grass.receiveShadow = true;
@@ -577,32 +507,8 @@ const City = (() => {
   }
 
   function buildGround() {
-    // Soft lawn: mottled patches of green with fine blades, tiled every 10m
-    const grassTexture = PropKit.kit.canvasTexture('grass', 512, 512, (ctx, w, h) => {
-      ctx.fillStyle = '#7cb342';
-      ctx.fillRect(0, 0, w, h);
-      let seed = 11;
-      const random = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-      for (let i = 0; i < 60; i++) {
-        const x = random() * w;
-        const y = random() * h;
-        const r = 30 + random() * 80;
-        const patch = ctx.createRadialGradient(x, y, 0, x, y, r);
-        patch.addColorStop(0, random() < 0.5 ? 'rgba(156, 204, 101, 0.35)' : 'rgba(85, 139, 47, 0.3)');
-        patch.addColorStop(1, 'rgba(124, 179, 66, 0)');
-        ctx.fillStyle = patch;
-        ctx.fillRect(x - r, y - r, r * 2, r * 2);
-      }
-      for (let i = 0; i < 2600; i++) {
-        const x = random() * w;
-        const y = random() * h;
-        ctx.strokeStyle = ['#8bc34a', '#689f38', '#9ccc65', '#558b2f'][i % 4];
-        ctx.globalAlpha = 0.5;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (random() - 0.5) * 3, y - 3 - random() * 4); ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-    });
+    // Lawn: the shared realistic grass, tiled every 10 m
+    const grassTexture = PropKit.kit.grassTexture('#558a33');
     // Lawn up to the edge of Genesis City; beyond it a flat grey void
     const edge = WORLD_LIMIT + 40;
     const shape = new THREE.Shape();
@@ -632,8 +538,8 @@ const City = (() => {
     pavers.repeat.set(1 / 8, 1 / 8);
     const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ map: pavers, roughness: 0.95 }));
     // Real grass for lawns (the parcel grid is built in finalize, once every district exists)
-    const texture = repeated(grassTexture, 1, 1);
-    texture.repeat.set(1 / 10, 1 / 10);
+    // (lawns are unit circles scaled per instance: about two grass tiles across)
+    const texture = repeated(grassTexture, 2, 2);
     grassMaterialForLawns = new THREE.MeshStandardMaterial({ map: texture, roughness: 1 });
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = GROUND_LEVEL;
@@ -1313,7 +1219,8 @@ const City = (() => {
     // A lake under the floating Zen temple
     const zen = districts.find((district) => district.world.elevation);
     if (zen) {
-      const lake = new THREE.Mesh(new THREE.CylinderGeometry(24, 24, 0.2, 40), material('#4fc3f7', { roughness: 0.1, metalness: 0.2 }));
+      const lakeNormals = repeated(PropKit.kit.waterNormals(), 3, 3);
+      const lake = new THREE.Mesh(new THREE.CylinderGeometry(24, 24, 0.2, 40), new THREE.MeshStandardMaterial({ color: '#4fc3f7', roughness: 0.06, metalness: 0.25, normalMap: lakeNormals, normalScale: new THREE.Vector2(0.5, 0.5) }));
       lake.position.set(zen.layout.center.x, GROUND_LEVEL + 0.1, zen.layout.center.z);
       scene.add(lake);
     }
@@ -1744,6 +1651,10 @@ const City = (() => {
     buildOutskirts();
     buildSkyline();
     buildHorizon();
+    // Grain, relief and roughness maps for everything built outside PropKit
+    // builders (ground, neighborhoods, skyline...) and for materials district
+    // files created directly; idempotent, so already-upgraded ones are skipped
+    PropKit.kit.enhanceSurfaces(scene);
   }
 
   return {
