@@ -143,9 +143,9 @@ const City = (() => {
         const water = seaAt(x, z);
         if (water && !water.island) continue;
         if (!water && isRoadParcel(px, pz)) roadSpots.push([x, z]);
-        // Like Decentraland, Genesis City itself (the commons) stays paved with
-        // stone; grass only covers the parcels for sale around it and islands
-        else if (water || !inCore(x, z)) grassSpots.push([x, z, px, pz]);
+        // Like Decentraland: stone around Genesis Plaza and on scattered little
+        // squares, green parcels everywhere else (lawns, trees and scenes on them)
+        else if (water || !inCore(x, z) || (Math.hypot(x, z) > 150 && parcelHash(px * 3 + 7, pz * 5 - 2) > 0.28)) grassSpots.push([x, z, px, pz]);
       }
     }
     const { grass, road } = parcelTextures();
@@ -980,12 +980,13 @@ const City = (() => {
         break;
       }
     });
-    for (let gx = -340; gx <= 340; gx += STEP) {
-      for (let gz = -340; gz <= 340; gz += STEP) {
+    // The whole commons is filled (up to its corners), so it never looks empty
+    for (let gx = -CORE_HALF + 10; gx <= CORE_HALF - 10; gx += STEP) {
+      for (let gz = -CORE_HALF + 10; gz <= CORE_HALF - 10; gz += STEP) {
         const x = gx + (random() - 0.5) * STEP * 0.8;
         const z = gz + (random() - 0.5) * STEP * 0.8;
         const radius = Math.hypot(x, z);
-        if (radius < 110 || radius > 360 || insideDistrict(x, z, 6) || nearPath(x, z, 5) || placedLandmarks.some((spot) => Math.hypot(spot.x - x, spot.z - z) < spot.size + 7)) { random(); continue; }
+        if (radius < 110 || seaAt(x, z) || insideDistrict(x, z, 6) || nearPath(x, z, 5) || placedLandmarks.some((spot) => Math.hypot(spot.x - x, spot.z - z) < spot.size + 7)) { random(); continue; }
         const roll = random();
         if (roll < 0.42) {
           lawns.push({ x, z, size: 7 + random() * 4 });
