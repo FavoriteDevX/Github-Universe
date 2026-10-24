@@ -155,6 +155,9 @@ const CityMap = (() => {
     else if (kind === 'scene') status = 'Community scene';
     else if (owner) status = `Owned by ${owner}`;
     else status = 'Empty parcel · for sale · 250 MVC';
+    // Published scenes show their title (Decentraland-style scene name)
+    const sceneTitle = window.SceneBuilder && !district ? SceneBuilder.titleAt(key) : null;
+    if (sceneTitle) status = `Scene "${sceneTitle}" · ${status}`;
     return { key, px, pz, x: px * parcelSize() + parcelSize() / 2, z: -(pz * parcelSize() + parcelSize() / 2), kind, owner, status, buyable: kind === 'land' && !owner };
   }
 
@@ -182,6 +185,8 @@ const CityMap = (() => {
       ctx.lineWidth = 1;
       ctx.strokeRect(sx + 0.5, sy + 0.5, s - 1, s - 1);
     });
+    // Published scenes: estate outline and title
+    if (window.SceneBuilder) SceneBuilder.drawMap(ctx, toScreen, view.scale);
     // Points of interest (every district)
     ctx.fillStyle = '#ff922b';
     City.districts.forEach((district) => {

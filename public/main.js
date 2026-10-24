@@ -920,6 +920,8 @@ function bindInputEvents() {
       return;
     }
     if (Interactions.isBusy()) { Interactions.handleKey(event); return; }
+    // B: Scene Builder on your own parcel (it also takes its keys while building)
+    if (window.SceneBuilder && SceneBuilder.handleKey(event)) return;
     // Shift+U: hide every overlay and keep only the scenery (screenshot mode)
     if (event.key === 'U') { document.body.classList.toggle('hide-ui'); return; }
     if (event.key === 'Escape') { closeInfoCard(); closeStream(); Cafe.close(); document.getElementById('mvc-store').style.display = 'none'; }
@@ -1091,6 +1093,9 @@ function updateHud() {
     else if (kind === 'road') outside = 'Genesis City · Road';
     else if (kind === 'scene') outside = 'Community scene';
     else if (kind === 'land') outside = owner ? `Parcel of ${owner}` : 'Empty parcel · for sale (/buyland)';
+    // Decentraland-style scene name: the title of the scene built on this parcel
+    const sceneTitle = window.SceneBuilder && SceneBuilder.titleAt(parcelKey);
+    if (sceneTitle) outside = `${sceneTitle} · ${owner ? `by ${owner}` : 'scene'}`;
   }
   if (chip) chip.firstChild.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : outside;
   ui.district.textContent = position.y < -20 ? `${district ? district.world.name : 'Genesis City'} · Underground` : district ? zoneName(district, position) : 'Genesis City';
@@ -1146,6 +1151,8 @@ function drawMinimap() {
       ctx.arcTo(x, y + height, x, y, radius); ctx.arcTo(x, y, x + width, y, radius); ctx.fill();
     }
   });
+  // Owned parcels (mine red, others green) and published scenes
+  if (window.SceneBuilder) SceneBuilder.drawMinimap(ctx, toMap, scale);
   // Devs in the same district (real time)
   Object.values(remoteMeshPointers).forEach((record) => {
     if (City.districtAt(record.target.x, record.target.z) !== current) return;
@@ -1226,7 +1233,8 @@ const TIME_PRESETS = { sunrise: 0, day: 1000, morning: 1000, noon: 6000, sunset:
 
 const HELP_PAGES = [
   ['Teleport', '/tp <player> | /tp <x> <z> | /tp <x> <y> <z> (supports ~ relative) | /tpa <player> | /tpahere <player> | /tpaccept | /tpdeny'],
-  ['Places', '/world <place> (alias /warp /goto) | /worlds | /spawn | /sethome | /home'],
+  ['Places', '/world <place> (alias /warp /goto) | /goto <x,y> (a parcel: lands on its scene spawn point) | /worlds | /spawn | /sethome | /home'],
+  ['Builder', 'B on a parcel you own opens the Scene Builder: pick an item, click to place | G move | R rotate | [ ] scale | PgUp/PgDn height | Del delete | Ctrl+Z / Ctrl+Y undo/redo | Save, Publish | Set spawn here'],
   ['Codify', 'C opens Codify: write code, Add to world (private unless you tick Visible to others) | E on your block to edit it | F next to any firepit: Fry your Code (E sits on the benches)'],
   ['Graphics', '/quality low | medium | high | auto — the game lowers it by itself when it gets slow'],
   ['Economy', '/balance | /pay <player> <amount> | /buyland (the parcel you stand on) | /lands — Multiverse Coins are in-game only'],
@@ -1310,6 +1318,9 @@ function interpretChatCommand(inputBuffer) {
     case 'world':
     case 'warp':
     case 'goto': {
+      // /goto x,y (or /goto x y): a Genesis City parcel, landing on its scene spawn point
+      const parcelArgs = args.join(',').replace(/,+/g, ',');
+      if (/^-?\d{1,3},-?\d{1,3}$/.test(parcelArgs) && window.SceneBuilder) { SceneBuilder.gotoParcel(parcelArgs); break; }
       const place = args[0] ? findPlace(args.join(' ')) : null;
       if (!place) { appendSystemMessage(`Usage: /${command} <place>. Places: ${places.map((candidate) => candidate.key).join(', ')}`); break; }
       teleportToPlace(place);
@@ -2008,6 +2019,13 @@ Promise.all([Auth.signIn(), universeReady]).then(([session]) => {
     releaseKeys: () => keysPressed.clear()
   });
   TechSquare.init(socket, scene, appendSystemMessage);
+  SceneBuilder.init({
+    socket,
+    system: appendSystemMessage,
+    username: () => session.username,
+    flyTo: (target, message) => flyTo(target, null, message),
+    jumpTo: (key) => { const place = findPlace(key); if (place) teleportToPlace(place); return Boolean(place); }
+  });
   initWeb3();
   plazaReady.then(() => CommunityEvents.init({
     scene,

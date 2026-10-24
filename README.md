@@ -296,6 +296,25 @@ HP, LinkedIn, Uber, Cisco and eBay are on the campus too (walk or fly to them).
 
 <img width="1000" height="583" alt="ezgif-7a0c6818e2a75603" src="https://github.com/user-attachments/assets/617e8f68-2ea2-47af-afbe-e8d99ede0759" />
 
+## 🧱 Build your own scene (Decentraland-style)
+
+Like Decentraland, every 16 m parcel of land can hold a scene built by its owner, while the districts stay as Genesis City's own content.
+
+- **Estates**: adjacent parcels of the same owner merge into one estate and are built as one scene.
+- **Scene manifest** (like `scene.json`): `display` (title, description), `owner`, `scene.parcels` / `scene.base`, `spawnPoints` and a list of `entities` (`item`, `position`, `rotation`, `scale`, `props`).
+- **Limits per scene, with n parcels:**
+  - height: log2(n+1) x 20 m;
+  - up to 200 x n entities and 10,000 x n triangles;
+  - limited materials and textures;
+  - nothing may leave the parcels.
+- **Builder**: press **B** on a parcel you own.
+  - **Catalog:** floors, wall, glass, stairs, platform, column, color cube, trees, plant, bench, table, chair, lamp, fire pit, text sign, YouTube/image screen, laptop and a portal.
+  - **Editing:** click to place or select, **G** move, **R** rotate, **[ ]** scale, **PgUp/PgDn** height, **Del** delete, **Ctrl+Z/Y** undo/redo, **Ctrl+D** duplicate.
+  - **Feedback:** a grid snap, a green/red ghost, the parcel outline with the height limit and a limits HUD.
+  - **Panel buttons:** Set spawn, Save (draft) and Publish.
+- **Server**: validates ownership, bounds and limits with the same rules as the client, saves scenes in `data/scenes.json`, sends every published scene to whoever connects and broadcasts new ones.
+- **Loading**: scenes are built lazily, nearest first. Entering one shows its title, the city map shows each scene's outline and title, and `/goto x,y` jumps to a parcel (and to its scene's spawn point). In solo mode scenes are kept in the browser.
+
 ## 🛠️ Tech Stack & Architecture
 
 - **Frontend**: [Three.js](https://threejs.org) r128 (vanilla JavaScript, local vendor)

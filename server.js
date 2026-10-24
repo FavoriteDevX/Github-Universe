@@ -121,6 +121,39 @@ function saveAccounts() {
 Web3.init();
 Web3.loadUsedTransactions(accounts.web3UsedTransactions);
 
+// ----------------------------------------------------------------------------
+// Scenes (Decentraland-style): the content devs build on their own parcels and
+// estates, persisted in data/scenes.json like users.json. The validation rules
+// (ownership, bounds, per-parcel limits) are shared with the browser Builder.
+// ----------------------------------------------------------------------------
+const SceneRules = require('./public/scenes-builder.js');
+const SCENES_FILE = path.join(DATA_DIR, 'scenes.json');
+let sceneStore = { published: {}, drafts: {} }; // base parcel "x,y" -> scene manifest
+try {
+  sceneStore = JSON.parse(fs.readFileSync(SCENES_FILE, 'utf8'));
+} catch (error) {
+  if (error.code !== 'ENOENT') console.error('[SCENES] Could not read scenes file:', error.message);
+}
+sceneStore.published = sceneStore.published || {};
+sceneStore.drafts = sceneStore.drafts || {};
+let sceneSaveTimer = null;
+function saveScenes() {
+  clearTimeout(sceneSaveTimer);
+  sceneSaveTimer = setTimeout(() => {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFile(SCENES_FILE, JSON.stringify(sceneStore), (error) => {
+      if (error) console.error('[SCENES] Could not save scenes file:', error.message);
+    });
+  }, 300);
+}
+const landOwnerOf = (parcel) => (accounts.lands[parcel] ? accounts.lands[parcel].owner : null);
+// Published scenes whose parcels still belong to the scene owner
+const publishedScenes = () => Object.values(sceneStore.published).filter((scene) => scene.scene.parcels.every((parcel) => SceneRules.sameName(landOwnerOf(parcel), scene.owner)));
+app.get('/api/scenes', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.json(publishedScenes());
+});
+
 
 function hashPassword(password, salt) {
   return crypto.scryptSync(password, salt, 64).toString('hex');
@@ -866,6 +899,47 @@ io.on('connection', (socket) => {
     socket.emit('wallet', { coins: account.coins, spent: LAND_PRICE, reason: `parcel ${parcel}` });
     grantParcel(parcel, { paidWith: 'in-game' });
   });
+
+  // --------------------------------------------------------------------------
+  // Scenes: load the drafts of an estate, save a draft, publish to everyone
+  // --------------------------------------------------------------------------
+  socket.emit('scenes', publishedScenes());
+  const reply = (ack, payload) => { if (typeof ack === 'function') ack(payload); };
+  socket.on('scene_load', ({ parcels } = {}, ack) => {
+    if (!Array.isArray(parcels)) { reply(ack, { ok: false, error: 'Invalid parcels.' }); return; }
+    const wanted = new Set(parcels.slice(0, SceneRules.MAX_PARCELS).map(String));
+    const found = {};
+    [sceneStore.published, sceneStore.drafts].forEach((bucket) => Object.values(bucket).forEach((scene) => {
+      if (SceneRules.sameName(scene.owner, account.username) && scene.scene.parcels.some((parcel) => wanted.has(parcel))) found[scene.scene.base] = scene;
+    }));
+    reply(ack, { ok: true, scenes: Object.values(found) });
+  });
+  function storeScene(input, publish, ack) {
+    const result = SceneRules.validate(input, { owner: account.username, ownerOf: landOwnerOf });
+    if (!result.ok) { reply(ack, { ok: false, error: result.error }); return; }
+    const scene = { ...result.manifest, updatedAt: Date.now() };
+    const id = scene.scene.base;
+    const parcels = new Set(scene.scene.parcels);
+    // Scenes merged into this one by the Builder (estate grew) are replaced
+    const replaced = [];
+    [sceneStore.drafts, ...(publish ? [sceneStore.published] : [])].forEach((bucket) => {
+      Object.keys(bucket).forEach((otherId) => {
+        if (otherId === id || !bucket[otherId].scene.parcels.some((parcel) => parcels.has(parcel))) return;
+        if (bucket === sceneStore.published) replaced.push(otherId);
+        delete bucket[otherId];
+      });
+    });
+    sceneStore.drafts[id] = scene;
+    if (publish) sceneStore.published[id] = scene;
+    saveScenes();
+    reply(ack, { ok: true, scene, stats: result.stats, limits: result.limits });
+    if (publish) {
+      io.emit('scene_published', { scene, replaced });
+      io.emit('system_message', `${developer().devTag} published the scene "${scene.display.title}" at parcel ${id}. Type /goto ${id} to visit it.`);
+    }
+  }
+  socket.on('scene_save', (manifest, ack) => storeScene(manifest, false, ack));
+  socket.on('scene_publish', (manifest, ack) => storeScene(manifest, true, ack));
 
   // --------------------------------------------------------------------------
   // Web3 (testnet MVC token): link wallet, claim coins, buy land on-chain

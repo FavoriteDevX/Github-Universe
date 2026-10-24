@@ -188,7 +188,9 @@ const City = (() => {
       instanced.castShadow = false;
       instanced.userData.alwaysVisible = true;
       scene.add(instanced);
-    });    buildSeas();
+    });
+    edging = { spots: grassSpots, edges, corners, edgeMatrices: edges.instanceMatrix.array.slice(), cornerMatrices: corners.instanceMatrix.array.slice() };
+    updateEstateEdging();    buildSeas();
   }
 
   // Water surfaces, sandy shores and island rims. The water sits 35 cm above
@@ -355,7 +357,28 @@ const City = (() => {
     return Boolean(solid) && y < solid.top && x > solid.minX && x < solid.maxX && z > solid.minZ && z < solid.maxZ;
   }
 
-  // Owned parcels: a fenced plot with the owner's sign (only these become 3D objects)
+  // Estates (like Decentraland): adjacent parcels of the same owner are one
+  // piece of land, so the stone edging between them is hidden
+  let edging = null;
+  const sameOwner = (a, b) => Boolean(landOwners[a] && landOwners[b] && landOwners[a].owner.toLowerCase() === landOwners[b].owner.toLowerCase());
+  function updateEstateEdging() {
+    if (!edging) return;
+    const hidden = new THREE.Matrix4().makeScale(0, 0, 0).toArray();
+    const write = (target, source, index, hide) => target.set(hide ? hidden : source.subarray(index * 16, index * 16 + 16), index * 16);
+    edging.spots.forEach(([, , px, pz], index) => {
+      const key = `${px},${pz}`;
+      const west = sameOwner(key, `${px - 1},${pz}`);
+      const south = sameOwner(key, `${px},${pz - 1}`);
+      write(edging.edges.instanceMatrix.array, edging.edgeMatrices, index * 2, west);
+      write(edging.edges.instanceMatrix.array, edging.edgeMatrices, index * 2 + 1, south);
+      write(edging.corners.instanceMatrix.array, edging.cornerMatrices, index, west && south && sameOwner(key, `${px - 1},${pz - 1}`));
+    });
+    edging.edges.instanceMatrix.needsUpdate = true;
+    edging.corners.instanceMatrix.needsUpdate = true;
+  }
+
+  // Owned parcels: a fenced plot with the owner's sign (only these become 3D
+  // objects); an estate gets one plot without posts between its parcels
   let ownedGroup = null;
   function buildOwnedParcels() {
     if (!scene) return;
@@ -372,14 +395,24 @@ const City = (() => {
       if (inCore(x, z)) return;
       const plot = new THREE.Group();
       plot.position.set(x, GROUND_LEVEL, z);
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(PARCEL_SIZE - 0.4, PARCEL_SIZE - 0.4).rotateX(-Math.PI / 2), plate);
-      floor.position.y = 0.03;
+      // Neighbors of the same estate (x grows east, parcel z grows north = -z)
+      const joined = { w: sameOwner(parcel, `${px - 1},${pz}`), e: sameOwner(parcel, `${px + 1},${pz}`), s: sameOwner(parcel, `${px},${pz - 1}`), n: sameOwner(parcel, `${px},${pz + 1}`) };
+      const inset = (side) => (joined[side] ? 0 : 0.2);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(PARCEL_SIZE - inset('w') - inset('e'), PARCEL_SIZE - inset('n') - inset('s')).rotateX(-Math.PI / 2), plate);
+      floor.position.set((inset('w') - inset('e')) / 2, 0.03, (inset('n') - inset('s')) / 2);
       floor.raycast = () => {};
       plot.add(floor);
-      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => plot.add(box(0.3, 1.4, 0.3, post, sx * 7.6, 0.7, sz * 7.6)));
-      const sign = textSprite(`${land.owner} · parcel ${parcel}`, { width: 6, background: 'rgba(80, 50, 160, 0.9)' });
-      sign.position.y = 3;
-      plot.add(sign);
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sz]) => {
+        if (joined[sx < 0 ? 'w' : 'e'] || joined[sz < 0 ? 'n' : 's']) return;
+        plot.add(box(0.3, 1.4, 0.3, post, sx * 7.6, 0.7, sz * 7.6));
+      });
+      // A published scene replaces the owner sign (its title shows in the location chip)
+      const hasScene = window.SceneBuilder && SceneBuilder.sceneAt(parcel);
+      if (!joined.w && !joined.s && !hasScene) {
+        const sign = textSprite(`${land.owner} · ${joined.e || joined.n ? 'estate' : 'parcel'} ${parcel}`, { width: 6, background: 'rgba(80, 50, 160, 0.9)' });
+        sign.position.y = 3;
+        plot.add(sign);
+      }
       ownedGroup.add(plot);
     });
     scene.add(ownedGroup);
@@ -748,6 +781,7 @@ const City = (() => {
       signMaterial.needsUpdate = true;
     });
     buildOwnedParcels();
+    updateEstateEdging();
   }
 
   // Outskirts: past the neighborhoods the land fades out gradually (sparse
@@ -1661,6 +1695,7 @@ const City = (() => {
   return {
     PARCEL_SIZE, CELL_SIZE, CITY_RADIUS, GROUND_LEVEL, WORLD_LIMIT, CORE_HALF, seaAt, paths, setLandOwners, prepareGround, landAt, isRoadParcel, isSceneParcel, setLandLayout, solidAt,
     landOwner: (parcel) => (landOwners[parcel] ? landOwners[parcel].owner : null),
+    refreshOwnedParcels: buildOwnedParcels,
     get landOwners() { return landOwners; },
     init, addDistrict, finalize, districtAt, updateEnvironment, layoutFor,
     // Objects the walking avatar can stand on or bump into around a point
